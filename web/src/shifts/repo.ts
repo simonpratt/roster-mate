@@ -58,6 +58,21 @@ export function useShiftsInRange(from: string, to: string): Shift[] | undefined 
   }, [from, to]);
 }
 
+/**
+ * The shifts on the given dates, keyed by date, as the import review compares against them;
+ * undefined while loading. Unrostered dates are absent.
+ */
+export function useShiftsOn(dates: readonly string[]): Map<string, Shift> | undefined {
+  const key = dates.join(",");
+  const result = useLiveQuery(async () => {
+    const rows = await db.shifts.bulkGet(key ? key.split(",") : []);
+    const shifts = rows.map(toShift).filter((s): s is Shift => s !== undefined);
+    return { key, shifts: new Map(shifts.map((s) => [s.date, s])) };
+  }, [key]);
+  // useLiveQuery keeps the previous answer while a new query runs; never show it for other dates.
+  return result?.key === key ? result.shifts : undefined;
+}
+
 /** The shift on date: undefined while loading, null for an unrostered date. */
 export function useShift(date: string): Shift | null | undefined {
   return useLiveQuery(async () => toShift(await db.shifts.get(date)) ?? null, [date]);

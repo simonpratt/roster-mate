@@ -53,6 +53,19 @@
   --color-scrim-sheet: rgb(4 5 7 / 0.66); /* behind the edit sheet */
   --color-picker: #1a1d24; /* an unselected code button in the edit sheet */
 
+  /* Import values from docs/designs/Import.dc.html; review markers from Tokens.dc.html. Markers
+     are outlined so they never read as a shift chip. */
+  --color-mark-new: #86efac;
+  --color-mark-new-surface: #0f2418;
+  --color-mark-new-line: #1d4a30;
+  --color-mark-changed-line: #5a3a1c; /* text is caution */
+  --color-mark-unsure: #f9a8d4;
+  --color-mark-unsure-line: #5b2546;
+  --color-mark-needs: #fda4af; /* on danger-surface, danger-line */
+  --color-row-unticked: rgb(255 255 255 / 0.015); /* an unticked review row */
+  --color-failed-icon: #fca5a5; /* the error badge over the roster photo */
+  --color-scan: rgb(125 211 252 / 0.14); /* the scanning band while extracting */
+
   /* Shift-code chips, §4.2: a light text colour on a dark fill of the same family.
      Day off (X) is outlined in border-strong with text-faint. See src/shifts/codes.ts. */
   --color-amber: #fcc35a; /* D Day */
@@ -66,6 +79,11 @@
   --color-lime: #c8ec72; /* every Other code */
   --color-lime-surface: #232e0c;
   --color-lime-line: #4a5e22; /* the Other code input's border */
+  /* Borders of the review list's code picker, one per family */
+  --color-amber-line: #5a4214;
+  --color-sky-line: #11435c;
+  --color-violet-line: #402b6b;
+  --color-indigo-line: #2b3275;
 
   --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -75,6 +93,14 @@
   --text-brand--font-weight: 700;
   --text-brand--line-height: 1.1;
   --text-brand--letter-spacing: -0.02em;
+  --text-hero: 30px; /* Import step 1 heading */
+  --text-hero--font-weight: 700;
+  --text-hero--line-height: 1.12;
+  --text-hero--letter-spacing: -0.02em;
+  --text-headline: 24px; /* Import review and outcome headings */
+  --text-headline--font-weight: 700;
+  --text-headline--line-height: 1.2;
+  --text-headline--letter-spacing: -0.015em;
   --text-display: 28px;
   --text-display--font-weight: 600;
   --text-display--line-height: 1.15;
@@ -105,6 +131,17 @@
   --text-code-xl: 22px; /* the Other code input */
   --text-code-xl--font-weight: 700;
   --text-code-xl--letter-spacing: 0.04em;
+
+  /* The scanning band sweeping over the roster photo while extracting */
+  --animate-scan: scan 2.2s ease-in-out infinite alternate;
+  @keyframes scan {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(150%);
+    }
+  }
 
   /* Corner radii from the designs */
   --radius-control: 10px;

@@ -29,7 +29,8 @@ and using it offline need HTTPS. Put the container behind a reverse proxy with a
 phone trusts. Over plain HTTP the app still works while online.
 
 Roster extraction can take up to 90 seconds, so give the proxy a read timeout above that (nginx
-defaults to 60s).
+defaults to 60s). Otherwise the proxy cuts the request off with a 504 and Import says it couldn't
+read the roster.
 
 ## Develop
 

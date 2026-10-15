@@ -16,6 +16,8 @@ export interface CodeStyle {
   text: string;
   /** Fill of the check badge on a selected code button, the code's text colour. */
   badge: string;
+  /** Fill, text and border of the review list's native code picker. */
+  field: string;
 }
 
 export interface CodeInfo extends CodeStyle {
@@ -36,6 +38,7 @@ export const STANDARD_CODES: readonly CodeInfo[] = [
     pickedFill: "bg-amber-surface",
     text: "text-amber",
     badge: "bg-amber",
+    field: "bg-amber-surface text-amber border-amber-line",
   },
   {
     code: "E",
@@ -46,6 +49,7 @@ export const STANDARD_CODES: readonly CodeInfo[] = [
     pickedFill: "bg-sky-surface",
     text: "text-sky",
     badge: "bg-sky",
+    field: "bg-sky-surface text-sky border-sky-line",
   },
   {
     code: "L",
@@ -56,6 +60,7 @@ export const STANDARD_CODES: readonly CodeInfo[] = [
     pickedFill: "bg-violet-surface",
     text: "text-violet",
     badge: "bg-violet",
+    field: "bg-violet-surface text-violet border-violet-line",
   },
   {
     code: "N",
@@ -66,6 +71,7 @@ export const STANDARD_CODES: readonly CodeInfo[] = [
     pickedFill: "bg-indigo-surface",
     text: "text-indigo",
     badge: "bg-indigo",
+    field: "bg-indigo-surface text-indigo border-indigo-line",
   },
   {
     code: "X",
@@ -76,6 +82,7 @@ export const STANDARD_CODES: readonly CodeInfo[] = [
     pickedFill: "bg-surface-disabled",
     text: "text-text-faint",
     badge: "bg-text-faint",
+    field: "bg-surface text-text-faint border-border-strong",
   },
 ];
 
@@ -86,6 +93,7 @@ export const OTHER_STYLE: CodeStyle = {
   pickedFill: "bg-lime-surface",
   text: "text-lime",
   badge: "bg-lime",
+  field: "bg-lime-surface text-lime border-lime-line",
 };
 
 const CODE_PATTERN = /^[A-Z]{1,2}$/;

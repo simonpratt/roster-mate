@@ -112,3 +112,44 @@ export function CheckIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function ImageIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <circle cx="9.5" cy="9.5" r="1.5" />
+      <path d="M20 15l-4.5-4.5L6 20" />
+    </svg>
+  );
+}
+
+export function AlertTriangleIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+      <path d="M12 4l9 16H3z" />
+      <path d="M12 10v4" />
+      <path d="M12 17v.01" />
+    </svg>
+  );
+}
+
+export function HelpCircleIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+      <path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18" />
+      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7" />
+      <path d="M12 17v.01" />
+    </svg>
+  );
+}
+
+export function UserMissingIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...stroke}>
+      <path d="M12 12a4 4 0 1 0 0-8a4 4 0 1 0 0 8" />
+      <path d="M4 20a8 8 0 0 1 11-7.4" />
+      <path d="M16 16l5 5" />
+      <path d="M21 16l-5 5" />
+    </svg>
+  );
+}

@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { request } from "../api";
 import { AppHeader } from "../components/AppHeader";
 import { Banner } from "../components/Banner";
@@ -21,7 +21,9 @@ import { countPendingEdits, usePendingCount, useSyncStatus } from "../sync/statu
 export function Calendar() {
   const navigate = useNavigate();
   const today = useToday();
-  const [month, setMonth] = useState(() => monthOf(today));
+  // Returning from Import opens on the month of the first saved date (§6.2).
+  const returnMonth = (useLocation().state as { month?: string } | null)?.month;
+  const [month, setMonth] = useState(() => returnMonth ?? monthOf(today));
   const dates = monthGridDates(month);
   const shifts = useShiftsInRange(dates[0]!, dates[dates.length - 1]!);
   const next = useNextShift(today);
