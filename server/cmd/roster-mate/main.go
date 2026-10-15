@@ -19,6 +19,7 @@ import (
 	"github.com/simonpratt/roster-mate/server/internal/api"
 	"github.com/simonpratt/roster-mate/server/internal/auth"
 	"github.com/simonpratt/roster-mate/server/internal/config"
+	"github.com/simonpratt/roster-mate/server/internal/extract"
 	"github.com/simonpratt/roster-mate/server/internal/store"
 	"github.com/simonpratt/roster-mate/server/internal/web"
 )
@@ -52,14 +53,15 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer) int 
 		return 1
 	}
 
+	ex := extract.NewClaude(cfg.AnthropicAPIKey, cfg.AnthropicModel, cfg.RosterName, log)
 	srv := &http.Server{
 		Addr:              net.JoinHostPort("", strconv.Itoa(cfg.Port)),
-		Handler:           api.NewRouter(web.Handler(web.Dist()), a, st),
+		Handler:           api.NewRouter(web.Handler(web.Dist()), a, st, ex),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	errc := make(chan error, 1)
 	go func() { errc <- srv.ListenAndServe() }()
-	log.Info("listening", "addr", srv.Addr, "dataDir", cfg.DataDir)
+	log.Info("listening", "addr", srv.Addr, "dataDir", cfg.DataDir, "model", cfg.AnthropicModel)
 
 	select {
 	case err := <-errc:

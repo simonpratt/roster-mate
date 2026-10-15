@@ -45,7 +45,7 @@ func do(t *testing.T, method, url, body string, c *http.Cookie, headers ...strin
 // newRouterServer serves the API with a, returning its base URL.
 func newRouterServer(t *testing.T, a *auth.Auth) string {
 	t.Helper()
-	srv := httptest.NewServer(NewRouter(http.NotFoundHandler(), a, newStore(t)))
+	srv := httptest.NewServer(NewRouter(http.NotFoundHandler(), a, newStore(t), nil))
 	t.Cleanup(srv.Close)
 	return srv.URL
 }

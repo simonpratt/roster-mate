@@ -210,11 +210,15 @@ to the later edit. See `docs/adr/0001-offline-first-last-write-wins.md`.
 
 ## Roster extraction
 
-`POST /api/extract` — `multipart/form-data` with field `image` (JPEG/PNG/WebP, ≤ 5 MB).
+`POST /api/extract` (session required) — `multipart/form-data` with field `image` (JPEG/PNG/WebP,
+≤ 5 MB). The type is sniffed from the bytes: a larger image is `413`, any other type `415`, a
+missing field `400`.
 
 - The client downsizes before upload: long edge ≤ 2000 px, JPEG quality 0.9.
-- The server sends the image to the Anthropic Messages API with the official Go SDK
-  (`github.com/anthropics/anthropic-sdk-go`), forcing a single tool call whose input schema is:
+- The server sends the image (base64) to the Anthropic Messages API in one call with the official
+  Go SDK (`github.com/anthropics/anthropic-sdk-go`), with one retry on an overloaded or transient
+  error. The answer is constrained by structured outputs (`output_config.format`, a JSON schema)
+  to this shape, which is also the response body:
 
 ```json
 { "personFound": true,
@@ -222,17 +226,25 @@ to the later edit. See `docs/adr/0001-offline-first-last-write-wins.md`.
   "warnings": [ "Week of 10 Nov is partly obscured" ] }
 ```
 
-- The prompt includes: `ROSTER_NAME`, today's date (for inferring missing years), the five
-  standard codes with meanings, that a shift belongs to the date it starts on (a Night shift running
-  past midnight is dated by its start, as rosters print it), and instructions to map synonyms
-  (e.g. "OFF", "RDO" → `X`; "AM" → `E`; "PM" → `L`) before any other rule, to
-  return any other cell text of one or two letters as an Other code (uppercased, e.g. "se" →
-  `SE`), to set `code: null` with the original text in `rawCode` only when a cell can't be a code
-  (longer than two letters or not letters, e.g. "A/L"), and to mark
-  low-confidence reads `uncertain`.
-- The server validates dates and codes (`^[A-Z]{1,2}$` or null), drops malformed entries into `warnings`, and returns
-  `200` with the validated payload. Anthropic errors → `502` with a short message; timeout 90s. A
-  reverse proxy in front of the app needs a read timeout above 90s (nginx defaults to 60s).
+  Structured outputs replaces a forced tool call: `claude-sonnet-5-5` and other current models
+  reject `tool_choice` of type `tool` with a 400.
+- The system prompt (`extract.BuildPrompt`) includes: `ROSTER_NAME`, today's date in `TZ` (for
+  inferring missing years), the five standard codes with meanings, to read only that person's row
+  and set `personFound: false` when the name is absent, that a shift belongs to the date it starts
+  on (a Night shift running past midnight is dated by its start, as rosters print it), and the cell
+  rules in order: map synonyms first ("OFF", "RDO", "/", blank-but-marked-off → `X`; "AM" → `E`;
+  "PM" → `L`); then return any other cell of one or two letters as an Other code (uppercased, e.g.
+  "se" → `SE`); and set `code: null` with the original text in `rawCode` only when a cell can't be
+  a code (longer than two letters or not letters, e.g. "A/L"). Low-confidence reads are marked
+  `uncertain`.
+- The server validates the answer (`extract.Validate`): an entry with an invalid date, a code not
+  matching `^[A-Z]{1,2}$` (after uppercasing), or a null code with no `rawCode` is dropped with a
+  warning, as is every reading of a date after the first. It returns `200` with the validated
+  payload.
+- A failed call, a refusal, a cut-off or unparseable answer, or the 90s timeout → `502
+  {"error":"extraction failed: <short reason>"}`; the reason never includes the API key or the
+  upstream body. Each call logs the model, input and output tokens and duration. A reverse proxy
+  in front of the app needs a read timeout above 90s (nginx defaults to 60s).
 - Nothing is stored. The image is not kept.
 
 ### Review and apply (client)

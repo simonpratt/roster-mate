@@ -28,7 +28,7 @@ func newSyncServer(t *testing.T, st *store.Store) (string, *http.Cookie) {
 	t.Helper()
 	a := auth.New("simon", "secret", []byte("0123456789abcdef0123456789abcdef"))
 	a.FailDelay = 0
-	srv := httptest.NewServer(NewRouter(http.NotFoundHandler(), a, st))
+	srv := httptest.NewServer(NewRouter(http.NotFoundHandler(), a, st, nil))
 	t.Cleanup(srv.Close)
 	return srv.URL, loginCookie(t, srv.URL)
 }
