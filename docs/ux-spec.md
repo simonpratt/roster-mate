@@ -2,8 +2,10 @@
 
 How Roster Mate looks, reads and behaves on a phone. `docs/design.md` covers architecture and
 behaviour; this document covers the screens, states, visual system and copy that the UI tickets
-(SIM-10, SIM-12, SIM-13, SIM-14, SIM-16) build. Where a ticket's spec is more specific, the
-ticket wins; where this document fills a gap the tickets leave, build to this document.
+(SIM-10, SIM-12, SIM-13, SIM-14, SIM-16) build. The design canvas (snapshot in `docs/designs/`)
+is the source of truth for layout, colour, type and copy; this document covers behaviour,
+states and accessibility. Where a ticket's spec is more specific, the ticket wins; where this
+document fills a gap the tickets leave, build to this document.
 
 Source: Linear SIM-17, written from SIM-8 to SIM-16 and `docs/design.md`. Terms follow
 `CONTEXT.md`: in particular, the home screen is the **Calendar**, a **Roster** is the employer's
@@ -52,23 +54,24 @@ control. Browser/OS back closes the edit sheet first, then leaves Import.
 ### 4.1 Theme
 
 Dark only: `<html class="dark">`, `color-scheme: dark`, manifest and `<meta name="theme-color">`
-set to the page background. Define these as Tailwind theme tokens so components use names, not
-raw palette classes.
+set to the page background. Define these as custom Tailwind theme tokens (values from
+`docs/designs/Tokens.dc.html`) so components use names, not raw palette classes.
 
-| Token | Tailwind value | Use |
+| Token | Value | Use |
 |---|---|---|
-| `bg` | `neutral-950` (#0a0a0a) | Page background, `theme_color`, `background_color` |
-| `surface` | `neutral-900` | Header, cards, review rows, bottom sheet |
-| `surface-raised` | `neutral-800` | Inputs, pressed states, menus |
-| `border` | `neutral-800` | Dividers, input borders |
-| `text` | `neutral-100` | Primary text |
-| `text-muted` | `neutral-400` | Secondary text, labels, adjacent-month dates |
-| `text-faint` | `neutral-600` | Disabled text |
-| `primary` | `neutral-100` bg / `neutral-950` text | Primary buttons (Save, Sign in) |
-| `danger` | `rose-400` | Error text, destructive confirmations |
-| `ok` | `emerald-400` | Synced dot |
-| `warn` | `amber-400` | Pending / attention dot |
-| `focus` | `sky-400` | Focus rings (2 px, offset 2 px) |
+| `bg` | #0E1014 | Page background, `theme_color`, `background_color` |
+| `cell` | #121418 | Calendar cells |
+| `surface` | #161920 | Pills, inputs, bottom sheet |
+| `surface-raised` | #1E222A | Pressed states, menus |
+| `border` | #2A2F38 | Dividers, input borders |
+| `text` | #ECEEF2 | Primary text |
+| `text-muted` | #9AA1AD | Secondary text, labels |
+| `text-faint` | #8C93A0 | Captions, Day off, disabled text |
+| `primary` | #ECEEF2 bg / #0E1014 text | Primary buttons (Save, Sign in) |
+| `danger` | #FB7185 | Errors, sign-in-needed dot and banner |
+| `ok` | #34D399 | Synced dot |
+| `warn` | #F5A524 | Pending dot |
+| `focus` | #7DD3FC | Focus rings (2 px, offset 2 px) |
 
 The primary button is near-white rather than a hue so it never competes with or mimics a shift
 colour.
@@ -76,35 +79,36 @@ colour.
 ### 4.2 Shift codes
 
 Codes, labels and colour families come from `web/src/shifts/codes.ts` (SIM-12). Chips use a
-tinted background with a light text colour of the same family, which keeps contrast high on the
-dark surface and lets six colours sit side by side without glare.
+dark fill with a light text colour of the same family, which keeps contrast high on the dark
+surface and lets six colours sit side by side without glare.
 
 | Code | Label | Chip background | Chip text | Notes |
 |---|---|---|---|---|
-| D | Day | `amber-400/15` | `amber-300` | |
-| E | Early | `sky-400/15` | `sky-300` | |
-| L | Late | `violet-400/15` | `violet-300` | |
-| N | Night | `indigo-400/20` | `indigo-300` | Slightly stronger fill to separate it from Late |
-| X | Day off | none | `neutral-500` | Rendered as a quiet letter, not a chip — days off should recede |
-| Other (`SE`, `XD`, …) | the code itself | `teal-400/15` | `teal-300` | One shared colour for every Other code; the chip shows both letters |
+| D | Day | #3B2A0A | #FCC35A (amber) | |
+| E | Early | #0A2C3D | #7DD3FC (sky) | |
+| L | Late | #2A1C47 | #C9B6FD (violet) | |
+| N | Night | #1B2050 | #A5B1FF (indigo) | |
+| X | Day off | none, 1 px #3A404B outline | #8C93A0 | Outlined, not filled, so days off recede |
+| Other (`SE`, `XD`, …) | the code itself | #232E0C | #C8EC72 (lime) | One shared colour for every Other code; the chip shows both letters |
 
-- Chip: rounded-md, code in semibold, centred. In the grid the chip shows the code only; in the
-  header, edit sheet and review list a standard code shows its label too ("L · Late" or "Late").
-  An Other code has no label, so it shows just its letters ("SE") everywhere. Two-letter codes
-  use 1 px tighter letter-spacing so they fit a 46 px cell.
-- Selected state (edit sheet, review picker): solid ring `ring-2` in the chip's text colour plus a
-  check icon, so selection does not rely on colour.
+- Chip: rounded, code in JetBrains Mono bold, centred. In the grid the chip shows the code only;
+  in the header, edit sheet and review list a standard code shows its label too ("Late").
+  An Other code has no label, so it shows just its letters ("SE") everywhere.
+- Selected state (edit sheet): border in the chip's text colour plus a check icon, so selection
+  does not rely on colour.
 - All chip text colours meet WCAG AA (≥ 4.5:1) against `surface` and `bg`; verify with a contrast
   checker when the palette is implemented.
 
 ### 4.3 Typography
 
-System font stack (`ui-sans-serif, system-ui, …`); no web fonts, so the shell renders offline
-instantly.
+Schibsted Grotesk (400–700) for UI and copy; JetBrains Mono (500/700) for shift codes and
+dates. Bundle both as `woff2` in the app (e.g. `@fontsource`) so the service worker precaches
+them and the shell renders offline; never load them from Google Fonts at runtime. Fall back to
+`ui-sans-serif, system-ui` / `ui-monospace`.
 
 | Role | Size / weight | Use |
 |---|---|---|
-| Display | 20 px / 600 | Next-shift line |
+| Display | 28 px / 600 | Next-shift line |
 | Title | 18 px / 600 | Screen titles, month name, sheet heading |
 | Body | 16 px / 400 | Body text, inputs (16 px prevents iOS zoom on focus) |
 | Label | 14 px / 500 | Buttons, badges, list secondary text |
@@ -139,31 +143,33 @@ cloud-off (offline). Icon-only buttons always carry an `aria-label`.
 
 ```
 ┌──────────────────────────────────────────┐
-│ Tomorrow · Late                [📷] [⋮] │  ← next shift (Display), Import, menu
-│ ● Synced                                 │  ← sync indicator (Caption)
+│ [logo]          (● Synced) [📷 Import] [⋮] │  ← header: sync pill, Import, menu
+│ NEXT SHIFT                               │
+│ [L] Tomorrow · Late                      │  ← next-shift block (Display)
 └──────────────────────────────────────────┘
 ```
 
-- **Next shift line** (rules from SIM-13): first working shift (any code except `X`,
-  including Other codes) dated today or later. An Other code shows its letters: "Tomorrow · SE". Formats: "Today · Day", "Tomorrow · Late", "Fri 6 Nov · Night", or "No upcoming shifts"
-  in `text-muted`. Tapping it jumps the grid to that date's month and opens nothing else.
-- **Import** button: camera icon with visible label "Import" if width allows, otherwise
-  icon-only with `aria-label="Import roster"`. When offline it stays visible; the Import screen
-  explains why it cannot proceed.
+- **Next shift block** (rules from SIM-13), below the header: a "Next shift" caption, the code
+  chip and the text. First working shift (any code except `X`, including Other codes) dated
+  today or later. An Other code shows its letters: "Tomorrow · SE". Formats: "Today · Day",
+  "Tomorrow · Late", "Fri 6 Nov · Night", or "No upcoming shifts". Tapping it jumps the grid to
+  that date's month and opens nothing else.
+- **Import** button: camera icon with visible label "Import". When offline it stays visible;
+  the Import screen explains why it cannot proceed.
 - **Menu (⋮)**: a small popover with "Sign out". Sign out asks for confirmation if the outbox is
   non-empty: "You have N pending edits. Signing out keeps them on this phone, but they won't
   sync until you sign in again." [Cancel] [Sign out].
 
 ### 5.2 Sync indicator
 
-A dot plus short text, `role="status"` so changes are announced politely.
+A pill with a dot and short text, `role="status"` so changes are announced politely.
 
 | Status (SIM-12) | Dot | Text | Tap action |
 |---|---|---|---|
 | `synced` | `ok` | "Synced" | Trigger a sync |
 | `pending(n)` | `warn` | "N pending" (e.g. "1 pending") | Trigger a sync |
-| `offline` | `text-muted`, hollow | "Offline" | None |
-| `unauthorized` | `warn` | "Sign in to sync" (link to `/login`) | Go to `/login` |
+| `offline` | `text-faint`, hollow | "Offline" | None |
+| `unauthorized` | `danger` | "Sign in needed", plus the sign-in banner (§5.7) | Go to `/login` |
 | `error` | `danger` | "Sync failed · retry" | Trigger a sync |
 
 While a run is in flight, keep the current text and pulse the dot (no spinner, no text change),
@@ -182,17 +188,17 @@ so the indicator doesn't flicker every 60 s.
  │ N │ L │   │
 ```
 
-- Monday-first, always 6 rows (SIM-13). Month title is a live region so screen readers hear the
-  new month after prev/next.
-- **Cell** (~46 × 56 px at 360 px): day number top-left (Caption), shift chip centred below,
-  note dot top-right (4 px, `text-muted`).
-- **Today**: 2 px `text` outline around the cell, day number bold.
-- **Adjacent-month days**: day number and chip at 40 % opacity; still tappable (opens that date).
+- Monday-first, always 6 rows (SIM-13). Weekday header uses single letters (M T W T F S S).
+  Month title is a live region so screen readers hear the new month after prev/next.
+- **Cell**: day number at the top (Caption, mono), shift chip centred, note dot at the bottom
+  (5 px, `text`).
+- **Today**: `text` outline around the cell, day number bold.
+- **Adjacent-month days**: day number and chip dimmed; still tappable (opens that date).
 - **Unrostered date**: day number only.
-- **Day off**: the muted `X` letter (§4.2); a note dot if it has a note.
-- **Past days**: no special styling (keeps the grid calm; history is useful for swaps).
-- **Navigation**: ‹ › buttons, horizontal swipe (≥ 50 px, mostly horizontal), "Today" button.
-  "Today" is hidden when the current month is shown.
+- **Day off**: the outlined `X` chip (§4.2); a note dot if it has a note.
+- **Past days**: day number dimmed; chips unchanged (history is useful for swaps).
+- **Navigation**: ‹ › buttons, horizontal swipe (≥ 50 px, mostly horizontal), "Today" button
+  (always shown).
 - **Accessible name** per cell: "Tuesday 3 November, Late, has note" / "Wednesday 4 November, no
   shift". Cells are buttons.
 
@@ -203,8 +209,8 @@ Choosing Other reveals a short text input (`maxlength=2`, `autocapitalize="chara
 only, shown uppercase) with placeholder "SE"; the selection is valid once it holds one or two
 letters. Typing a standard code there (e.g. "D") selects that standard chip instead. Opening the
 picker on a shift with an Other code selects Other with its letters filled in. There is no
-"Clear": choosing Day off (`X`) is how a shift is removed. Used in the edit sheet and (compact, letters only) in
-the review list. One selected, or none only on an unrostered date that hasn't been picked yet;
+"Clear": choosing Day off (`X`) is how a shift is removed. Used in the edit sheet; the review
+list uses a native `<select>` with the same options instead (§6.4). One selected, or none only on an unrostered date that hasn't been picked yet;
 `role="radiogroup"` with each chip `role="radio"`.
 
 ### 5.5 Bottom sheet
@@ -226,10 +232,11 @@ Disabled: `text-faint`, no bg change on press, `aria-disabled`. Pressed: 95 % sc
 
 ### 5.7 Banners and inline messages
 
-Full-width strip under the header, `surface` bg with a 3 px left border in the status colour,
-icon + one sentence + optional action. Used for: offline on Import, warnings from extraction,
-errors on Login/Import. Never stack more than one banner on the Calendar; the sync
-indicator carries routine status.
+A rounded box with a tinted background and border in the status colour, icon + one sentence +
+optional action. Used for: the sign-in-needed banner on the Calendar ("Sign in to sync. Your
+edits are kept on this phone until then." [Sign in]), warnings from extraction, errors on
+Login/Import. The sign-in banner is the only banner on the Calendar; the sync pill carries
+routine status.
 
 ## 6. Screens
 
@@ -241,19 +248,19 @@ indicator carries routine status.
   │ Username                  │
   └───────────────────────────┘
   ┌───────────────────────────┐
-  │ Password               👁 │
+  │ Password                  │
   └───────────────────────────┘
-  Wrong username or password.        ← danger, only after 401
   [          Sign in          ]
 ```
 
-- Vertically centred column. App name in Title. No sign-up, no "forgot password".
+- Top-aligned column: logo, "Roster Mate", tagline "Your shifts, on your phone.", then the form
+  (`docs/designs/Login.dc.html`). No sign-up, no "forgot password", no show/hide toggle.
 - Inputs: `autocomplete="username"` / `"current-password"`, `autocapitalize="none"`,
-  `autocorrect="off"`. Password has a show/hide toggle. Enter submits.
+  `autocorrect="off"`. Enter submits.
 - **Submitting**: button text "Signing in…", disabled. The server waits 1 s on failure, so keep
   the button busy for the whole request.
-- **401**: "Wrong username or password." under the fields; password cleared and focused; username
-  kept.
+- **401**: alert box above the fields, "That username and password don’t match."; field borders
+  turn `danger`; password cleared and focused; username kept.
 - **Network error**: "Can't reach Roster Mate. Check you're on your home network." — the
   server is LAN-only, so this is the likely cause.
 - **Offline** (`navigator.onLine === false`): banner "You're offline. Sign in when you're back on
@@ -262,9 +269,8 @@ indicator carries routine status.
 
 ### 6.2 Calendar (`/`)
 
-Layout top to bottom: header (§5.1), month controls, weekday row, grid (§5.3). Below the grid,
-a short legend line in Caption: "D Day · E Early · L Late · N Night · X Off · other codes as shown" — useful on first
-use, cheap to keep.
+Layout top to bottom: header and next-shift block (§5.1), month controls, weekday row, grid
+(§5.3). No legend: the edit sheet labels every code.
 
 States:
 
@@ -274,7 +280,7 @@ States:
 | Normal | As above |
 | Offline | Indicator "Offline"; everything else unchanged and editable |
 | Pending edits | Indicator "N pending" |
-| Signed out but data cached | Indicator "Sign in to sync"; data visible and editable |
+| Signed out but data cached | Pill "Sign in needed" and the sign-in banner; data visible and editable |
 | Returning from Import | Grid on the month of the first saved date; indicator shows pending until sync completes |
 
 Tapping a date opens the edit sheet (§6.3). Long-press does nothing (avoid conflicting gestures).
@@ -285,13 +291,13 @@ Tapping a date opens the edit sheet (§6.3). Long-press does nothing (avoid conf
   ───                                     ← drag handle
   Wednesday 4 November                    ← Title
   [ D ] [ E ] [ L✓] [ N ] [ X ] [Other]   ← code picker
-   Day  Early Late  Night Off
-                              [ SE ]      ← only when Other is selected
+   Day  Early Late  Night Day off
+  To remove a shift, set it to Day off.
+  [ SE ] Code                             ← only when Other is selected
   Note
   ┌──────────────────────────────────┐
   │ swapped with Sam                 │
   └──────────────────────────────────┘
-                              16 / 500    ← shown from 400 chars
   [ Cancel ]            [    Save    ]
 ```
 
@@ -304,8 +310,8 @@ Tapping a date opens the edit sheet (§6.3). Long-press does nothing (avoid conf
 - **Save** disabled until the code or note differs from the stored value (SIM-14). On Save: write
   locally, close, and the cell updates immediately. No toast — the grid change and the
   indicator going to "1 pending" are the feedback.
-- **Note**: textarea, 3 rows growing to 6, `maxlength=500`, plain text. Counter appears at 400
-  characters.
+- **Note**: single-line text input, `maxlength=500`, plain text, no counter. Notes are short
+  ("swapped with Sam").
 - **Cancel / backdrop / Escape / back**: close without writing. If there are unsaved changes,
   close anyway — edits are small and quick to redo; a confirm dialog would slow the common case.
 - When the keyboard is open, the sheet stays above it (use `visualViewport` height) so Save
@@ -315,67 +321,67 @@ Tapping a date opens the edit sheet (§6.3). Long-press does nothing (avoid conf
 
 Header: back arrow (to `/`) and title "Import roster". Four steps share one screen.
 
-**Offline** — banner "Import needs a connection. You can still view and edit shifts offline."
-plus "Back to calendar". No file input (SIM-16).
+**Offline** — cloud-off icon, heading "Import needs a connection", text "Reconnect to your home
+network to import a roster. You can still view and edit shifts while you’re away." and
+"Back to calendar". No file input (SIM-16).
 
-**Step 1 — Choose a photo**
+**Step 1 — Choose a photo** (`docs/designs/Import.dc.html`)
 
 ```
-  Import roster
-  Take a clear photo of the whole roster,
-  with your name and the dates visible.
+  Photograph your roster
+  Claude reads the photo and finds your row. You’ll check
+  every shift before anything is saved.
+  1  Fit the whole roster in frame, with your name visible.
+  2  Printed sheets and screenshots both work.
   [   📷  Take photo   ]                    ← primary, capture="environment"
   [   Choose from library   ]               ← secondary
+  The photo is read once and not stored.
 ```
 
-- Short guidance text above the buttons. After selection, show a thumbnail briefly while the
-  image is downscaled.
+**Step 2 — Extracting** (`docs/designs/ImportExtracting.dc.html`)
 
-**Step 2 — Reading**
-
-- Thumbnail, spinner and "Reading roster…". After 10 s add "This can take up to a minute."
-  [Cancel] aborts the request and returns to Step 1.
+- Photo thumbnail with a scanning animation, heading "Extracting…", text "Finding the shifts in
+  your row. This can take up to a minute." [Cancel] aborts the request and returns to Step 1.
 - Keep the screen awake is not required; if the user leaves the app, the request may fail and
   the error state handles it.
 
 **Step 3 — Review**
 
 ```
-  ⚠ Week of 10 Nov is partly obscured      ← warnings banner (collapsible if > 2)
-  12 shifts found · 8 selected
-  [Select all new/changed]
+  14 shifts found
+  Mon 26 Oct – Sun 8 Nov · 10 new · 1 changed · 2 same · 1 needs a code
+  ⚠ Week of 2 Nov is partly obscured.       ← warnings banner
   ┌──────────────────────────────────────┐
-  │ ☑ Mon 2 Nov   —  →  [N]   New        │
-  │ ☑ Tue 3 Nov   E  →  [L]   Changed    │
-  │ ☐ Wed 4 Nov   X  →  [X]   Same       │
-  │ ☐ Thu 5 Nov   —  →  [ ? ] Unmapped "A/L"│ ← disabled until a code is picked
-  │ ☑ Sat 7 Nov   —  →  [SE]  New        │  ← Other code
-  │ ☑ Fri 6 Nov   —  →  [D]   Uncertain  │
+  │ ☐ Mon 26 Oct  Already Night  Same  [N Night ▾] │
+  │ ☑ Wed 28 Oct  Was Day off  Changed [E Early ▾] │
+  │ ☑ Sat 31 Oct  Not rostered  Unsure [L Late  ▾] │
+  │ ☑ Thu 5 Nov   Not rostered  New    [Other ▾][SE]│
+  │ ☐ Fri 6 Nov   Read as “TRN” Needs code [Pick… ▾]│ ← disabled until a code is picked
   └──────────────────────────────────────┘
-  [          Save 8 shifts          ]       ← sticky footer
+  Unticked rows are left as they are.
+  [          Save 11 shifts          ]      ← sticky footer
 ```
 
-- Rows sorted by date, grouped by month with a sticky month subheading when the result spans
-  months.
-- Each row: checkbox, date ("Tue 3 Nov"), current local value (chip or "—"), arrow, proposed
-  code (tap to open a compact code picker popover), badge.
-- **Badges** (text plus colour, never colour alone):
+- Rows sorted by date (`docs/designs/ImportReview.dc.html`).
+- Each row: checkbox, date ("Tue 3 Nov") with a status line under it ("Already Night", "Was Day
+  off", "Not rostered", or "Read as “TRN”" for an Unmapped code), one badge, and a native
+  `<select>` code picker (Pick…, the five standard codes, Other) tinted in the code's colours.
+  Choosing Other shows a two-letter input beside it.
+- **Badges** (text plus colour, never colour alone). One per row; Unsure takes precedence while
+  the proposed code is unchanged, and the status line still shows what it replaces:
 
-  | Badge | Meaning | Style | Default checkbox |
-  |---|---|---|---|
-  | New | No local shift | `ok` text | Checked |
-  | Changed | Local code differs | `warn` text | Checked |
-  | Same | Matches local | `text-muted` | Unchecked |
-  | Uncertain | The roster cell was hard to read | `warn` outline | Checked if New/Changed |
-  | Unmapped "A/L" | Unmapped code; the cell text is shown | `danger` text | Unchecked, disabled |
+  | Badge | Meaning | Default checkbox |
+  |---|---|---|
+  | New | No local shift | Checked |
+  | Changed | Local code differs | Checked |
+  | Same | Matches local | Unchecked |
+  | Unsure | Uncertain: the roster cell was hard to read | Checked if new or changed |
+  | Needs code | Unmapped code | Unchecked, disabled |
 
-  A row can be both Changed and Uncertain; show both badges.
 - Other codes from the roster (e.g. `SE`) are ordinary proposed shifts: they get New / Changed /
-  Same like any other code. The row picker includes Other (§5.4).
-- Picking a code on an Unmapped row enables and checks it, and replaces the badge with New or
+  Same like any other code.
+- Picking a code on a Needs code row enables and checks it, and replaces the badge with New or
   Changed. Changing the proposed code on any row re-evaluates its badge against the local value.
-- Changed rows show the local note, if any, under the date in Caption so the user knows it will
-  be kept.
 - Footer button: "Save N shifts", disabled at 0 with text "Nothing selected". On Save: write all
   checked rows locally, then go to `/` on the month of the first saved date.
 - **Not found** (`personFound: false`): "Couldn't find you on this roster." with a hint "Check
@@ -383,8 +389,8 @@ plus "Back to calendar". No file input (SIM-16).
   Save (SIM-16).
 - **Nothing found** (`personFound: true`, zero shifts): "Found you, but no shifts could be
   read." [Try another photo].
-- Leaving Review with selected rows (back arrow or OS back) asks: "Discard this import?"
-  [Keep reviewing] [Discard]. The extraction is not stored, so leaving loses it.
+- Leaving Review with selected rows (back arrow or OS back) asks with a native `confirm()`:
+  "Discard this import?". The extraction is not stored, so leaving loses it.
 
 **Errors** (replace Step 2 with a message and [Try again] / [Choose another photo]):
 
@@ -400,7 +406,7 @@ plus "Back to calendar". No file input (SIM-16).
 ### 7.1 Offline and sync
 
 - The UI never waits for the network outside Login and Import. Edits render from IndexedDB.
-- Offline is shown in one place only: the sync indicator (and the Import/Login screens that need
+- Offline is shown in one place only: the sync pill (and the Import/Login screens that need
   a connection). No global offline banner on the Calendar.
 - A sync that pulls in changes updates the grid in place without animation or scroll jumps. If
   the edit sheet is open for a date that sync changes, the sheet keeps the user's in-progress
@@ -443,13 +449,14 @@ plus "Back to calendar". No file input (SIM-16).
 | App name | Roster Mate |
 | Next shift | "Today · {Label}", "Tomorrow · {Label}", "{Ddd d Mmm} · {Label}"; {Label} is the code itself for an Other code |
 | No next shift | No upcoming shifts |
-| Sync | Synced · {n} pending · Offline · Sign in to sync · Sync failed · retry |
+| Sync | Synced · {n} pending · Offline · Sign in needed · Sync failed · retry |
+| Sign-in banner | Sign in to sync. Your edits are kept on this phone until then. |
 | Empty roster | Import a photo of your roster to get started. |
-| Login error | Wrong username or password. |
+| Login error | That username and password don’t match. |
 | Login unreachable | Can't reach Roster Mate. Check you're on your home network. |
-| Import offline | Import needs a connection. You can still view and edit shifts offline. |
-| Import guidance | Take a clear photo of the whole roster, with your name and the dates visible. |
-| Reading | Reading roster… / This can take up to a minute. |
+| Import offline | Import needs a connection / Reconnect to your home network to import a roster. You can still view and edit shifts while you’re away. |
+| Import guidance | Photograph your roster / Claude reads the photo and finds your row. You’ll check every shift before anything is saved. |
+| Extracting | Extracting… / Finding the shifts in your row. This can take up to a minute. |
 | Not found | Couldn't find you on this roster. |
 | Save import | Save {n} shifts / Save 1 shift / Nothing selected |
 | Discard import | Discard this import? |
@@ -473,16 +480,13 @@ exception, already used in the indicator).
 These come from this spec, not from the ticket specs. Each is small; drop any that the reviewer
 doesn't want, and the ticket specs still stand on their own.
 
-- Legend line under the grid and first-run empty-state card (§6.2).
+- First-run empty-state card (§6.2).
 - Tapping the next-shift line jumps to its month; tapping the sync indicator triggers a sync.
 - Sign-out confirmation when edits are pending (§5.1).
 - "Nothing found" import state and "Discard this import?" confirmation (§6.4).
-- Note counter from 400 characters; sheet stays above the keyboard (§6.3).
+- Sheet stays above the keyboard (§6.3).
 - `en-AU` date formatting and midnight rollover of "today" (§7.2).
 - Sync failure status text "Sync failed · retry" for the `error` state SIM-12 exposes.
-- "Today" button hidden while the current month is already shown (SIM-13 only says it returns
-  to the current month).
-- "Select all new/changed" shortcut on the review list (§6.4).
 
 ## 11. Open questions
 

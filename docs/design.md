@@ -101,7 +101,7 @@ The server refuses to start, with a message naming the variable, if a required o
 - Static assets are served without auth so the shell loads offline; the client checks
   `/api/session` when online and shows the login screen on `401`.
 - Offline, the client trusts its cached data and does not require a session. A `401` during
-  sync shows a "Sign in to sync" banner; local data and the outbox are kept.
+  sync shows "Sign in needed" and a "Sign in to sync" banner; local data and the outbox are kept.
 
 ## Data model
 
@@ -139,7 +139,7 @@ Defined once per side (`server/internal/store/codes.go`, `web/src/shifts/codes.t
 | L | Late | violet |
 | N | Night | indigo |
 | X | Day off | neutral / muted |
-| any other 1–2 letters | Other (the code itself is shown, e.g. `SE`) | teal |
+| any other 1–2 letters | Other (the code itself is shown, e.g. `SE`) | lime |
 
 A shift code must match `^[A-Z]{1,2}$`; the five above are the standard codes and anything else
 that matches is an Other code (see `CONTEXT.md`). The client uppercases what the user types; the
