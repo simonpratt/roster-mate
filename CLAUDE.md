@@ -1,9 +1,54 @@
 # Roster Mate
 
+A single-user, mobile-first, dark-only PWA holding one shift worker's shifts: Claude reads them from a roster photo, the user reviews and saves them, and the phone keeps working offline. A Go server with SQLite serves an embedded React/Tailwind client that stores shifts in Dexie, all in one Docker image on a LAN-only homelab.
+
+**Read `CONTEXT.md` before any work.** It is the domain glossary. Use its terms in code, API, UI copy, tests and tickets, and never the words listed under _Avoid_ (in particular, "Day" is a shift code, so a calendar date is a **Date**). Implementation-only terms (Outbox, `rev`) are in `docs/design.md` § Glossary. If a term is missing or no longer fits, raise it with the user rather than inventing one; the `/domain-modeling` skill edits `CONTEXT.md` and the ADRs.
+
+## Sources, and which one wins
+
+- **Linear**, project `roster-mate` (team SIM). SIM-8 parents the initial build and lists its sub-issues in landing order with their blockers. A ticket's `## Spec` is what to build, and its **Designs** section names the artboards.
+- `docs/design.md`: architecture, configuration, auth, schema, sync protocol, extraction, PWA and testing.
+- `docs/ux-spec.md`: screens, states, tokens and copy. §9 maps its sections to tickets.
+- `docs/designs/`: the snapshot of the design canvas (see UX design below).
+- `docs/adr/`: decisions that are hard to reverse. Read them before touching offline sync and conflicts (0001) or the shape of a shift (0002), and record any new decision of that kind there.
+
+When they disagree, `CONTEXT.md` wins on terms, the ticket's Spec and acceptance criteria win on behaviour, `docs/designs/` wins on layout, colour, type and copy, and `docs/ux-spec.md` fills the gaps the tickets and designs leave. Mention each disagreement you resolve in the ticket comment. `docs/ux-spec.md` §10 lists small additions beyond the tickets (empty state, sign-out confirmation, …); build each with the ticket for its screen unless that ticket puts it out of scope.
+
+## Working on tickets
+
+`/linear-refine` and `/linear-implement` carry the Linear status flow and the commit format. For any other change, commit to `master` (the default branch; there is no `main`) with the subject `SIM-<n>: <summary>` when it belongs to a ticket. The repo has no remote: the user reviews and pushes.
+
+- Done means every acceptance criterion is met. Automated criteria get their test in the same commit. Manual ones (on a phone, in devtools, Lighthouse) are checked, or reported as unchecked with the steps to check them.
+- Keep `docs/design.md` true to the code: change it in the same commit as any change to the configuration table, schema, endpoints or sync protocol.
+
+## Commands
+
+Nothing is scaffolded until SIM-9 lands. It adds `make dev`, `make test` (Go and Vitest) and `make build` (the Docker image), with every environment variable in `.env.example`. As each ticket lands, record here the commands and gotchas that a look at the `Makefile` or `package.json` wouldn't reveal.
+
+- **Viewing the app** in this sandbox: start the dev servers as background tasks listening on `0.0.0.0`, and wait until `/api/health` returns 200 and the client page loads. Then ask the user to run `sbx ports <sandbox-name> --publish <port>:<port>` on their host for the client's port, with the name from `$SANDBOX_NAME`, and to log in with the dev `APP_USERNAME`/`APP_PASSWORD`. Stop the tasks when asked.
+- **SQLite** files belong in a temp dir (tests) or a `DATA_DIR` outside the repo. The repo sits on a host mount, where SQLite can report disk I/O or locking errors.
+- **Anthropic API**: tests never call it. The extraction client sits behind an interface, and handler tests use a fake. Load the `/claude-api` skill before changing `server/internal/extract`.
+
+## Invariants
+
+- **Offline-first** (ADR 0001): the UI reads and writes only IndexedDB, and only the sync engine talks to `/api/sync`. The service worker precaches the shell and never caches `/api/`. Clashing edits resolve by last-write-wins on the phone's `editedAt`.
+- **A shift is one code on one date** (ADR 0002): codes match `^[A-Z]{1,2}$`, `D E L N X` are the standard codes, and any other match is an Other code. Codes are defined on both sides, in `server/internal/store/codes.go` and `web/src/shifts/codes.ts`; change them together.
+- **Day off is how a shift is removed.** The UI always writes a code. `code: null` is a reserved tombstone that the protocol accepts and clients show as an unrostered date.
+- **Dates are local calendar dates**: `YYYY-MM-DD` strings with no time or zone, and a Night shift belongs to the date it starts on. Do date arithmetic on the calendar date itself. `toISOString()` and `new Date('YYYY-MM-DD')` go through UTC and shift dates by a day in `en-AU`.
+- **Import saves only through review**: extraction returns proposed shifts and stores nothing, including the photo. Saved rows become ordinary local edits through the outbox.
+- **One user on a LAN**: build for exactly one account and one usually-online phone, as `docs/design.md` § Non-goals sets out.
+
+## UI
+
+- Colours, sizes and spacing come from the Tailwind theme tokens (`docs/ux-spec.md` §4.1, `docs/designs/Tokens.dc.html`), referenced by name rather than raw palette classes. Every shift shows its letter code; colour is a second cue.
+- Each pattern in `docs/ux-spec.md` §5 (app header, sync indicator, month grid, code picker, bottom sheet, buttons, banners) is one component in `web/src/components/`, and screens in `web/src/routes/` only arrange them. Search there first and extend a component with a prop before adding a new one.
+- UI text comes from the designs, collected in the copy deck, `docs/ux-spec.md` §8.
+
 ## UX design
 
 The design canvas is the source of truth for UX: https://claude.ai/artifact/f7df7c66-c03e-4e71-bb0b-018b8b594d58
 
-Add every new screen, state or UX change to the canvas first. Once the canvas changes are finished,
-pull the canvas's `project/` files down into `docs/designs/` and commit them before implementing. `docs/designs/`
-is a snapshot of the canvas, so leave it unedited by hand.
+Add every new screen, state or UX change to the canvas first. Once the canvas changes are finished, pull the canvas's `project/` files down into `docs/designs/` and commit them before implementing. `docs/designs/` is a snapshot of the canvas, so leave it unedited by hand.
+
+- **Reading:** the `.dc.html` files are design-tool templates, so read them as source. The markup and inline styles give layout and styling, and the `<script type="text/x-dc">` at the bottom holds the sample data and prototype behaviour (the calendar and edit sheet live in `Main.dc.html`; the other artboards show its states). `Tokens.dc.html` holds colours, type and markers; `canvas.json` indexes the boards by row.
+- The prototype behaviour is a sketch: where it differs from a ticket (such as when Save is enabled in the edit sheet), the ticket wins.
