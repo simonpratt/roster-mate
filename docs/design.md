@@ -216,6 +216,8 @@ one device, this is enough.
 
 ## UI
 
+Screen layouts, states, visual tokens and copy are specified in `docs/ux-spec.md`.
+
 Dark mode only (`<html class="dark">`, dark palette baked into Tailwind theme, `color-scheme: dark`,
 `theme-color` matching). Designed for a 360–430 px wide portrait phone; usable but not tuned on
 desktop.
