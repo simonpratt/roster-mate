@@ -25,19 +25,48 @@
   --color-warn: #f5a524;
   --color-focus: #7dd3fc;
 
+  /* Further values from docs/designs/ (Login, Tokens) that the §4.1 table doesn't name. */
+  --color-border-input: #2e333c; /* input and banner borders */
+  --color-border-strong: #3a404b; /* outlined buttons, Day off chip */
+  --color-text-soft: #c9cdd4; /* field labels, busy primary button */
+  --color-surface-disabled: #22262e;
+  --color-text-disabled: #737b88;
+  --color-danger-surface: #2a1418;
+  --color-danger-line: #4a1f27;
+  --color-danger-soft: #fbd5db;
+  --color-caution: #fdba74;
+  --color-caution-surface: #2a1e10;
+  --color-caution-line: #4a3317;
+  --color-caution-soft: #fce3c8;
+
   --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* Type scale, §4.3 */
+  /* Type scale, §4.3, plus the sizes the Login design uses (brand, callout, footnote) */
+  --text-brand: 34px;
+  --text-brand--font-weight: 700;
+  --text-brand--line-height: 1.1;
+  --text-brand--letter-spacing: -0.02em;
   --text-display: 28px;
   --text-display--font-weight: 600;
   --text-title: 18px;
   --text-title--font-weight: 600;
   --text-body: 16px;
+  --text-body--line-height: 1.45;
+  --text-callout: 15px;
+  --text-callout--line-height: 1.45;
   --text-label: 14px;
   --text-label--font-weight: 500;
+  --text-label--line-height: 1.4;
+  --text-footnote: 13px;
+  --text-footnote--line-height: 1.5;
   --text-caption: 12px;
   --text-caption--font-weight: 500;
+
+  /* Corner radii from the designs */
+  --radius-control: 10px;
+  --radius-field: 12px;
+  --radius-card: 14px;
 
   /* Content column on wide screens, §4.4 */
   --container-app: 480px;

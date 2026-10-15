@@ -3,8 +3,14 @@ package main
 import (
 	"bytes"
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/simonpratt/roster-mate/server/internal/api"
+	"github.com/simonpratt/roster-mate/server/internal/config"
+	"github.com/simonpratt/roster-mate/server/internal/store"
 )
 
 func TestRunWithoutAppPasswordExitsNonZero(t *testing.T) {
@@ -21,6 +27,45 @@ func TestRunWithoutAppPasswordExitsNonZero(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "APP_PASSWORD") {
 		t.Errorf("stderr %q does not name APP_PASSWORD", stderr.String())
+	}
+}
+
+// Without SESSION_SECRET, a cookie issued before a restart (the same DATA_DIR reopened) still
+// signs the user in afterwards.
+func TestSessionSurvivesRestartWithoutSessionSecret(t *testing.T) {
+	cfg := config.Config{Username: "simon", Password: "secret", DataDir: t.TempDir()}
+	app := http.NotFoundHandler()
+
+	start := func() (*store.Store, http.Handler) {
+		t.Helper()
+		st, err := store.Open(cfg.DataDir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		a, err := newAuth(cfg, st)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return st, api.NewRouter(app, a)
+	}
+
+	st, h := start()
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest("POST", "/api/login", strings.NewReader(`{"username":"simon","password":"secret"}`)))
+	cookies := rec.Result().Cookies()
+	if rec.Code != 204 || len(cookies) != 1 {
+		t.Fatalf("login = %d with %d cookies", rec.Code, len(cookies))
+	}
+	st.Close()
+
+	st, h = start()
+	defer st.Close()
+	req := httptest.NewRequest("GET", "/api/session", nil)
+	req.AddCookie(cookies[0])
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != 200 {
+		t.Fatalf("GET /api/session after restart = %d %q, want 200", rec.Code, rec.Body.String())
 	}
 }
 

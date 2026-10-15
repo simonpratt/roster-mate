@@ -3,8 +3,10 @@
 package store
 
 import (
+	"crypto/rand"
 	"database/sql"
 	"embed"
+	"encoding/hex"
 	"fmt"
 	"io/fs"
 	"os"
@@ -66,6 +68,30 @@ func (s *Store) Close() error { return s.DB.Close() }
 
 // SchemaVersion returns the number of the last applied migration (0 for a new database).
 func (s *Store) SchemaVersion() (int, error) { return schemaVersion(s.DB) }
+
+// SessionSecret returns meta.session_secret, the HMAC key for session cookies when
+// SESSION_SECRET is unset. The first call generates 32 random bytes and stores them, so
+// sessions survive a restart.
+func (s *Store) SessionSecret() ([]byte, error) {
+	fresh := make([]byte, 32)
+	if _, err := rand.Read(fresh); err != nil {
+		return nil, fmt.Errorf("generate session secret: %w", err)
+	}
+	if _, err := s.DB.Exec(
+		`INSERT INTO meta (key, value) VALUES ('session_secret', ?) ON CONFLICT (key) DO NOTHING`,
+		hex.EncodeToString(fresh)); err != nil {
+		return nil, fmt.Errorf("store session secret: %w", err)
+	}
+	var v string
+	if err := s.DB.QueryRow(`SELECT value FROM meta WHERE key = 'session_secret'`).Scan(&v); err != nil {
+		return nil, fmt.Errorf("read session secret: %w", err)
+	}
+	key, err := hex.DecodeString(v)
+	if err != nil || len(key) < 32 {
+		return nil, fmt.Errorf("meta.session_secret is not a hex value of at least 32 bytes")
+	}
+	return key, nil
+}
 
 type migration struct {
 	version int

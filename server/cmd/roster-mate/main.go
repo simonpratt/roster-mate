@@ -17,6 +17,7 @@ import (
 	_ "time/tzdata" // TZ works on any base image, including ones without zoneinfo
 
 	"github.com/simonpratt/roster-mate/server/internal/api"
+	"github.com/simonpratt/roster-mate/server/internal/auth"
 	"github.com/simonpratt/roster-mate/server/internal/config"
 	"github.com/simonpratt/roster-mate/server/internal/store"
 	"github.com/simonpratt/roster-mate/server/internal/web"
@@ -45,9 +46,15 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer) int 
 	}
 	defer st.Close()
 
+	a, err := newAuth(cfg, st)
+	if err != nil {
+		fmt.Fprintf(stderr, "roster-mate: %v\n", err)
+		return 1
+	}
+
 	srv := &http.Server{
 		Addr:              net.JoinHostPort("", strconv.Itoa(cfg.Port)),
-		Handler:           api.NewRouter(web.Handler(web.Dist())),
+		Handler:           api.NewRouter(web.Handler(web.Dist()), a),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	errc := make(chan error, 1)
@@ -68,4 +75,17 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer) int 
 	}
 	log.Info("stopped")
 	return 0
+}
+
+// newAuth signs sessions with SESSION_SECRET, or else with the key kept in the database so
+// sessions survive restarts.
+func newAuth(cfg config.Config, st *store.Store) (*auth.Auth, error) {
+	key := []byte(cfg.SessionSecret)
+	if len(key) == 0 {
+		var err error
+		if key, err = st.SessionSecret(); err != nil {
+			return nil, err
+		}
+	}
+	return auth.New(cfg.Username, cfg.Password, key), nil
 }

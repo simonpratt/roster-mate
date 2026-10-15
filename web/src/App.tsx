@@ -1,6 +1,34 @@
+import { useEffect, useRef } from "react";
+import { Route, Routes, useLocation, useNavigate } from "react-router";
+import { getSession, UnauthorizedError } from "./api";
 import { Home } from "./routes/Home";
+import { Login } from "./routes/Login";
 
-// Routing arrives with the Login, Calendar and Import screens.
+// The router itself (BrowserRouter) is in main.tsx, so tests can use a MemoryRouter.
 export function App() {
-  return <Home />;
+  useSessionCheck();
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="*" element={<Home />} />
+    </Routes>
+  );
+}
+
+// On start, when online, asks the server whether the session is still valid and goes to /login
+// if not. Offline the app trusts its local data and stays put (docs/design.md § Authentication).
+// Opening on /login skips the check, so a slow 401 can't follow a fresh sign-in.
+function useSessionCheck() {
+  const navigate = useNavigate();
+  const startPath = useRef(useLocation().pathname);
+  useEffect(() => {
+    if (!navigator.onLine || startPath.current === "/login") return;
+    let cancelled = false;
+    getSession().catch((err: unknown) => {
+      if (!cancelled && err instanceof UnauthorizedError) navigate("/login", { replace: true });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 }

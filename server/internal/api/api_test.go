@@ -8,6 +8,7 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/simonpratt/roster-mate/server/internal/auth"
 	"github.com/simonpratt/roster-mate/server/internal/web"
 )
 
@@ -15,13 +16,23 @@ const indexHTML = `<!doctype html><html class="dark"><div id="root"></div></html
 
 func newServer(t *testing.T) *httptest.Server {
 	t.Helper()
+	srv, _ := newAuthServer(t)
+	return srv
+}
+
+// newAuthServer returns a server for account simon/secret whose Auth has no failed-login delay
+// and a clock the test can move.
+func newAuthServer(t *testing.T) (*httptest.Server, *auth.Auth) {
+	t.Helper()
 	app := web.Handler(fstest.MapFS{
 		"index.html":       {Data: []byte(indexHTML)},
 		"assets/app-1a.js": {Data: []byte(`console.log(1)`)},
 	})
-	srv := httptest.NewServer(NewRouter(app))
+	a := auth.New("simon", "secret", []byte("0123456789abcdef0123456789abcdef"))
+	a.FailDelay = 0
+	srv := httptest.NewServer(NewRouter(app, a))
 	t.Cleanup(srv.Close)
-	return srv
+	return srv, a
 }
 
 func get(t *testing.T, url string) (*http.Response, string) {
@@ -48,8 +59,9 @@ func TestHealth(t *testing.T) {
 
 func TestUnknownAPIPathIs404(t *testing.T) {
 	srv := newServer(t)
+	c := loginCookie(t, srv.URL)
 	for _, p := range []string{"/api/foo", "/api/", "/api/health/extra"} {
-		res, body := get(t, srv.URL+p)
+		res, body := do(t, "GET", srv.URL+p, "", c)
 		if res.StatusCode != 404 || strings.Contains(body, "<html") {
 			t.Errorf("GET %s = %d %q, want a JSON 404", p, res.StatusCode, body)
 		}

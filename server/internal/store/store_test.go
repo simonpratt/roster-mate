@@ -75,6 +75,32 @@ func TestReopenKeepsDataAndSkipsAppliedMigrations(t *testing.T) {
 	}
 }
 
+// The generated session secret is created once and read back unchanged after a reopen.
+func TestSessionSecretIsGeneratedOnceAndKept(t *testing.T) {
+	dir := t.TempDir()
+	s, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := s.SessionSecret()
+	if err != nil || len(first) != 32 {
+		t.Fatalf("SessionSecret = %x, %v; want 32 bytes", first, err)
+	}
+	if again, err := s.SessionSecret(); err != nil || string(again) != string(first) {
+		t.Fatalf("second SessionSecret = %x, %v; want %x", again, err, first)
+	}
+	s.Close()
+
+	s, err = Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if reopened, err := s.SessionSecret(); err != nil || string(reopened) != string(first) {
+		t.Fatalf("SessionSecret after reopen = %x, %v; want %x", reopened, err, first)
+	}
+}
+
 func TestMigrationsApplyInNumericOrder(t *testing.T) {
 	migrations := fstest.MapFS{
 		"0010_b.sql": {Data: []byte(`INSERT INTO log VALUES ('b');`)},

@@ -94,8 +94,11 @@ The server refuses to start, with a message naming the variable, if a required o
 - `POST /api/logout` → `204`, clears the cookie.
 - `GET /api/session` → `200 {username}` or `401`.
 - Cookie: HMAC-SHA256-signed `{username, expiresAt}`, `HttpOnly`, `SameSite=Strict`, `Path=/`,
-  90-day lifetime refreshed on any authenticated request. `Secure` is set when the request
-  arrived over TLS or with `X-Forwarded-Proto: https`.
+  90-day lifetime refreshed on authenticated requests: a valid cookie with less than 89 days
+  left is reissued, so the session runs 90 days from its last use (to within a day) without a
+  `Set-Cookie` on every response. `Secure` is set when the request arrived over TLS or with
+  `X-Forwarded-Proto: https`. The key is `SESSION_SECRET`, else 32 random bytes generated on
+  first start and kept in `meta.session_secret`, so sessions survive restarts.
 - Every `/api/*` route except login and `/api/health` requires a valid cookie; otherwise `401`.
 - Failed logins sleep 1s before responding (crude brute-force damping; LAN only).
 - Static assets are served without auth so the shell loads offline; the client checks
