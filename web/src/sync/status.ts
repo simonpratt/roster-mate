@@ -20,6 +20,11 @@ export function syncStatus(outcome: Outcome | null, online: boolean, pendingCoun
   return "synced";
 }
 
+/** Reads the number of pending edits once. */
+export function countPendingEdits(): Promise<number> {
+  return db.outbox.count();
+}
+
 /** The number of pending edits, whatever the status (the sign-out dialog needs it offline). */
 export function usePendingCount(): number {
   return useLiveQuery(() => db.outbox.count(), [], 0);

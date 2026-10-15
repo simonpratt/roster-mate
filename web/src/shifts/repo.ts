@@ -67,3 +67,16 @@ export function useShift(date: string): Shift | null | undefined {
 export function useHasLocalShifts(): boolean | undefined {
   return useLiveQuery(async () => (await db.shifts.count()) > 0, []);
 }
+
+/** The next shift: the first working shift dated today or later; undefined while loading. */
+export function useNextShift(today: string): Shift | null | undefined {
+  return useLiveQuery(async () => {
+    const row = await db.shifts
+      .where("date")
+      .aboveOrEqual(today)
+      // A working shift: any code except X (Day off), Other codes included.
+      .filter((r) => r.code !== null && r.code !== "X")
+      .first();
+    return toShift(row) ?? null;
+  }, [today]);
+}

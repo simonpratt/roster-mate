@@ -39,6 +39,18 @@
   --color-caution-line: #4a3317;
   --color-caution-soft: #fce3c8;
 
+  /* Calendar values from docs/designs/Main.dc.html */
+  --color-border-subtle: #23272f; /* sync pill and empty-state card */
+  --color-cell-line: #1c2027; /* calendar cell border */
+  --color-cell-line-dim: #15181d; /* adjacent-month cell border */
+  --color-text-dim: #5a616d; /* adjacent-month day numbers and note dots */
+  --color-on-danger: #1a0a0d; /* text on the danger-filled Sign in button */
+  --color-failed-surface: #2a1416; /* Sync failed pill */
+  --color-failed-line: #5a2228;
+  --color-failed-soft: #fecaca;
+  --color-failed-action: #ffffff; /* Retry on the Sync failed pill */
+  --color-scrim: rgb(4 5 7 / 0.72); /* behind the sign-out dialog */
+
   /* Shift-code chips, §4.2: a light text colour on a dark fill of the same family.
      Day off (X) is outlined in border-strong with text-faint. See src/shifts/codes.ts. */
   --color-amber: #fcc35a; /* D Day */
@@ -62,6 +74,11 @@
   --text-brand--letter-spacing: -0.02em;
   --text-display: 28px;
   --text-display--font-weight: 600;
+  --text-display--line-height: 1.15;
+  --text-display--letter-spacing: -0.01em;
+  --text-heading: 21px; /* dialog title */
+  --text-heading--font-weight: 600;
+  --text-heading--letter-spacing: -0.01em;
   --text-title: 18px;
   --text-title--font-weight: 600;
   --text-body: 16px;
@@ -75,11 +92,19 @@
   --text-footnote--line-height: 1.5;
   --text-caption: 12px;
   --text-caption--font-weight: 500;
+  --text-code: 14px; /* shift code in a grid chip */
+  --text-code--font-weight: 700;
+  --text-code-lg: 20px; /* shift code in the next-shift chip */
+  --text-code-lg--font-weight: 700;
 
   /* Corner radii from the designs */
   --radius-control: 10px;
   --radius-field: 12px;
   --radius-card: 14px;
+  --radius-panel: 16px; /* menu popover, empty-state card */
+  --radius-dialog: 22px;
+
+  --shadow-popover: 0 16px 40px rgb(0 0 0 / 0.55);
 
   /* Content column on wide screens, §4.4 */
   --container-app: 480px;

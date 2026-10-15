@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { getSession, UnauthorizedError } from "./api";
-import { Home } from "./routes/Home";
+import { Calendar } from "./routes/Calendar";
+import { Import } from "./routes/Import";
 import { Login } from "./routes/Login";
 import { useSyncTriggers } from "./sync/triggers";
 
@@ -12,7 +13,8 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="*" element={<Home />} />
+      <Route path="/import" element={<Import />} />
+      <Route path="*" element={<Calendar />} />
     </Routes>
   );
 }

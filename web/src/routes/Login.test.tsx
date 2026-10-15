@@ -20,7 +20,7 @@ describe("Login", () => {
     renderApp("/login");
     fillAndSubmit("simon", "secret");
 
-    expect(await screen.findByText("Your shifts will appear here.")).toBeInTheDocument();
+    expect(await screen.findByText("Next shift")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/login",
       expect.objectContaining({
@@ -62,7 +62,7 @@ describe("Login", () => {
     expect(screen.getByLabelText("Username")).toHaveValue("simon");
     expect(password).toHaveAttribute("aria-invalid", "true");
     await waitFor(() => expect(password).toHaveFocus());
-    expect(screen.queryByText("Your shifts will appear here.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Next shift")).not.toBeInTheDocument();
   });
 
   it("says the server can't be reached on a network error", async () => {
@@ -99,7 +99,7 @@ describe("Login", () => {
 
     expect(screen.getByRole("button", { name: "Sign in" })).toBeDisabled();
     fireEvent.click(await screen.findByRole("button", { name: "Back to calendar" }));
-    expect(await screen.findByText("Your shifts will appear here.")).toBeInTheDocument();
+    expect(await screen.findByText("Next shift")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
