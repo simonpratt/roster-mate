@@ -15,23 +15,31 @@ body{margin:0}
 </helmet>
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #0E1014; color: #ECEEF2; color-scheme: dark; font-family: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif; display: flex; flex-direction: column">
 
-  <header style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 8px">
-    <svg width="30" height="30" viewBox="0 0 30 30" role="img" aria-label="Roster Mate">
-      <rect x="1" y="1" width="28" height="28" rx="8" fill="#161920" stroke="#2A2F38"></rect>
-      <rect x="7" y="7" width="7" height="7" rx="2" fill="#FCC35A"></rect>
-      <rect x="16" y="7" width="7" height="7" rx="2" fill="#7DD3FC"></rect>
-      <rect x="7" y="16" width="7" height="7" rx="2" fill="#C9B6FD"></rect>
-      <rect x="16" y="16" width="7" height="7" rx="2" fill="none" stroke="#5A616D" stroke-width="1.5"></rect>
-    </svg>
-    <div style="display: flex; align-items: center; gap: 8px">
+  <header style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 8px 8px 16px">
+    <sc-if value="{{pillIsButton}}" hint-placeholder-val="{{ false }}">
+      <button type="button" onClick="{{retry}}" aria-label="Sync failed. Retry" style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 18px; background: #2A1416; border: 1px solid #5A2228; font: inherit; font-size: 13px; font-weight: 600; color: #FECACA; box-sizing: border-box; cursor: pointer">
+        <span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 4px; background: #EF4444"></span>
+        <span>Sync failed</span>
+        <span aria-hidden="true" style="display: inline-flex; align-items: center; gap: 4px; color: #FFFFFF">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"></path><path d="M20 4v5h-5"></path></svg>
+          Retry
+        </span>
+      </button>
+    </sc-if>
+    <sc-if value="{{pillIsStatus}}" hint-placeholder-val="{{ true }}">
       <p aria-label="Sync status: {{syncLabel}}" style="margin: 0; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 16px; background: #161920; border: 1px solid #23272F; font-size: 13px; font-weight: 500; color: #C9CDD4; box-sizing: border-box">
         <span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 4px; background: {{syncDot}}; box-shadow: inset 0 0 0 1.5px {{syncRing}}"></span>
         <span>{{syncLabel}}</span>
       </p>
-      <a href="Import.dc.html" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px 0 14px; border-radius: 12px; background: #ECEEF2; color: #0E1014; font-weight: 600; font-size: 15px; text-decoration: none; box-sizing: border-box">
+    </sc-if>
+    <div style="display: flex; align-items: center; gap: 4px">
+      <a href="Import.dc.html" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px 0 12px; border-radius: 12px; background: #ECEEF2; color: #0E1014; font-weight: 600; font-size: 15px; text-decoration: none; box-sizing: border-box">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
         Import
       </a>
+      <button type="button" onClick="{{toggleMenu}}" aria-label="More" aria-haspopup="menu" aria-expanded="{{menuOpen}}" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: {{menuBtnBg}}; color: #C9CDD4; display: flex; align-items: center; justify-content: center; cursor: pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5.5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="18.5" r="1.8"></circle></svg>
+      </button>
     </div>
   </header>
 
@@ -45,7 +53,7 @@ body{margin:0}
   <section aria-labelledby="next-shift" style="padding: 16px 16px 20px">
     <p style="margin: 0; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #9AA1AD">Next shift</p>
     <div style="display: flex; align-items: center; gap: 14px; margin-top: 10px">
-      <span aria-hidden="true" style="width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: {{nextBg}}; color: {{nextFg}}; box-shadow: inset 0 0 0 1px {{nextLine}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 22px">{{nextCode}}</span>
+      <span aria-hidden="true" style="width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: {{nextBg}}; color: {{nextFg}}; box-shadow: inset 0 0 0 1px {{nextLine}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 20px">{{nextCode}}</span>
       <h1 id="next-shift" style="margin: 0; font-size: 28px; line-height: 1.15; font-weight: 600; letter-spacing: -0.01em">{{nextTitle}}</h1>
     </div>
   </section>
@@ -68,14 +76,57 @@ body{margin:0}
   </div>
 
   <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding: 0 12px">
-    <sc-for list="{{days}}" as="d" hint-placeholder-count="35">
-      <button type="button" onClick="{{d.pick}}" disabled="{{d.disabled}}" aria-label="{{d.aria}}" style="height: 80px; box-sizing: border-box; border-radius: 12px; border: 1px solid {{d.border}}; box-shadow: inset 0 0 0 1px {{d.ring}}; background: {{d.cellBg}}; padding: 7px 0 8px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; color: {{d.numColor}}; font: inherit; cursor: pointer">
+    <sc-for list="{{days}}" as="d" hint-placeholder-count="42">
+      <button type="button" onClick="{{d.pick}}" aria-label="{{d.aria}}" style="height: 70px; box-sizing: border-box; border-radius: 12px; border: 1px solid {{d.border}}; box-shadow: inset 0 0 0 1px {{d.ring}}; background: {{d.cellBg}}; padding: 6px 0 7px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; color: {{d.numColor}}; font: inherit; cursor: pointer">
         <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; font-weight: {{d.numWeight}}">{{d.num}}</span>
-        <span style="width: 34px; height: 34px; box-sizing: border-box; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: {{d.chipBg}}; color: {{d.chipFg}}; box-shadow: inset 0 0 0 1px {{d.chipLine}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 15px">{{d.code}}</span>
+        <span style="width: 34px; height: 32px; box-sizing: border-box; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: {{d.chipBg}}; color: {{d.chipFg}}; box-shadow: inset 0 0 0 1px {{d.chipLine}}; opacity: {{d.chipOpacity}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 14px">{{d.code}}</span>
         <span style="width: 5px; height: 5px; border-radius: 3px; background: {{d.dot}}"></span>
       </button>
     </sc-for>
   </div>
+
+  <sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+    <div style="margin: 16px 16px 0; padding: 18px; border-radius: 16px; background: #161920; border: 1px solid #23272F; display: flex; flex-direction: column; gap: 14px">
+      <p style="margin: 0; font-size: 16px; line-height: 1.45; color: #ECEEF2">Import a photo of your roster to get started.</p>
+      <a href="Import.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px 0 16px; border-radius: 12px; background: #ECEEF2; color: #0E1014; font-weight: 600; font-size: 15px; text-decoration: none; box-sizing: border-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+        Import roster
+      </a>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0">
+      <button type="button" aria-label="Close menu" onClick="{{closeOverlay}}" style="position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; cursor: default"></button>
+      <div role="menu" aria-label="More" style="position: absolute; top: 62px; right: 12px; width: 208px; padding: 6px; box-sizing: border-box; border-radius: 16px; background: #1E222A; border: 1px solid #2E333C; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55)">
+        <sc-if value="{{signOutConfirms}}" hint-placeholder-val="{{ false }}">
+          <button type="button" role="menuitem" onClick="{{askSignOut}}" style="width: 100%; height: 48px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: #ECEEF2; font: inherit; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9AA1AD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 16l-4-4 4-4"></path><path d="M6 12h10"></path></svg>
+            Sign out
+          </button>
+        </sc-if>
+        <sc-if value="{{signOutDirect}}" hint-placeholder-val="{{ true }}">
+          <a href="Login.dc.html" role="menuitem" style="height: 48px; padding: 0 12px; border-radius: 10px; color: #ECEEF2; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 12px; text-decoration: none">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9AA1AD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 16l-4-4 4-4"></path><path d="M6 12h10"></path></svg>
+            Sign out
+          </a>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{confirmOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(4, 5, 7, 0.72); display: flex; align-items: center; justify-content: center; padding: 0 20px">
+      <section role="alertdialog" aria-modal="true" aria-labelledby="so-title" aria-describedby="so-body" style="width: 100%; box-sizing: border-box; padding: 24px 20px 20px; border-radius: 22px; background: #161920; border: 1px solid #2A2F38; display: flex; flex-direction: column; gap: 12px">
+        <h2 id="so-title" style="margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -0.01em">Sign out?</h2>
+        <p id="so-body" style="margin: 0; font-size: 15px; line-height: 1.5; color: #C9CDD4; text-wrap: pretty">{{confirmText}}</p>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px">
+          <button type="button" onClick="{{closeOverlay}}" style="height: 52px; border-radius: 14px; border: 1px solid #2E333C; background: transparent; color: #ECEEF2; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer">Cancel</button>
+          <a href="Login.dc.html" style="height: 52px; border-radius: 14px; background: #ECEEF2; color: #0E1014; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; text-decoration: none">Sign out</a>
+        </div>
+      </section>
+    </div>
+  </sc-if>
 
   <sc-if value="{{sheetOpen}}" hint-placeholder-val="{{ false }}">
     <div style="position: absolute; inset: 0; background: rgba(4, 5, 7, 0.66)">
@@ -88,8 +139,13 @@ body{margin:0}
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px">
           <div role="group" aria-label="Shift" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px">
-            <sc-for list="{{codeButtons}}" as="b" hint-placeholder-count="5">
-              <button type="button" onClick="{{b.pick}}" aria-pressed="{{b.pressed}}" style="height: 72px; box-sizing: border-box; border-radius: 14px; border: 1.5px solid {{b.line}}; background: {{b.bg}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: inherit; cursor: pointer; padding: 0">
+            <sc-for list="{{codeButtons}}" as="b" hint-placeholder-count="6">
+              <button type="button" onClick="{{b.pick}}" aria-pressed="{{b.pressed}}" aria-label="{{b.aria}}" style="position: relative; height: 72px; box-sizing: border-box; border-radius: 14px; border: 1.5px solid {{b.line}}; background: {{b.bg}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: inherit; cursor: pointer; padding: 0">
+                <sc-if value="{{b.pressed}}" hint-placeholder-val="{{ false }}">
+                  <span aria-hidden="true" style="position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 8px; background: {{b.fg}}; color: #0E1014; display: flex; align-items: center; justify-content: center">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                  </span>
+                </sc-if>
                 <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 20px; color: {{b.fg}}">{{b.key}}</span>
                 <span style="font-size: 12px; font-weight: 500; color: {{b.labelColor}}">{{b.label}}</span>
               </button>
@@ -112,7 +168,7 @@ body{margin:0}
         </div>
         <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
           <button type="button" onClick="{{cancel}}" style="height: 52px; border-radius: 14px; border: 1px solid #2E333C; background: transparent; color: #ECEEF2; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer">Cancel</button>
-          <button type="button" onClick="{{save}}" disabled="{{saveDisabled}}" style="height: 52px; border-radius: 14px; border: 0; background: #ECEEF2; color: #0E1014; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; opacity: {{saveOpacity}}">Save</button>
+          <button type="button" onClick="{{save}}" disabled="{{saveDisabled}}" style="height: 52px; border-radius: 14px; border: 0; background: {{saveBg}}; color: {{saveFg}}; font: inherit; font-size: 16px; font-weight: 600; cursor: {{saveCursor}}">Save</button>
         </div>
       </section>
     </div>
@@ -120,12 +176,14 @@ body{margin:0}
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"sync":{"editor":"enum","options":["synced","pending","offline","signin"],"default":"synced"},"openDate":{"editor":null},"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"sync":{"editor":"enum","options":["synced","pending","offline","signin","failed"],"default":"synced"},"overlay":{"editor":"enum","options":["none","menu","signout"],"default":"none"},"empty":{"editor":"boolean","default":false},"openDate":{"editor":null},"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
-  componentWillUnmount() { clearTimeout(this._t); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._r); }
   renderVals() {
     const WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const WDL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const MON = { 9: 'September', 10: 'October', 11: 'November' };
+    const MS = { 9: 'Sep', 10: 'Oct', 11: 'Nov' };
     const CODES = {
       D: { label: 'Day', bg: '#3B2A0A', fg: '#FCC35A', line: '#3B2A0A' },
       E: { label: 'Early', bg: '#0A2C3D', fg: '#7DD3FC', line: '#0A2C3D' },
@@ -135,103 +193,142 @@ class Component extends DCLogic {
     };
     const OTHER = { label: 'Other', bg: '#232E0C', fg: '#C8EC72', line: '#232E0C' };
     const info = (k) => CODES[k] || OTHER;
-    const INITIAL = { 1: 'D', 2: 'D', 3: 'X', 4: 'X', 5: 'E', 6: 'E', 7: 'L', 8: 'L', 9: 'X', 10: 'N', 11: 'N', 12: 'N', 13: 'X', 14: 'X', 15: 'X', 16: 'L', 17: 'L', 18: 'X', 19: 'E', 20: 'E', 21: 'D', 22: 'D', 23: 'SE', 24: 'N', 25: 'N', 26: 'N', 27: 'X', 28: 'X' };
-    const NOTES = { 22: 'Swapped with Sam' };
+    const labelOf = (k) => (CODES[k] ? CODES[k].label : 'Other · ' + k);
+    const OCT = ['D', 'D', 'X', 'X', 'E', 'E', 'L', 'L', 'X', 'N', 'N', 'N', 'X', 'X', 'X', 'L', 'L', 'X', 'E', 'E', 'D', 'D', 'SE', 'N', 'N', 'N', 'X', 'X'];
+    const INITIAL = { '9-28': 'E', '9-29': 'E', '9-30': 'L' };
+    OCT.forEach((k, i) => { INITIAL['10-' + (i + 1)] = k; });
+    const NOTES = { '10-22': 'Swapped with Sam' };
     const SYNC = {
       synced: { label: 'Synced', dot: '#34D399', ring: '#34D399' },
       pending: { label: '2 pending', dot: '#F5A524', ring: '#F5A524' },
       offline: { label: 'Offline', dot: 'transparent', ring: '#8C93A0' },
-      signin: { label: 'Sign in needed', dot: '#FB7185', ring: '#FB7185' }
+      signin: { label: 'Sign in needed', dot: '#FB7185', ring: '#FB7185' },
+      syncing: { label: 'Syncing…', dot: 'transparent', ring: '#7DD3FC' }
     };
-    const TODAY = 15;
-    const wd = (d) => (3 + d - 1) % 7;
+    const TODAY = '10-15';
+    const ord = (key) => { const a = key.split('-'); return Number(a[0]) * 100 + Number(a[1]); };
 
     const s = this.state || {};
     const p = this.props || {};
-    const shifts = s.shifts || INITIAL;
-    const notes = s.notes || NOTES;
-    const labelOf = (k) => (CODES[k] ? CODES[k].label : 'Other · ' + k);
-    const editing = s.editing !== undefined ? s.editing : (p.openDate ? Number(p.openDate) : null);
+    const isEmpty = p.empty === true || p.empty === 'true';
+    const shifts = s.shifts || (isEmpty ? {} : INITIAL);
+    const notes = s.notes || (isEmpty ? {} : NOTES);
+    const openKey = p.openDate ? (String(p.openDate).indexOf('-') > 0 ? String(p.openDate) : '10-' + p.openDate) : null;
+    const editing = s.editing !== undefined ? s.editing : openKey;
     const pendingCount = s.pendingCount || 0;
-    const syncKey = SYNC[p.sync] ? p.sync : 'synced';
-    let sync = SYNC[syncKey];
-    if (syncKey === 'synced' && pendingCount > 0) sync = { label: pendingCount + ' pending', dot: '#F5A524', ring: '#F5A524' };
+    const baseSync = s.syncOverride || (['synced', 'pending', 'offline', 'signin', 'failed'].indexOf(p.sync) >= 0 ? p.sync : 'synced');
+    let sync = SYNC[baseSync] || SYNC.synced;
+    if (baseSync === 'synced' && pendingCount > 0) sync = { label: pendingCount + ' pending', dot: '#F5A524', ring: '#F5A524' };
+    const pendingTotal = (baseSync === 'pending' ? 2 : 0) + pendingCount;
+    const overlay = s.overlay !== undefined ? s.overlay : (['menu', 'signout'].indexOf(p.overlay) >= 0 ? p.overlay : 'none');
 
-    const blank = (n) => ({ num: n, aria: 'Outside October', disabled: true, pick: () => {}, cellBg: 'transparent', border: 'transparent', ring: 'transparent', numColor: '#4B515C', numWeight: 500, chipBg: 'transparent', chipFg: 'transparent', chipLine: 'transparent', code: '', dot: 'transparent' });
-    const days = [blank(28), blank(29), blank(30)];
-    for (let d = 1; d <= 31; d++) {
-      const k = shifts[d];
+    const cells = [{ m: 9, d: 28 }, { m: 9, d: 29 }, { m: 9, d: 30 }];
+    for (let d = 1; d <= 31; d++) cells.push({ m: 10, d });
+    for (let d = 1; d <= 8; d++) cells.push({ m: 11, d });
+    const wdOf = {};
+    const days = cells.map((cell, i) => {
+      const key = cell.m + '-' + cell.d;
+      wdOf[key] = i % 7;
+      const inMonth = cell.m === 10;
+      const k = shifts[key];
       const c = k ? info(k) : null;
-      const isToday = d === TODAY;
-      const isEditing = d === editing;
-      days.push({
-        num: d,
-        disabled: false,
-        aria: WD[wd(d)] + ' ' + d + ' October, ' + (c ? labelOf(k) : 'no shift') + (notes[d] ? ', has note' : '') + (isToday ? ', today' : ''),
-        pick: () => this.setState({ editing: d, draftCode: undefined, noteDraft: undefined, otherDraft: undefined }),
-        cellBg: isToday ? '#161920' : '#121418',
-        border: isToday || isEditing ? '#ECEEF2' : '#1C2027',
+      const isToday = key === TODAY;
+      const isEditing = key === editing;
+      return {
+        num: cell.d,
+        aria: WD[i % 7] + ' ' + cell.d + ' ' + MON[cell.m] + ', ' + (c ? labelOf(k) : 'no shift') + (notes[key] ? ', has note' : '') + (isToday ? ', today' : ''),
+        pick: () => this.setState({ editing: key, draftCode: undefined, noteDraft: undefined, otherDraft: undefined }),
+        cellBg: !inMonth ? 'transparent' : (isToday ? '#161920' : '#121418'),
+        border: isToday || isEditing ? '#ECEEF2' : (inMonth ? '#1C2027' : '#15181D'),
         ring: isToday ? '#ECEEF2' : 'transparent',
-        numColor: isToday ? '#ECEEF2' : (d < TODAY ? '#737B88' : '#C9CDD4'),
+        numColor: !inMonth ? '#5A616D' : (isToday ? '#ECEEF2' : (ord(key) < ord(TODAY) ? '#737B88' : '#C9CDD4')),
         numWeight: isToday ? 700 : 500,
         chipBg: c ? c.bg : 'transparent',
         chipFg: c ? c.fg : 'transparent',
         chipLine: c ? c.line : 'transparent',
+        chipOpacity: inMonth ? 1 : 0.45,
         code: k || '',
-        dot: notes[d] ? '#ECEEF2' : 'transparent'
-      });
-    }
-    days.push(blank(1));
+        dot: notes[key] ? (inMonth ? '#ECEEF2' : '#5A616D') : 'transparent'
+      };
+    });
 
     let next = null;
-    for (let d = TODAY; d <= 31; d++) { const k = shifts[d]; if (k && k !== 'X') { next = d; break; } }
-    const nc = next !== null ? info(shifts[next]) : null;
-    const when = next === null ? '' : (next === TODAY ? 'Today' : next === TODAY + 1 ? 'Tomorrow' : WD[wd(next)] + ' ' + next + ' Oct');
+    for (const cell of cells) {
+      const key = cell.m + '-' + cell.d;
+      if (ord(key) < ord(TODAY)) continue;
+      const k = shifts[key];
+      if (k && k !== 'X') { next = { key, cell, k }; break; }
+    }
+    const nc = next ? info(next.k) : null;
+    const when = !next ? '' : (next.key === TODAY ? 'Today' : ord(next.key) === ord(TODAY) + 1 ? 'Tomorrow' : WD[wdOf[next.key]] + ' ' + next.cell.d + ' ' + MS[next.cell.m]);
 
-    const sheetOpen = editing !== null && editing !== undefined;
+    const sheetOpen = !!editing;
     const cur = sheetOpen ? shifts[editing] : undefined;
+    const curNote = sheetOpen ? (notes[editing] || '') : '';
     const draftCode = s.draftCode !== undefined ? s.draftCode : (cur ? (CODES[cur] ? cur : 'O') : undefined);
-    const noteDraft = s.noteDraft !== undefined ? s.noteDraft : (sheetOpen ? (notes[editing] || '') : '');
+    const noteDraft = s.noteDraft !== undefined ? s.noteDraft : curNote;
     const otherDraft = s.otherDraft !== undefined ? s.otherDraft : (cur && !CODES[cur] ? cur : '');
     const finalCode = draftCode === 'O' ? otherDraft : draftCode;
+    const changed = !!finalCode && (finalCode !== cur || noteDraft !== curNote);
     const codeButtons = ['D', 'E', 'L', 'N', 'X', 'O'].map((k) => {
       const c = k === 'O' ? OTHER : CODES[k];
       const on = draftCode === k;
       return {
         key: k === 'O' ? (otherDraft || '··') : k, label: c.label, pressed: on, fg: c.fg,
+        aria: k === 'O' ? 'Other' + (otherDraft ? ', ' + otherDraft : '') : k + ', ' + c.label,
         bg: on ? (k === 'X' ? '#22262E' : c.bg) : '#1A1D24',
         line: on ? c.fg : '#2A2F38',
         labelColor: on ? '#ECEEF2' : '#9AA1AD',
         pick: () => this.setState({ draftCode: k })
       };
     });
+    const editCell = sheetOpen ? editing.split('-') : null;
 
     return {
+      pillIsButton: baseSync === 'failed',
+      pillIsStatus: baseSync !== 'failed',
       syncLabel: sync.label, syncDot: sync.dot, syncRing: sync.ring,
-      showBanner: syncKey === 'signin',
-      nextCode: nc ? shifts[next] : '–',
+      retry: () => {
+        this.setState({ syncOverride: 'syncing' });
+        clearTimeout(this._r);
+        this._r = setTimeout(() => this.setState({ syncOverride: 'synced' }), 1400);
+      },
+      showBanner: baseSync === 'signin',
+      menuOpen: overlay === 'menu',
+      menuBtnBg: overlay === 'menu' ? '#1E222A' : 'transparent',
+      toggleMenu: () => this.setState({ overlay: overlay === 'menu' ? 'none' : 'menu' }),
+      closeOverlay: () => this.setState({ overlay: 'none' }),
+      signOutConfirms: pendingTotal > 0,
+      signOutDirect: pendingTotal === 0,
+      askSignOut: () => this.setState({ overlay: 'signout' }),
+      confirmOpen: overlay === 'signout',
+      confirmText: 'You have ' + Math.max(pendingTotal, 1) + ' pending edit' + (Math.max(pendingTotal, 1) === 1 ? '' : 's') + '. Signing out keeps them on this phone, but they won’t sync until you sign in again.',
+      isEmpty: Object.keys(shifts).length === 0,
+      nextCode: nc ? next.k : '–',
       nextBg: nc ? nc.bg : '#161920', nextFg: nc ? nc.fg : '#8C93A0', nextLine: nc ? nc.line : '#2A2F38',
-      nextTitle: nc ? when + ' · ' + labelOf(shifts[next]) : 'No upcoming shifts',
+      nextTitle: nc ? when + ' · ' + labelOf(next.k) : (Object.keys(shifts).length ? 'No upcoming shifts' : 'No shifts yet'),
       days,
       sheetOpen,
-      sheetTitle: sheetOpen ? WDL[wd(editing)] + ' ' + editing + ' October' : '',
-      sheetSub: sheetOpen ? (shifts[editing] ? 'Currently ' + labelOf(shifts[editing]) : 'Not rostered yet') : '',
+      sheetTitle: sheetOpen ? WDL[wdOf[editing]] + ' ' + editCell[1] + ' ' + MON[editCell[0]] : '',
+      sheetSub: sheetOpen ? (cur ? 'Currently ' + labelOf(cur) : 'Not rostered yet') : '',
       codeButtons,
       noteDraft,
       onNote: (e) => this.setState({ noteDraft: e.target.value }),
       showOther: draftCode === 'O',
       otherDraft,
       onOther: (e) => this.setState({ otherDraft: String(e.target.value).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2) }),
-      saveDisabled: !finalCode,
-      saveOpacity: finalCode ? 1 : 0.4,
+      saveDisabled: !changed,
+      saveBg: changed ? '#ECEEF2' : '#22262E',
+      saveFg: changed ? '#0E1014' : '#737B88',
+      saveCursor: changed ? 'pointer' : 'not-allowed',
       cancel: () => this.setState({ editing: null, draftCode: undefined, noteDraft: undefined, otherDraft: undefined }),
       save: () => {
-        if (!finalCode) return;
+        if (!changed) return;
         const ns = Object.assign({}, shifts); ns[editing] = finalCode;
         const nn = Object.assign({}, notes);
         if (noteDraft) nn[editing] = noteDraft; else delete nn[editing];
         this.setState({ shifts: ns, notes: nn, editing: null, draftCode: undefined, noteDraft: undefined, otherDraft: undefined, pendingCount: pendingCount + 1 });
-        if (syncKey === 'synced') {
+        if (baseSync === 'synced') {
           clearTimeout(this._t);
           this._t = setTimeout(() => this.setState({ pendingCount: 0 }), 1600);
         }

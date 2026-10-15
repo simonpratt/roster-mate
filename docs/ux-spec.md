@@ -69,6 +69,7 @@ set to the page background. Define these as custom Tailwind theme tokens (values
 | `text-faint` | #8C93A0 | Captions, Day off, disabled text |
 | `primary` | #ECEEF2 bg / #0E1014 text | Primary buttons (Save, Sign in) |
 | `danger` | #FB7185 | Errors, sign-in-needed dot and banner |
+| `failed` | #EF4444 | Sync-failed dot |
 | `ok` | #34D399 | Synced dot |
 | `warn` | #F5A524 | Pending dot |
 | `focus` | #7DD3FC | Focus rings (2 px, offset 2 px) |
@@ -156,9 +157,10 @@ cloud-off (offline). Icon-only buttons always carry an `aria-label`.
   that date's month and opens nothing else.
 - **Import** button: camera icon with visible label "Import". When offline it stays visible;
   the Import screen explains why it cannot proceed.
-- **Menu (⋮)**: a small popover with "Sign out". Sign out asks for confirmation if the outbox is
-  non-empty: "You have N pending edits. Signing out keeps them on this phone, but they won't
-  sync until you sign in again." [Cancel] [Sign out].
+- **Menu (⋮)**: a small popover with "Sign out" (`docs/designs/CalendarMenu.dc.html`). With an
+  empty outbox, Sign out goes straight to `/login`. Otherwise it opens a centred dialog
+  (`docs/designs/CalendarSignOut.dc.html`): "Sign out?" / "You have N pending edits. Signing out
+  keeps them on this phone, but they won't sync until you sign in again." [Cancel] [Sign out].
 
 ### 5.2 Sync indicator
 
@@ -170,10 +172,11 @@ A pill with a dot and short text, `role="status"` so changes are announced polit
 | `pending(n)` | `warn` | "N pending" (e.g. "1 pending") | Trigger a sync |
 | `offline` | `text-faint`, hollow | "Offline" | None |
 | `unauthorized` | `danger` | "Sign in needed", plus the sign-in banner (§5.7) | Go to `/login` |
-| `error` | `danger` | "Sync failed · retry" | Trigger a sync |
+| `error` | `failed` | "Sync failed" with a "↻ Retry" affordance; the whole pill is a `<button>` on a red-tinted background (`docs/designs/CalendarFailed.dc.html`) | Trigger a sync |
 
-While a run is in flight, keep the current text and pulse the dot (no spinner, no text change),
-so the indicator doesn't flicker every 60 s.
+While a background run is in flight, keep the current text (no spinner, no text change), so the
+pill doesn't flicker every 60 s. After the user taps Retry, show "Syncing…" (hollow `focus`
+dot) until that run finishes.
 
 ### 5.3 Month grid
 
@@ -263,8 +266,11 @@ routine status.
   turn `danger`; password cleared and focused; username kept.
 - **Network error**: "Can't reach Roster Mate. Check you're on your home network." — the
   server is LAN-only, so this is the likely cause.
-- **Offline** (`navigator.onLine === false`): banner "You're offline. Sign in when you're back on
-  your home network." with a "Back to calendar" link if any shifts are stored locally.
+- **Offline** (`navigator.onLine === false`): banner at the top "You're offline. Sign in when
+  you're back on your home network." with a "Back to calendar" button if any shifts are stored
+  locally; the Sign in button is disabled (`docs/designs/LoginOffline.dc.html`).
+- States are drawn in `docs/designs/LoginBusy.dc.html`, `LoginError.dc.html`,
+  `LoginNetwork.dc.html` and `LoginOffline.dc.html`.
 - **Success**: navigate to `/`, replacing history so back doesn't return to Login.
 
 ### 6.2 Calendar (`/`)
@@ -276,7 +282,7 @@ States:
 
 | State | What the user sees |
 |---|---|
-| First run, no shifts | Grid of unrostered dates; next-shift line "No upcoming shifts"; below the grid an empty-state card: "Import a photo of your roster to get started." [Import roster] |
+| First run, no shifts | Grid of unrostered dates; next-shift line "No upcoming shifts"; below the grid an empty-state card: "Import a photo of your roster to get started." [Import roster] (`docs/designs/CalendarEmpty.dc.html`) |
 | Normal | As above |
 | Offline | Indicator "Offline"; everything else unchanged and editable |
 | Pending edits | Indicator "N pending" |
@@ -392,7 +398,11 @@ network to import a roster. You can still view and edit shifts while you’re aw
 - Leaving Review with selected rows (back arrow or OS back) asks with a native `confirm()`:
   "Discard this import?". The extraction is not stored, so leaving loses it.
 
-**Errors** (replace Step 2 with a message and [Try again] / [Choose another photo]):
+Not found and Nothing found reuse the Step 2 layout (dimmed photo, message, [Try another photo]):
+`docs/designs/ImportNotFound.dc.html`, `docs/designs/ImportNoShifts.dc.html`.
+
+**Errors** (replace Step 2 with a message and [Try again] / [Choose another photo]; drawn in
+`docs/designs/ImportTooLarge.dc.html`, `ImportReadFailed.dc.html`, `ImportConnLost.dc.html`):
 
 | Cause | Message |
 |---|---|
@@ -449,7 +459,7 @@ network to import a roster. You can still view and edit shifts while you’re aw
 | App name | Roster Mate |
 | Next shift | "Today · {Label}", "Tomorrow · {Label}", "{Ddd d Mmm} · {Label}"; {Label} is the code itself for an Other code |
 | No next shift | No upcoming shifts |
-| Sync | Synced · {n} pending · Offline · Sign in needed · Sync failed · retry |
+| Sync | Synced · {n} pending · Offline · Sign in needed · Sync failed + Retry · Syncing… |
 | Sign-in banner | Sign in to sync. Your edits are kept on this phone until then. |
 | Empty roster | Import a photo of your roster to get started. |
 | Login error | That username and password don’t match. |
@@ -486,7 +496,7 @@ doesn't want, and the ticket specs still stand on their own.
 - "Nothing found" import state and "Discard this import?" confirmation (§6.4).
 - Sheet stays above the keyboard (§6.3).
 - `en-AU` date formatting and midnight rollover of "today" (§7.2).
-- Sync failure status text "Sync failed · retry" for the `error` state SIM-12 exposes.
+- Sync failure pill "Sync failed" + Retry for the `error` state SIM-12 exposes.
 
 ## 11. Open questions
 
