@@ -269,8 +269,12 @@ desktop.
 
 ## PWA
 
-- `vite-plugin-pwa` with a generated service worker that precaches the built shell and
-  serves `index.html` for navigations offline.
+- `vite-plugin-pwa` with a generated service worker that precaches the built shell (including
+  the bundled `woff2` fonts) and serves `index.html` for navigations offline. It never handles
+  `/api/`. Only `vite build` generates it; `make dev` runs without one.
+- The Go server sends `Cache-Control: no-cache` for every unhashed file (`index.html`, `sw.js`,
+  `registerSW.js`, `manifest.webmanifest`, icons) so a new build is picked up, and a year,
+  `immutable`, for the content-hashed files under `assets/`.
 - Manifest: name "Roster Mate", `display: standalone`, `orientation: portrait`, dark
   `background_color`/`theme_color`, 192/512 px and maskable icons.
 - Service workers need a secure context. The app must be reached over HTTPS (e.g. the user's

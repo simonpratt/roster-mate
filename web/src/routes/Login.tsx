@@ -6,6 +6,8 @@ import { Button } from "../components/Button";
 import { AlertCircleIcon, CloudOffIcon, WifiOffIcon } from "../components/icons";
 import { Logo } from "../components/Logo";
 import { TextField } from "../components/TextField";
+import { useHasLocalShifts } from "../shifts/repo";
+import { sync } from "../sync/engine";
 import { useOnline } from "../useOnline";
 
 // Login (/login), docs/ux-spec.md §6.1 and docs/designs/Login*.dc.html.
@@ -14,6 +16,7 @@ type Status = "idle" | "busy" | "error" | "network";
 export function Login() {
   const navigate = useNavigate();
   const online = useOnline();
+  const hasLocalShifts = useHasLocalShifts();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -25,6 +28,7 @@ export function Login() {
     setStatus("busy");
     try {
       await login(username, password);
+      void sync.trigger();
       navigate("/", { replace: true });
     } catch (err) {
       if (err instanceof UnauthorizedError) {
@@ -48,10 +52,12 @@ export function Login() {
           tone="neutral"
           icon={<CloudOffIcon className="size-5" />}
           action={
-            // SIM-12 limits this to when shifts are stored on the phone.
-            <Button variant="outline" onClick={() => navigate("/", { replace: true })}>
-              Back to calendar
-            </Button>
+            // Only worth offering when there are shifts on the phone to go back to.
+            hasLocalShifts && (
+              <Button variant="outline" onClick={() => navigate("/", { replace: true })}>
+                Back to calendar
+              </Button>
+            )
           }
         >
           You’re offline. Sign in when you’re back on your home network.

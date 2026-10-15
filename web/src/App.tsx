@@ -3,10 +3,12 @@ import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { getSession, UnauthorizedError } from "./api";
 import { Home } from "./routes/Home";
 import { Login } from "./routes/Login";
+import { useSyncTriggers } from "./sync/triggers";
 
 // The router itself (BrowserRouter) is in main.tsx, so tests can use a MemoryRouter.
 export function App() {
   useSessionCheck();
+  useSyncTriggers();
   return (
     <Routes>
       <Route path="/login" element={<Login />} />

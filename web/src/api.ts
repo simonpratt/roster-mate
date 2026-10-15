@@ -1,6 +1,6 @@
 // A small wrapper over fetch for the server's JSON API (docs/design.md § Authentication).
-// Only the login screen, the session check and (later) the sync engine call it; the UI reads
-// shifts from IndexedDB.
+// Only the login screen, the session check and the sync engine call it; the UI reads shifts
+// from IndexedDB.
 
 /** The server answered 401: there is no valid session. */
 export class UnauthorizedError extends Error {
@@ -27,7 +27,7 @@ export class ApiError extends Error {
  */
 export async function request<T = unknown>(
   path: string,
-  init: { method?: string; body?: unknown } = {},
+  init: { method?: string; body?: unknown; signal?: AbortSignal } = {},
 ): Promise<T | undefined> {
   const hasBody = init.body !== undefined;
   const res = await fetch(path, {
@@ -35,6 +35,7 @@ export async function request<T = unknown>(
     credentials: "same-origin",
     headers: hasBody ? { "Content-Type": "application/json" } : undefined,
     body: hasBody ? JSON.stringify(init.body) : undefined,
+    signal: init.signal,
   });
   if (res.status === 401) throw new UnauthorizedError();
   if (!res.ok) throw new ApiError(res.status);

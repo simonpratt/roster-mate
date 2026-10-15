@@ -39,6 +39,19 @@
   --color-caution-line: #4a3317;
   --color-caution-soft: #fce3c8;
 
+  /* Shift-code chips, §4.2: a light text colour on a dark fill of the same family.
+     Day off (X) is outlined in border-strong with text-faint. See src/shifts/codes.ts. */
+  --color-amber: #fcc35a; /* D Day */
+  --color-amber-surface: #3b2a0a;
+  --color-sky: #7dd3fc; /* E Early */
+  --color-sky-surface: #0a2c3d;
+  --color-violet: #c9b6fd; /* L Late */
+  --color-violet-surface: #2a1c47;
+  --color-indigo: #a5b1ff; /* N Night */
+  --color-indigo-surface: #1b2050;
+  --color-lime: #c8ec72; /* every Other code */
+  --color-lime-surface: #232e0c;
+
   --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 

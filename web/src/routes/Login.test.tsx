@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { db } from "../db";
 import { renderApp, setOnline, stubFetch } from "../test-utils";
 
 afterEach(() => {
@@ -34,7 +35,11 @@ describe("Login", () => {
     let finish: (r: Response) => void = () => {};
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => new Promise<Response>((resolve) => (finish = resolve))),
+      vi.fn((input: RequestInfo | URL) =>
+        String(input) === "/api/login"
+          ? new Promise<Response>((resolve) => (finish = resolve))
+          : Promise.resolve(new Response(null, { status: 404 })),
+      ),
     );
     renderApp("/login");
     fillAndSubmit("simon", "secret");
@@ -71,16 +76,29 @@ describe("Login", () => {
     expect(screen.getByLabelText("Password")).toHaveValue("secret");
   });
 
-  it("offline: shows the banner, disables Sign in and offers Back to calendar", async () => {
+  it("offline with no shifts on the phone: shows the banner without Back to calendar", async () => {
     setOnline(false);
-    const fetchMock = stubFetch({});
+    stubFetch({});
     renderApp("/login");
 
     expect(screen.getByRole("status")).toHaveTextContent(
       "You’re offline. Sign in when you’re back on your home network.",
     );
     expect(screen.getByRole("button", { name: "Sign in" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Back to calendar" }));
+    // Give the local-shift query time to answer before checking the button stays hidden.
+    await act(() => db.shifts.count());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByRole("button", { name: "Back to calendar" })).not.toBeInTheDocument();
+  });
+
+  it("offline with shifts on the phone: offers Back to calendar", async () => {
+    setOnline(false);
+    await db.shifts.put({ date: "2026-11-03", code: "L", note: "", editedAt: 1 });
+    const fetchMock = stubFetch({});
+    renderApp("/login");
+
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeDisabled();
+    fireEvent.click(await screen.findByRole("button", { name: "Back to calendar" }));
     expect(await screen.findByText("Your shifts will appear here.")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });

@@ -32,3 +32,36 @@ func TestHeadServesIndexWithoutBody(t *testing.T) {
 		t.Errorf("HEAD = %d with %d bytes", rec.Code, rec.Body.Len())
 	}
 }
+
+func TestCacheControl(t *testing.T) {
+	fsys := fstest.MapFS{
+		"index.html":                 {Data: []byte("<html></html>")},
+		"sw.js":                      {Data: []byte("sw")},
+		"registerSW.js":              {Data: []byte("reg")},
+		"manifest.webmanifest":       {Data: []byte("{}")},
+		"icons/icon-192.png":         {Data: []byte("png")},
+		"assets/index-Cj5pXuDJ.js":   {Data: []byte("js")},
+		"assets/font-BWZEU5yA.woff2": {Data: []byte("font")},
+	}
+	const immutable = "public, max-age=31536000, immutable"
+	cases := map[string]string{
+		"/":                           "no-cache",
+		"/calendar":                   "no-cache",
+		"/sw.js":                      "no-cache",
+		"/registerSW.js":              "no-cache",
+		"/manifest.webmanifest":       "no-cache",
+		"/icons/icon-192.png":         "no-cache",
+		"/assets/index-Cj5pXuDJ.js":   immutable,
+		"/assets/font-BWZEU5yA.woff2": immutable,
+	}
+	for p, want := range cases {
+		rec := httptest.NewRecorder()
+		Handler(fsys).ServeHTTP(rec, httptest.NewRequest("GET", p, nil))
+		if rec.Code != http.StatusOK {
+			t.Errorf("GET %s = %d", p, rec.Code)
+		}
+		if got := rec.Header().Get("Cache-Control"); got != want {
+			t.Errorf("GET %s Cache-Control = %q, want %q", p, got, want)
+		}
+	}
+}

@@ -41,6 +41,10 @@ func Handler(fsys fs.FS) http.Handler {
 			if strings.HasPrefix(name, "assets/") {
 				// Vite puts a content hash in every file name under assets/.
 				w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			} else {
+				// Unhashed files, among them sw.js, registerSW.js and manifest.webmanifest, are
+				// revalidated on every request so a new build's service worker is picked up.
+				w.Header().Set("Cache-Control", "no-cache")
 			}
 			files.ServeHTTP(w, r)
 			return
