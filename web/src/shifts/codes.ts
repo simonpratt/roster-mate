@@ -10,6 +10,12 @@ export interface CodeStyle {
   chip: string;
   /** Border colour for the selected state, the chip's text colour. */
   selected: string;
+  /** A selected code button's fill in the edit sheet. */
+  pickedFill: string;
+  /** The code's text colour, for the letters on a code button. */
+  text: string;
+  /** Fill of the check badge on a selected code button, the code's text colour. */
+  badge: string;
 }
 
 export interface CodeInfo extends CodeStyle {
@@ -21,21 +27,66 @@ export interface CodeInfo extends CodeStyle {
 
 /** The five standard codes, in display order. */
 export const STANDARD_CODES: readonly CodeInfo[] = [
-  { code: "D", label: "Day", standard: true, chip: "bg-amber-surface text-amber", selected: "border-amber" },
-  { code: "E", label: "Early", standard: true, chip: "bg-sky-surface text-sky", selected: "border-sky" },
-  { code: "L", label: "Late", standard: true, chip: "bg-violet-surface text-violet", selected: "border-violet" },
-  { code: "N", label: "Night", standard: true, chip: "bg-indigo-surface text-indigo", selected: "border-indigo" },
+  {
+    code: "D",
+    label: "Day",
+    standard: true,
+    chip: "bg-amber-surface text-amber",
+    selected: "border-amber",
+    pickedFill: "bg-amber-surface",
+    text: "text-amber",
+    badge: "bg-amber",
+  },
+  {
+    code: "E",
+    label: "Early",
+    standard: true,
+    chip: "bg-sky-surface text-sky",
+    selected: "border-sky",
+    pickedFill: "bg-sky-surface",
+    text: "text-sky",
+    badge: "bg-sky",
+  },
+  {
+    code: "L",
+    label: "Late",
+    standard: true,
+    chip: "bg-violet-surface text-violet",
+    selected: "border-violet",
+    pickedFill: "bg-violet-surface",
+    text: "text-violet",
+    badge: "bg-violet",
+  },
+  {
+    code: "N",
+    label: "Night",
+    standard: true,
+    chip: "bg-indigo-surface text-indigo",
+    selected: "border-indigo",
+    pickedFill: "bg-indigo-surface",
+    text: "text-indigo",
+    badge: "bg-indigo",
+  },
   {
     code: "X",
     label: "Day off",
     standard: true,
     chip: "border border-border-strong text-text-faint",
     selected: "border-text-faint",
+    pickedFill: "bg-surface-disabled",
+    text: "text-text-faint",
+    badge: "bg-text-faint",
   },
 ];
 
 /** Every Other code shares one colour. */
-export const OTHER_STYLE: CodeStyle = { chip: "bg-lime-surface text-lime", selected: "border-lime" };
+export const OTHER_STYLE: CodeStyle = {
+  chip: "bg-lime-surface text-lime",
+  selected: "border-lime",
+  pickedFill: "bg-lime-surface",
+  text: "text-lime",
+  badge: "bg-lime",
+};
 
 const CODE_PATTERN = /^[A-Z]{1,2}$/;
 

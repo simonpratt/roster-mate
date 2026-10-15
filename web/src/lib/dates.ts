@@ -110,6 +110,15 @@ export function formatLongDate(date: DateString): string {
   return `${weekdayName(date)} ${d} ${monthName(m)}`;
 }
 
+/**
+ * "Wednesday 4 November", with the year added when it isn't today's year:
+ * "Monday 4 January 2027".
+ */
+export function formatHeadingDate(date: DateString, today: DateString): string {
+  const year = parts(date)[0];
+  return year === parts(today)[0] ? formatLongDate(date) : `${formatLongDate(date)} ${year}`;
+}
+
 /** "November 2026". */
 export function formatMonth(month: MonthString): string {
   const [y, m] = parts(`${month}-01`);

@@ -145,6 +145,7 @@ function DayCell({ date, shift, inMonth, today, onSelect }: DayCellProps) {
     <button
       type="button"
       aria-label={name}
+      data-date={date}
       aria-current={isToday ? "date" : undefined}
       onClick={() => onSelect(date)}
       className={`flex h-17.5 min-w-0 flex-col items-center justify-between rounded-field border pt-1.5 pb-1.75 ${cell} ${focus}`}

@@ -7,6 +7,7 @@ import {
   addDays,
   addMonths,
   daysBetween,
+  formatHeadingDate,
   formatLongDate,
   formatMonth,
   formatShortDate,
@@ -58,6 +59,11 @@ describe("formatting and months", () => {
     expect(formatShortDate("2026-11-06")).toBe("Fri 6 Nov");
     expect(formatLongDate("2026-11-03")).toBe("Tuesday 3 November");
     expect(formatMonth("2026-11")).toBe("November 2026");
+  });
+
+  it("adds the year to a heading date only outside today's year", () => {
+    expect(formatHeadingDate("2026-11-04", "2026-11-15")).toBe("Wednesday 4 November");
+    expect(formatHeadingDate("2027-01-04", "2026-11-15")).toBe("Monday 4 January 2027");
   });
 
   it("moves across years", () => {

@@ -50,6 +50,8 @@
   --color-failed-soft: #fecaca;
   --color-failed-action: #ffffff; /* Retry on the Sync failed pill */
   --color-scrim: rgb(4 5 7 / 0.72); /* behind the sign-out dialog */
+  --color-scrim-sheet: rgb(4 5 7 / 0.66); /* behind the edit sheet */
+  --color-picker: #1a1d24; /* an unselected code button in the edit sheet */
 
   /* Shift-code chips, §4.2: a light text colour on a dark fill of the same family.
      Day off (X) is outlined in border-strong with text-faint. See src/shifts/codes.ts. */
@@ -63,6 +65,7 @@
   --color-indigo-surface: #1b2050;
   --color-lime: #c8ec72; /* every Other code */
   --color-lime-surface: #232e0c;
+  --color-lime-line: #4a5e22; /* the Other code input's border */
 
   --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -79,6 +82,9 @@
   --text-heading: 21px; /* dialog title */
   --text-heading--font-weight: 600;
   --text-heading--letter-spacing: -0.01em;
+  --text-sheet-title: 22px; /* edit sheet heading */
+  --text-sheet-title--font-weight: 600;
+  --text-sheet-title--letter-spacing: -0.01em;
   --text-title: 18px;
   --text-title--font-weight: 600;
   --text-body: 16px;
@@ -96,6 +102,9 @@
   --text-code--font-weight: 700;
   --text-code-lg: 20px; /* shift code in the next-shift chip */
   --text-code-lg--font-weight: 700;
+  --text-code-xl: 22px; /* the Other code input */
+  --text-code-xl--font-weight: 700;
+  --text-code-xl--letter-spacing: 0.04em;
 
   /* Corner radii from the designs */
   --radius-control: 10px;
@@ -105,6 +114,20 @@
   --radius-dialog: 22px;
 
   --shadow-popover: 0 16px 40px rgb(0 0 0 / 0.55);
+
+  /* Bottom sheet motion, §4.6: slides up in 200 ms; the scrim fades in. */
+  --animate-sheet-in: sheet-in 200ms ease-out;
+  --animate-fade-in: fade-in 200ms ease-out;
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
 
   /* Content column on wide screens, §4.4 */
   --container-app: 480px;

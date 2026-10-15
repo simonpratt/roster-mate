@@ -5,6 +5,7 @@ import { AppHeader } from "../components/AppHeader";
 import { Banner } from "../components/Banner";
 import { buttonClassName } from "../components/Button";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { EditShiftSheet } from "../components/EditShiftSheet";
 import { CameraIcon } from "../components/icons";
 import { MonthGrid } from "../components/MonthGrid";
 import { NextShift } from "../components/NextShift";
@@ -16,13 +17,8 @@ import { sync } from "../sync/engine";
 import { countPendingEdits, usePendingCount, useSyncStatus } from "../sync/status";
 
 // The Calendar (/), the home screen: docs/ux-spec.md §6.2 and docs/designs/Main.dc.html with
-// its Calendar* states.
-type CalendarProps = {
-  /** Called with a tapped date; the edit sheet (SIM-14) hooks in here. */
-  onSelectDay?: (date: DateString) => void;
-};
-
-export function Calendar({ onSelectDay = () => {} }: CalendarProps) {
+// its Calendar* states. Tapping a date opens the edit sheet (§6.3).
+export function Calendar() {
   const navigate = useNavigate();
   const today = useToday();
   const [month, setMonth] = useState(() => monthOf(today));
@@ -35,6 +31,7 @@ export function Calendar({ onSelectDay = () => {} }: CalendarProps) {
   const [userSyncing, setUserSyncing] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [editing, setEditing] = useState<DateString | null>(null);
 
   async function syncNow() {
     if (userSyncing) return;
@@ -66,6 +63,7 @@ export function Calendar({ onSelectDay = () => {} }: CalendarProps) {
   }
 
   const onCancelSignOut = useCallback(() => setConfirmSignOut(false), []);
+  const onCloseSheet = useCallback(() => setEditing(null), []);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-app flex-col pb-[max(24px,env(safe-area-inset-bottom))]">
@@ -99,7 +97,7 @@ export function Calendar({ onSelectDay = () => {} }: CalendarProps) {
 
       <NextShift shift={next} today={today} onShow={(date) => setMonth(monthOf(date))} />
 
-      <MonthGrid month={month} today={today} shifts={shifts} onMonthChange={setMonth} onSelectDay={onSelectDay} />
+      <MonthGrid month={month} today={today} shifts={shifts} onMonthChange={setMonth} onSelectDay={setEditing} />
 
       {hasShifts === false && (
         <div className="mx-4 mt-4 flex flex-col gap-3.5 rounded-panel border border-border-subtle bg-surface p-4.5">
@@ -110,6 +108,8 @@ export function Calendar({ onSelectDay = () => {} }: CalendarProps) {
           </Link>
         </div>
       )}
+
+      {editing && <EditShiftSheet date={editing} today={today} onClose={onCloseSheet} />}
 
       {confirmSignOut && (
         <ConfirmDialog
