@@ -22,13 +22,37 @@ tag in place of `roster-mate` to skip the local build.
 Open `http://<host>:8080`. `GET /api/health` returns `{"ok":true}`. The database is
 `/data/roster-mate.db`; keep the volume to keep your shifts across restarts and upgrades.
 
+### It runs as non-root
+
 The container runs as the unprivileged UID/GID 65532, never root, so `/data` must be writable by
-that user: `mkdir -p data && sudo chown 65532:65532 data` before the first run, or add
-`--user "$(id -u):$(id -g)"` to `docker run` to run as yourself. Under Kubernetes, set your own
-`runAsUser`/`runAsGroup` in the pod's `securityContext` and give it a `/data` volume that user
-can write (an `fsGroup` matching the group does this for most volume types). The server needs no
-privileges and writes only to `/data`, so `runAsNonRoot: true`, `readOnlyRootFilesystem: true`,
-`allowPrivilegeEscalation: false` and `capabilities: {drop: [ALL]}` all suit it.
+the user it runs as. With `docker run`, either `mkdir -p data && sudo chown 65532:65532 data`
+before the first run, or add `--user "$(id -u):$(id -g)"` to run as yourself.
+
+Under Kubernetes, set your own UID in the pod's `securityContext`, and an `fsGroup` to make the
+`/data` volume writable by it. The server needs no privileges and writes nothing outside `/data`
+(not even temp files), so it runs with a read-only root filesystem and every capability dropped:
+
+```yaml
+spec:
+  securityContext:            # pod level
+    runAsNonRoot: true
+    runAsUser: 1234           # your UID and GID
+    runAsGroup: 1234
+    fsGroup: 1234             # makes the /data volume writable by that group
+  containers:
+    - name: roster-mate
+      securityContext:
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        capabilities: { drop: [ALL] }
+      volumeMounts:
+        - { name: data, mountPath: /data }
+```
+
+If `/data` isn't writable, the server stops at startup with
+`open /data/roster-mate.db: unable to open database file (14)`: fix the volume's ownership or the
+`fsGroup`. A database carried over from an image that ran as root has root-owned files, so
+`chown` `roster-mate.db*` to the new UID before the first start.
 
 The server stops at startup, naming the variable, if `APP_USERNAME`, `APP_PASSWORD`,
 `ANTHROPIC_API_KEY` or `ROSTER_NAME` is missing. Every setting is listed in `.env.example` and in
