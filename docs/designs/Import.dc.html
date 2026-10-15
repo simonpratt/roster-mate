@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roster Mate — Import roster</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #0E1014; color: #ECEEF2; color-scheme: dark; font-family: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="display: flex; align-items: center; gap: 4px; padding: 8px 16px 8px 4px; height: 60px; box-sizing: border-box; flex: none">
+    <a href="Main.dc.html" aria-label="Back to calendar" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #C9CDD4">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <h1 style="margin: 0; font-size: 17px; font-weight: 600">Import roster</h1>
+  </header>
+
+  <sc-if value="{{isPick}}" hint-placeholder-val="{{ true }}">
+    <div style="flex: 1; display: flex; flex-direction: column; padding: 32px 24px 32px">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 30px; line-height: 1.12; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance">Photograph your roster</h2>
+        <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #9AA1AD; text-wrap: pretty">Claude reads the photo and finds your row. You’ll check every shift before anything is saved.</p>
+      </div>
+      <div style="margin-top: 32px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; gap: 12px; align-items: flex-start">
+          <span style="flex: none; width: 28px; height: 28px; border-radius: 8px; background: #161920; border: 1px solid #2A2F38; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; font-weight: 700; color: #C9CDD4">1</span>
+          <p style="margin: 3px 0 0; font-size: 15px; line-height: 1.45; color: #C9CDD4">Fit the whole roster in frame, with your name visible.</p>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: flex-start">
+          <span style="flex: none; width: 28px; height: 28px; border-radius: 8px; background: #161920; border: 1px solid #2A2F38; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; font-weight: 700; color: #C9CDD4">2</span>
+          <p style="margin: 3px 0 0; font-size: 15px; line-height: 1.45; color: #C9CDD4">Printed sheets and screenshots both work.</p>
+        </div>
+      </div>
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px">
+        <button type="button" onClick="{{start}}" style="height: 56px; border-radius: 14px; border: 0; background: #ECEEF2; color: #0E1014; font: inherit; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+          Take photo
+        </button>
+        <button type="button" onClick="{{start}}" style="height: 56px; border-radius: 14px; border: 1px solid #2E333C; background: transparent; color: #ECEEF2; font: inherit; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9.5" cy="9.5" r="1.5"></circle><path d="M20 15l-4.5-4.5L6 20"></path></svg>
+          Choose from library
+        </button>
+        <p style="margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: #8C93A0; text-align: center">The photo is read once and not stored.</p>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{isExtracting}}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 1; display: flex; flex-direction: column; padding: 16px 16px 32px; gap: 28px">
+      <div style="position: relative; height: 330px; border-radius: 18px; background: #161920; border: 1px solid #23272F; overflow: hidden; display: flex; align-items: center; justify-content: center">
+        <svg width="300" height="230" viewBox="0 0 300 230" aria-hidden="true">
+          <rect x="0.5" y="0.5" width="299" height="229" rx="6" fill="#1B1F26" stroke="#2E333C"></rect>
+          <path d="M0 32H300M0 64H300M0 96H300M0 128H300M0 160H300M0 192H300M80 0V230M111 0V230M142 0V230M173 0V230M204 0V230M235 0V230M266 0V230" stroke="#2A2F38"></path>
+          <rect x="12" y="12" width="44" height="8" rx="2" fill="#3A404B"></rect>
+          <rect x="12" y="44" width="52" height="8" rx="2" fill="#3A404B"></rect>
+          <rect x="12" y="108" width="40" height="8" rx="2" fill="#3A404B"></rect>
+          <rect x="12" y="140" width="56" height="8" rx="2" fill="#3A404B"></rect>
+          <rect x="12" y="172" width="46" height="8" rx="2" fill="#3A404B"></rect>
+          <rect x="12" y="204" width="50" height="8" rx="2" fill="#3A404B"></rect>
+          <rect x="1.5" y="65.5" width="297" height="29" rx="3" fill="rgba(252,195,90,0.08)" stroke="#FCC35A" stroke-width="1.5"></rect>
+          <rect x="12" y="76" width="48" height="8" rx="2" fill="#FCC35A"></rect>
+        </svg>
+        <span style="position: absolute; left: 0; right: 0; top: 0; height: 132px; background: linear-gradient(180deg, rgba(125, 211, 252, 0) 0%, rgba(125, 211, 252, 0.14) 100%); border-bottom: 2px solid #7DD3FC"></span>
+        <span style="position: absolute; left: 12px; bottom: 12px; font-size: 12px; color: #8C93A0">Roster photo</span>
+      </div>
+      <div role="status" style="display: flex; flex-direction: column; gap: 10px; padding: 0 8px">
+        <h2 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em">Extracting…</h2>
+        <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #9AA1AD">Finding the shifts in your row. This can take up to a minute.</p>
+      </div>
+      <button type="button" onClick="{{cancelExtract}}" style="margin-top: auto; height: 56px; border-radius: 14px; border: 1px solid #2E333C; background: transparent; color: #ECEEF2; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer">Cancel</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{isReview}}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 1; min-height: 0; display: flex; flex-direction: column">
+      <div style="padding: 4px 16px 12px; display: flex; flex-direction: column; gap: 12px; flex: none">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.015em">14 shifts found</h2>
+          <p style="margin: 0; font-size: 14px; color: #9AA1AD">Mon 26 Oct – Sun 8 Nov · {{summary}}</p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: #2A1E10; border: 1px solid #4A3317">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FDBA74" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M12 4l9 16H3z"></path><path d="M12 10v4"></path><path d="M12 17v.01"></path></svg>
+          <p style="margin: 0; font-size: 14px; line-height: 1.4; color: #FCE3C8">Week of 2 Nov is partly obscured. Check those rows against the roster.</p>
+        </div>
+      </div>
+      <ul style="list-style: none; margin: 0; padding: 0 0 132px; flex: 1; min-height: 0; overflow-y: auto; border-top: 1px solid #1C2027">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+          <li style="display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 0 16px 0 4px; border-bottom: 1px solid #1C2027; background: {{r.rowBg}}">
+            <input type="checkbox" id="row-{{$index}}" checked="{{r.checked}}" disabled="{{r.cbDisabled}}" onChange="{{r.toggle}}" style="flex: none; width: 20px; height: 20px; margin: 0 0 0 12px; accent-color: #ECEEF2">
+            <label for="row-{{$index}}" style="flex: 1; min-width: 0; min-height: 44px; display: flex; flex-direction: column; justify-content: center; gap: 2px; cursor: pointer">
+              <span style="font-size: 15px; font-weight: 600; color: {{r.dateColor}}">{{r.date}}</span>
+              <span style="font-size: 12px; color: #9AA1AD">{{r.existingText}}</span>
+            </label>
+            <span style="flex: none; height: 24px; padding: 0 8px; border-radius: 12px; display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; color: {{r.markFg}}; background: {{r.markBg}}; box-shadow: inset 0 0 0 1px {{r.markLine}}">{{r.marker}}</span>
+            <select aria-label="Shift for {{r.date}}" value="{{r.code}}" onChange="{{r.onCode}}" style="flex: none; width: {{r.selW}}px; height: 44px; box-sizing: border-box; border-radius: 10px; border: 1px solid {{r.chipLine}}; background: {{r.chipBg}}; color: {{r.chipFg}}; padding: 0 8px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; font-weight: 700">
+              <option value="">Pick…</option>
+              <option value="D">D Day</option>
+              <option value="E">E Early</option>
+              <option value="L">L Late</option>
+              <option value="N">N Night</option>
+              <option value="X">X Off</option>
+              <option value="O">Other</option>
+            </select>
+            <sc-if value="{{r.isOther}}" hint-placeholder-val="{{ false }}">
+              <input type="text" maxlength="2" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Other code for {{r.date}}" value="{{r.other}}" onChange="{{r.onOther}}" placeholder="··" style="flex: none; width: 48px; height: 44px; box-sizing: border-box; border-radius: 10px; border: 1.5px solid #4A5E22; background: #232E0C; color: #C8EC72; padding: 0; text-align: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 15px; font-weight: 700">
+            </sc-if>
+          </li>
+        </sc-for>
+      </ul>
+      <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px 28px; background: #0E1014; border-top: 1px solid #1C2027; display: flex; flex-direction: column; gap: 8px">
+        <p style="margin: 0; font-size: 13px; color: #8C93A0; text-align: center">Unticked rows are left as they are.</p>
+        <sc-if value="{{canSave}}" hint-placeholder-val="{{ true }}">
+          <a href="Main.dc.html" style="height: 56px; border-radius: 14px; background: #ECEEF2; color: #0E1014; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; text-decoration: none">{{saveLabel}}</a>
+        </sc-if>
+        <sc-if value="{{cannotSave}}" hint-placeholder-val="{{ false }}">
+          <button type="button" disabled style="height: 56px; border-radius: 14px; border: 0; background: #22262E; color: #8C93A0; font: inherit; font-size: 16px; font-weight: 600">Nothing selected</button>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{isOffline}}" hint-placeholder-val="{{ false }}">
+    <div style="flex: 1; display: flex; flex-direction: column; padding: 96px 24px 32px">
+      <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 20px">
+        <span style="width: 64px; height: 64px; border-radius: 20px; background: #161920; border: 1px solid #2A2F38; display: flex; align-items: center; justify-content: center; color: #9AA1AD">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.2 9.1 4.5 4.5 0 0 0 7 18z"></path><path d="M3 3l18 18"></path></svg>
+        </span>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <h2 style="margin: 0; font-size: 28px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em">Import needs a connection</h2>
+          <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #9AA1AD; text-wrap: pretty">Reconnect to your home network to import a roster. You can still view and edit shifts while you’re away.</p>
+        </div>
+      </div>
+      <a href="Main.dc.html" style="margin-top: auto; height: 56px; border-radius: 14px; border: 1px solid #2E333C; color: #ECEEF2; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; text-decoration: none">Back to calendar</a>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"stage":{"editor":"enum","options":["pick","extracting","review","offline"],"default":"pick"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  componentWillUnmount() { clearTimeout(this._t); }
+  renderVals() {
+    const CODES = {
+      D: { label: 'Day', bg: '#3B2A0A', fg: '#FCC35A', line: '#5A4214' },
+      E: { label: 'Early', bg: '#0A2C3D', fg: '#7DD3FC', line: '#11435C' },
+      L: { label: 'Late', bg: '#2A1C47', fg: '#C9B6FD', line: '#402B6B' },
+      N: { label: 'Night', bg: '#1B2050', fg: '#A5B1FF', line: '#2B3275' },
+      X: { label: 'Day off', bg: '#161920', fg: '#8C93A0', line: '#3A404B' }
+    };
+    const OTHER = { label: 'Other', bg: '#232E0C', fg: '#C8EC72', line: '#4A5E22' };
+    const ROWS = [
+      { date: 'Mon 26 Oct', existing: 'N', code: 'N' },
+      { date: 'Tue 27 Oct', existing: 'X', code: 'X' },
+      { date: 'Wed 28 Oct', existing: 'X', code: 'E' },
+      { date: 'Thu 29 Oct', existing: null, code: 'E' },
+      { date: 'Fri 30 Oct', existing: null, code: 'E' },
+      { date: 'Sat 31 Oct', existing: null, code: 'L', uncertain: true },
+      { date: 'Sun 1 Nov', existing: null, code: 'L' },
+      { date: 'Mon 2 Nov', existing: null, code: 'X' },
+      { date: 'Tue 3 Nov', existing: null, code: 'X' },
+      { date: 'Wed 4 Nov', existing: null, code: 'D', uncertain: true },
+      { date: 'Thu 5 Nov', existing: null, code: 'SE' },
+      { date: 'Fri 6 Nov', existing: null, code: '', raw: 'TRN' },
+      { date: 'Sat 7 Nov', existing: null, code: 'N' },
+      { date: 'Sun 8 Nov', existing: null, code: 'N' }
+    ];
+    const MARK = {
+      New: { fg: '#86EFAC', bg: '#0F2418', line: '#1D4A30' },
+      Changed: { fg: '#FDBA74', bg: 'transparent', line: '#5A3A1C' },
+      Same: { fg: '#8C93A0', bg: 'transparent', line: '#2A2F38' },
+      Unsure: { fg: '#F9A8D4', bg: 'transparent', line: '#5B2546' },
+      'Needs code': { fg: '#FDA4AF', bg: '#2A1418', line: '#4A1F27' }
+    };
+
+    const s = this.state || {};
+    const p = this.props || {};
+    const stage = s.stage || (['pick', 'extracting', 'review', 'offline'].indexOf(p.stage) >= 0 ? p.stage : 'pick');
+    const codes = s.codes || {};
+    const checked = s.checked || {};
+    const others = s.others || {};
+
+    let selected = 0;
+    const counts = { New: 0, Changed: 0, Same: 0, Unsure: 0, 'Needs code': 0 };
+    const rows = ROWS.map((r, i) => {
+      const sel = codes[i] !== undefined ? codes[i] : (r.code ? (CODES[r.code] ? r.code : 'O') : '');
+      const other = others[i] !== undefined ? others[i] : (r.code && !CODES[r.code] ? r.code : '');
+      const code = sel === 'O' ? other : sel;
+      let kind;
+      if (!code) kind = 'Needs code';
+      else if (!r.existing) kind = 'New';
+      else if (r.existing === code) kind = 'Same';
+      else kind = 'Changed';
+      const defaultChecked = kind === 'New' || kind === 'Changed';
+      const isChecked = !!code && (checked[i] !== undefined ? checked[i] : defaultChecked);
+      if (isChecked) selected++;
+      const marker = r.uncertain && code === r.code ? 'Unsure' : kind;
+      counts[marker]++;
+      const m = MARK[marker];
+      const c = code ? (CODES[code] || OTHER) : (sel === 'O' ? OTHER : null);
+      return {
+        date: r.date,
+        existingText: r.raw ? 'Read as “' + r.raw + '”' : (r.existing ? (r.existing === code ? 'Already ' : 'Was ') + CODES[r.existing].label : 'Not rostered'),
+        dateColor: isChecked ? '#ECEEF2' : '#9AA1AD',
+        rowBg: isChecked ? 'transparent' : 'rgba(255,255,255,0.015)',
+        marker,
+        markFg: m.fg, markBg: m.bg, markLine: m.line,
+        code: sel,
+        isOther: sel === 'O',
+        other,
+        selW: sel === 'O' ? 76 : 96,
+        chipBg: c ? c.bg : '#2A1418', chipFg: c ? c.fg : '#FBD5DB', chipLine: c ? c.line : '#4A1F27',
+        checked: isChecked,
+        cbDisabled: !code,
+        toggle: () => this.setState({ checked: Object.assign({}, checked, { [i]: !isChecked }) }),
+        onCode: (e) => {
+          const v = e.target.value;
+          this.setState({
+            codes: Object.assign({}, codes, { [i]: v }),
+            checked: Object.assign({}, checked, { [i]: v === 'O' ? !!other : (!!v && r.existing !== v) })
+          });
+        },
+        onOther: (e) => {
+          const v = String(e.target.value).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+          this.setState({
+            others: Object.assign({}, others, { [i]: v }),
+            checked: Object.assign({}, checked, { [i]: !!v })
+          });
+        }
+      };
+    });
+
+    const parts = [];
+    if (counts.New + counts.Unsure) parts.push((counts.New + counts.Unsure) + ' new');
+    if (counts.Changed) parts.push(counts.Changed + ' changed');
+    if (counts.Same) parts.push(counts.Same + ' same');
+    if (counts['Needs code']) parts.push(counts['Needs code'] + ' needs a code');
+
+    return {
+      isPick: stage === 'pick',
+      isExtracting: stage === 'extracting',
+      isReview: stage === 'review',
+      isOffline: stage === 'offline',
+      start: () => {
+        this.setState({ stage: 'extracting' });
+        clearTimeout(this._t);
+        this._t = setTimeout(() => this.setState({ stage: 'review' }), 2200);
+      },
+      cancelExtract: () => { clearTimeout(this._t); this.setState({ stage: 'pick' }); },
+      rows,
+      summary: parts.join(' · '),
+      canSave: selected > 0,
+      cannotSave: selected === 0,
+      saveLabel: 'Save ' + selected + (selected === 1 ? ' shift' : ' shifts')
+    };
+  }
+}
+</script>
+</body>
+</html>

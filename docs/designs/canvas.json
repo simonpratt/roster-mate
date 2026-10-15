@@ -1,0 +1,42 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-15T07:19:00Z" },
+  "title": "Roster Mate",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 940, "y": 0, "w": 390, "h": 844, "title": "Calendar", "is_interactive": true, "radius": 28 },
+    "Login.dc.html": { "x": 0, "y": 0, "w": 390, "h": 844, "title": "Sign in", "is_interactive": true, "radius": 28 },
+    "LoginError.dc.html": { "x": 470, "y": 0, "w": 390, "h": 844, "title": "Sign in — error", "radius": 28 },
+    "EditSheet.dc.html": { "x": 1410, "y": 0, "w": 390, "h": 844, "title": "Edit shift", "is_interactive": true, "radius": 28 },
+    "CalendarPending.dc.html": { "x": 0, "y": 1244, "w": 390, "h": 844, "title": "Pending edits", "radius": 28 },
+    "CalendarOffline.dc.html": { "x": 470, "y": 1244, "w": 390, "h": 844, "title": "Offline", "radius": 28 },
+    "CalendarSignIn.dc.html": { "x": 940, "y": 1244, "w": 390, "h": 844, "title": "Sign in to sync", "radius": 28 },
+    "Import.dc.html": { "x": 0, "y": 2488, "w": 390, "h": 844, "title": "Import — pick photo", "is_interactive": true, "radius": 28 },
+    "ImportExtracting.dc.html": { "x": 470, "y": 2488, "w": 390, "h": 844, "title": "Extracting", "radius": 28 },
+    "ImportReview.dc.html": { "x": 940, "y": 2488, "w": 390, "h": 844, "title": "Review", "is_interactive": true, "radius": 28 },
+    "ImportOffline.dc.html": { "x": 1410, "y": 2488, "w": 390, "h": 844, "title": "Import — offline", "radius": 28 },
+    "Tokens.dc.html": { "x": 0, "y": 3732, "w": 1200, "h": 760, "title": "Tokens" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Login.dc.html",
+    "LoginError.dc.html",
+    "EditSheet.dc.html",
+    "CalendarPending.dc.html",
+    "CalendarOffline.dc.html",
+    "CalendarSignIn.dc.html",
+    "Import.dc.html",
+    "ImportExtracting.dc.html",
+    "ImportReview.dc.html",
+    "ImportOffline.dc.html",
+    "Tokens.dc.html"
+  ],
+  "notes": {
+    "rowA": { "x": 0, "y": -260, "text": "Sign in & calendar", "kind": "title1", "maxW": 1800 },
+    "rowB": { "x": 0, "y": 984, "text": "Sync states", "kind": "title1", "maxW": 1800 },
+    "rowC": { "x": 0, "y": 2228, "text": "Import a roster", "kind": "title1", "maxW": 1800 },
+    "rowD": { "x": 0, "y": 3472, "text": "Tokens", "kind": "title1", "maxW": 1800 }
+  },
+  "designSystems": []
+}

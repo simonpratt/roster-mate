@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roster Mate — Tokens</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1200px; height: 760px; box-sizing: border-box; padding: 56px; background: #0E1014; color: #ECEEF2; font-family: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif; display: flex; flex-direction: column; gap: 40px">
+
+  <div style="display: flex; align-items: baseline; justify-content: space-between">
+    <h1 style="margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -0.02em">Roster Mate tokens</h1>
+    <p style="margin: 0; font-size: 14px; color: #9AA1AD">Dark only · color-scheme: dark · theme-color #0E1014</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px; flex: 1">
+
+    <section style="display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AD">Shift codes</h2>
+      <sc-for list="{{codes}}" as="c" hint-placeholder-count="5">
+        <div style="display: flex; align-items: center; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid #1C2027">
+          <span style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: {{c.bg}}; color: {{c.fg}}; box-shadow: inset 0 0 0 1px {{c.line}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px; font-weight: 700">{{c.code}}</span>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 16px; font-weight: 600">{{c.label}}</span>
+            <span style="font-size: 13px; color: #9AA1AD">{{c.token}}</span>
+          </div>
+          <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #8C93A0; text-align: right; white-space: pre-line">{{c.hex}}</span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AD">Surfaces &amp; text</h2>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <sc-for list="{{surfaces}}" as="s" hint-placeholder-count="8">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span style="flex: none; width: 36px; height: 36px; border-radius: 10px; background: {{s.hex}}; box-shadow: inset 0 0 0 1px #2E333C"></span>
+            <div style="display: flex; flex-direction: column; gap: 1px">
+              <span style="font-size: 14px; font-weight: 600">{{s.name}}</span>
+              <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #8C93A0">{{s.hex}}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <h2 style="margin: 20px 0 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AD">Type</h2>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <p style="margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.01em">Tomorrow · Late</p>
+        <p style="margin: 0; font-size: 14px; color: #9AA1AD">Schibsted Grotesk 400–700 · UI and copy</p>
+        <p style="margin: 6px 0 0; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 22px; font-weight: 700">D E L N X · 15</p>
+        <p style="margin: 0; font-size: 14px; color: #9AA1AD">JetBrains Mono 500/700 · codes and dates</p>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AD">Sync status</h2>
+      <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+        <sc-for list="{{sync}}" as="y" hint-placeholder-count="4">
+          <p style="margin: 0; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 16px; background: #161920; border: 1px solid #23272F; font-size: 13px; font-weight: 500; color: #C9CDD4; box-sizing: border-box">
+            <span style="width: 8px; height: 8px; border-radius: 4px; background: {{y.dot}}; box-shadow: inset 0 0 0 1.5px {{y.ring}}"></span>
+            {{y.label}}
+          </p>
+        </sc-for>
+      </div>
+
+      <h2 style="margin: 20px 0 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AD">Review markers</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <sc-for list="{{marks}}" as="m" hint-placeholder-count="5">
+          <span style="height: 24px; padding: 0 8px; border-radius: 12px; display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; color: {{m.fg}}; background: {{m.bg}}; box-shadow: inset 0 0 0 1px {{m.line}}">{{m.label}}</span>
+        </sc-for>
+      </div>
+      <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #9AA1AD">Markers are outlined; shift chips are filled, so the two never read as the same thing.</p>
+    </section>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      codes: [
+        { code: 'D', label: 'Day', token: 'amber', bg: '#3B2A0A', fg: '#FCC35A', line: '#3B2A0A', hex: '#FCC35A\n#3B2A0A' },
+        { code: 'E', label: 'Early', token: 'sky', bg: '#0A2C3D', fg: '#7DD3FC', line: '#0A2C3D', hex: '#7DD3FC\n#0A2C3D' },
+        { code: 'L', label: 'Late', token: 'violet', bg: '#2A1C47', fg: '#C9B6FD', line: '#2A1C47', hex: '#C9B6FD\n#2A1C47' },
+        { code: 'N', label: 'Night', token: 'indigo', bg: '#1B2050', fg: '#A5B1FF', line: '#1B2050', hex: '#A5B1FF\n#1B2050' },
+        { code: 'X', label: 'Day off', token: 'neutral · outlined', bg: 'transparent', fg: '#8C93A0', line: '#3A404B', hex: '#8C93A0\n#3A404B' },
+        { code: 'SE', label: 'Other', token: 'lime · any 1–2 letter code', bg: '#232E0C', fg: '#C8EC72', line: '#232E0C', hex: '#C8EC72\n#232E0C' }
+      ],
+      surfaces: [
+        { name: 'Ground', hex: '#0E1014' },
+        { name: 'Cell', hex: '#121418' },
+        { name: 'Surface', hex: '#161920' },
+        { name: 'Raised', hex: '#1E222A' },
+        { name: 'Line', hex: '#2A2F38' },
+        { name: 'Text', hex: '#ECEEF2' },
+        { name: 'Muted', hex: '#9AA1AD' },
+        { name: 'Faint', hex: '#8C93A0' }
+      ],
+      sync: [
+        { label: 'Synced', dot: '#34D399', ring: '#34D399' },
+        { label: '2 pending', dot: '#F5A524', ring: '#F5A524' },
+        { label: 'Offline', dot: 'transparent', ring: '#8C93A0' },
+        { label: 'Sign in needed', dot: '#FB7185', ring: '#FB7185' }
+      ],
+      marks: [
+        { label: 'New', fg: '#86EFAC', bg: '#0F2418', line: '#1D4A30' },
+        { label: 'Changed', fg: '#FDBA74', bg: 'transparent', line: '#5A3A1C' },
+        { label: 'Same', fg: '#8C93A0', bg: 'transparent', line: '#2A2F38' },
+        { label: 'Unsure', fg: '#F9A8D4', bg: 'transparent', line: '#5B2546' },
+        { label: 'Needs code', fg: '#FDA4AF', bg: '#2A1418', line: '#4A1F27' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
