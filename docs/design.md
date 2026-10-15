@@ -1,0 +1,260 @@
+# Roster Mate — Design
+
+Roster Mate is a single-user, mobile-first progressive web app (PWA) for keeping track of
+work shifts. The user photographs a printed or on-screen roster, an LLM extracts their shifts,
+and the app shows them in a simple calendar that keeps working offline.
+
+Source: Linear SIM-8 ("Initial scope").
+
+## Goals
+
+- Upload a photo of a roster; Claude extracts the user's shifts; the user reviews and saves them.
+- View shifts on a phone in a simple, dark-mode-only UI.
+- Edit or clear a single shift (e.g. after a swap).
+- View and edit while away from the home network; edits sync when the phone reconnects.
+
+## Non-goals
+
+- Multiple users, sharing, or roles.
+- Importing or extracting rosters while offline.
+- Light mode, desktop-optimised layouts, native apps.
+- Push notifications, calendar (ICS) export, pay calculation.
+- Exposing the app to the internet. Network isolation is a deployment concern.
+
+## Glossary
+
+| Term | Meaning |
+|---|---|
+| **Shift** | What the user works on one calendar date. At most one per date. |
+| **Shift code** | One of `D` Day, `E` Early, `L` Late, `N` Night, `X` Day off. |
+| **Cleared** | A date that had a shift and was explicitly emptied. Stored as a tombstone so the deletion syncs. |
+| **Roster** | The image the user uploads. Usually a grid of many staff × many dates. |
+| **Extraction** | One call to Claude that turns a roster image into proposed shifts. Stateless; nothing is saved until the user confirms. |
+| **Outbox** | Client-side queue of local edits not yet acknowledged by the server. |
+| **Revision (`rev`)** | Server-wide, monotonically increasing integer stamped on every shift write. Clients pull "everything since rev N". |
+
+## Architecture
+
+```
+ phone (PWA)                                   homelab: one Docker container
+ ┌───────────────────────────┐                 ┌─────────────────────────────────┐
+ │ React + Tailwind UI       │                 │ Go binary                        │
+ │   ↕                       │   HTTPS (via    │  ├─ /            embedded web    │
+ │ Dexie (IndexedDB)         │   user's TLS    │  ├─ /api/login, /api/session ... │
+ │   shifts + outbox + meta  │   reverse proxy)│  ├─ /api/sync     shifts         │
+ │   ↕ sync engine  ─────────┼────────────────►│  └─ /api/extract  → Anthropic API│
+ │ Service worker (shell)    │                 │ SQLite file in /data             │
+ └───────────────────────────┘                 └─────────────────────────────────┘
+```
+
+- **The UI reads and writes only IndexedDB.** The sync engine moves data between IndexedDB and
+  the server. The service worker only precaches the app shell; it never caches API responses.
+- **One container**: a multi-stage Dockerfile builds the web app, embeds `web/dist` into the
+  Go binary with `embed.FS`, and ships a static binary. SQLite via `modernc.org/sqlite`
+  (pure Go, no CGO).
+
+### Repository layout
+
+```
+/server            Go module (cmd/roster-mate/main.go, internal/...)
+  internal/config  env loading + validation
+  internal/auth    login, sessions, middleware
+  internal/store   SQLite open, migrations, shift queries
+  internal/api     HTTP handlers (sync, extract, session)
+  internal/extract Anthropic client + prompt + response parsing
+  internal/web     embed of the built frontend + SPA fallback
+/web               Vite + React + TypeScript + Tailwind app
+  src/db           Dexie schema
+  src/sync         sync engine
+  src/shifts       shift codes, labels, colours (mirrors server)
+  src/routes       Login, Roster, Import
+/docs              design docs
+Dockerfile, Makefile, .env.example, README.md
+```
+
+## Configuration (environment)
+
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `APP_USERNAME` | yes | — | Login username |
+| `APP_PASSWORD` | yes | — | Login password (compared in constant time) |
+| `ANTHROPIC_API_KEY` | yes | — | Extraction |
+| `ANTHROPIC_MODEL` | no | `claude-sonnet-5-5` | Extraction model |
+| `ROSTER_NAME` | yes | — | The user's name as printed on rosters; tells Claude which row is theirs |
+| `SESSION_SECRET` | no | random, generated once and stored in the DB | HMAC key for session cookies |
+| `PORT` | no | `8080` | Listen port |
+| `DATA_DIR` | no | `/data` | Holds `roster-mate.db` |
+| `TZ` | no | container default | Used only for "today" in the extraction prompt |
+
+The server refuses to start, with a message naming the variable, if a required one is missing.
+
+## Authentication
+
+- `POST /api/login` `{username, password}` → `204` and a `rm_session` cookie, or `401`.
+- `POST /api/logout` → `204`, clears the cookie.
+- `GET /api/session` → `200 {username}` or `401`.
+- Cookie: HMAC-SHA256-signed `{username, expiresAt}`, `HttpOnly`, `SameSite=Strict`, `Path=/`,
+  90-day lifetime refreshed on any authenticated request. `Secure` is set when the request
+  arrived over TLS or with `X-Forwarded-Proto: https`.
+- Every `/api/*` route except login and `/api/health` requires a valid cookie; otherwise `401`.
+- Failed logins sleep 1s before responding (crude brute-force damping; LAN only).
+- Static assets are served without auth so the shell loads offline; the client checks
+  `/api/session` when online and shows the login screen on `401`.
+- Offline, the client trusts its cached data and does not require a session. A `401` during
+  sync shows a "Sign in to sync" banner; local data and the outbox are kept.
+
+## Data model
+
+### Server (SQLite)
+
+```sql
+CREATE TABLE shifts (
+  date       TEXT PRIMARY KEY,        -- 'YYYY-MM-DD', a local calendar date
+  code       TEXT,                    -- 'D','E','L','N','X'; NULL when cleared
+  note       TEXT NOT NULL DEFAULT '',
+  edited_at  INTEGER NOT NULL,        -- client edit time, unix ms (last-write-wins key)
+  rev        INTEGER NOT NULL         -- server revision of the last applied write
+);
+CREATE INDEX shifts_rev ON shifts(rev);
+CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);  -- 'rev', 'session_secret', 'schema_version'
+```
+
+Migrations are ordered SQL files embedded in the binary and applied at startup.
+
+### Client (Dexie / IndexedDB)
+
+- `shifts`: `{date, code | null, note, editedAt, rev}` keyed by `date`.
+- `outbox`: `{date, code | null, note, editedAt}` keyed by `date` (a newer edit to the same date
+  replaces the queued one).
+- `meta`: `{key: 'lastRev', value}`.
+
+### Shift codes
+
+Defined once per side (`server/internal/store/codes.go`, `web/src/shifts/codes.ts`):
+
+| Code | Label | Colour token |
+|---|---|---|
+| D | Day | amber |
+| E | Early | sky |
+| L | Late | violet |
+| N | Night | indigo |
+| X | Day off | neutral / muted |
+
+The server rejects any other code with `400`.
+
+## Sync protocol
+
+Single endpoint, one round trip:
+
+`POST /api/sync`
+
+```json
+{ "since": 41,
+  "changes": [ { "date": "2026-11-03", "code": "L", "note": "swapped with Sam", "editedAt": 1760500000000 },
+               { "date": "2026-11-04", "code": null, "note": "", "editedAt": 1760500001000 } ] }
+```
+
+Response:
+
+```json
+{ "rev": 44,
+  "shifts": [ { "date": "2026-11-03", "code": "L", "note": "swapped with Sam", "editedAt": 1760500000000, "rev": 43 }, ... ] }
+```
+
+Server rules, all in one transaction:
+
+1. For each change, if no row exists or `change.editedAt >= row.edited_at`, write it with
+   `rev = ++meta.rev`. Otherwise ignore it (an older edit lost to a newer one).
+2. Return every row with `rev > since`, including cleared rows, and the current `meta.rev`.
+
+Client rules:
+
+- After any local edit: write `shifts` and `outbox` in one Dexie transaction, then trigger sync.
+- Sync triggers: app start, `online` event, page becoming visible, after each local edit, and
+  every 60s while visible and online. Only one sync runs at a time; a trigger during a run
+  schedules one follow-up run.
+- On success: delete the outbox entries that were sent (only if not replaced since), upsert
+  returned shifts **unless** the outbox holds a newer local edit for that date, set `lastRev`.
+- Network failure: keep everything, retry on the next trigger. `401`: show the sign-in banner.
+- Cleared rows are kept locally with `code: null` and rendered as empty days.
+
+Conflict policy is last-write-wins on `editedAt` (the phone's clock). With one user and usually
+one device, this is enough.
+
+## Roster extraction
+
+`POST /api/extract` — `multipart/form-data` with field `image` (JPEG/PNG/WebP, ≤ 5 MB).
+
+- The client downsizes before upload: long edge ≤ 2000 px, JPEG quality 0.9.
+- The server sends the image to the Anthropic Messages API with the official Go SDK
+  (`github.com/anthropics/anthropic-sdk-go`), forcing a single tool call whose input schema is:
+
+```json
+{ "personFound": true,
+  "shifts": [ { "date": "2026-11-03", "code": "L", "rawCode": "L", "uncertain": false } ],
+  "warnings": [ "Week of 10 Nov is partly obscured" ] }
+```
+
+- The prompt includes: `ROSTER_NAME`, today's date (for inferring missing years), the five
+  codes with meanings, and instructions to map synonyms (e.g. "OFF", "RDO" → `X`), to set
+  `code: null` with the original text in `rawCode` when a cell does not map, and to mark
+  low-confidence reads `uncertain`.
+- The server validates dates and codes, drops malformed entries into `warnings`, and returns
+  `200` with the validated payload. Anthropic errors → `502` with a short message; timeout 90s.
+- Nothing is stored. The image is not kept.
+
+### Review and apply (client)
+
+1. Import screen: pick or take a photo → "Extracting…" → review list.
+2. The review list shows each proposed date with: the existing shift (from IndexedDB), the
+   proposed code, and a marker for new / changed / same / uncertain / unmapped.
+3. Each row has a checkbox (default checked for new and changed; unmapped rows default
+   unchecked and need a code picked to be included) and a code picker.
+4. "Save N shifts" writes the selected rows as ordinary local edits (`editedAt = now`), which
+   go through the outbox and sync like any other edit.
+5. Import requires being online; the screen shows an "Import needs a connection" state offline.
+
+## UI
+
+Dark mode only (`<html class="dark">`, dark palette baked into Tailwind theme, `color-scheme: dark`,
+`theme-color` matching). Designed for a 360–430 px wide portrait phone; usable but not tuned on
+desktop.
+
+- **Login**: username, password, submit, error message.
+- **Roster** (home):
+  - Header: next upcoming shift ("Tomorrow · Late"), sync status dot (synced / pending N /
+    offline / sign-in needed), Import button.
+  - Month grid, Monday-first, with previous/next month controls and a "Today" jump. Each day
+    shows its code in a coloured chip; today is outlined; days with notes show a dot.
+  - Tapping a day opens the **edit sheet**: five code buttons, "Clear", a note field, Save/Cancel.
+- **Import**: as described above.
+
+## PWA
+
+- `vite-plugin-pwa` with a generated service worker that precaches the built shell and
+  serves `index.html` for navigations offline.
+- Manifest: name "Roster Mate", `display: standalone`, `orientation: portrait`, dark
+  `background_color`/`theme_color`, 192/512 px and maskable icons.
+- Service workers need a secure context. The app must be reached over HTTPS (e.g. the user's
+  existing reverse proxy with a certificate the phone trusts) for install and offline to work.
+  Over plain HTTP the app still works online.
+
+## Testing
+
+- Go: `go test ./...`; store and handler tests against a temp-dir SQLite file and `httptest`.
+  The extraction client is behind an interface so handler tests use a fake.
+- Web: Vitest + Testing Library; `fake-indexeddb` for Dexie and sync-engine tests with a mocked
+  `fetch`.
+- `make test` runs both; `make build` builds the image; `docker run` with `.env.example` values
+  serves the app.
+
+## Delivery order
+
+1. Scaffold and container
+2. Authentication
+3. Shift storage and sync API
+4. Offline store, sync engine and PWA shell
+5. Roster view
+6. Shift editing
+7. Roster extraction API
+8. Import and review UI
