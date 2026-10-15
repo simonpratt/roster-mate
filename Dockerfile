@@ -20,13 +20,17 @@ RUN go mod download
 COPY server/ ./
 COPY --from=web /web/dist ./internal/web/dist
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -trimpath -ldflags="-s -w" -o /out/roster-mate ./cmd/roster-mate
+    go build -trimpath -ldflags="-s -w" -o /out/roster-mate ./cmd/roster-mate \
+ && mkdir /out/data
 
 # 3. Run it. distroless/static carries CA certificates (for the Anthropic API); the binary
-# embeds its own zoneinfo for TZ. It runs as root so a bind-mounted /data that Docker created
-# on the host is writable.
-FROM gcr.io/distroless/static-debian12
+# embeds its own zoneinfo for TZ. It runs as the unprivileged UID/GID 65532, numeric so that
+# Kubernetes' runAsNonRoot can check it. /data is owned by 65532, so a fresh Docker volume is
+# writable; a bind mount, or a PVC with another runAsUser, must be writable by the running UID.
+FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=server /out/roster-mate /roster-mate
+COPY --from=server --chown=65532:65532 /out/data /data
+USER 65532:65532
 ENV DATA_DIR=/data PORT=8080
 VOLUME /data
 EXPOSE 8080

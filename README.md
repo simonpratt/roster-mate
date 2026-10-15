@@ -22,6 +22,14 @@ tag in place of `roster-mate` to skip the local build.
 Open `http://<host>:8080`. `GET /api/health` returns `{"ok":true}`. The database is
 `/data/roster-mate.db`; keep the volume to keep your shifts across restarts and upgrades.
 
+The container runs as the unprivileged UID/GID 65532, never root, so `/data` must be writable by
+that user: `mkdir -p data && sudo chown 65532:65532 data` before the first run, or add
+`--user "$(id -u):$(id -g)"` to `docker run` to run as yourself. Under Kubernetes, set your own
+`runAsUser`/`runAsGroup` in the pod's `securityContext` and give it a `/data` volume that user
+can write (an `fsGroup` matching the group does this for most volume types). The server needs no
+privileges and writes only to `/data`, so `runAsNonRoot: true`, `readOnlyRootFilesystem: true`,
+`allowPrivilegeEscalation: false` and `capabilities: {drop: [ALL]}` all suit it.
+
 The server stops at startup, naming the variable, if `APP_USERNAME`, `APP_PASSWORD`,
 `ANTHROPIC_API_KEY` or `ROSTER_NAME` is missing. Every setting is listed in `.env.example` and in
 `docs/design.md` § Configuration.
