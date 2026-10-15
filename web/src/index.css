@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/* Dark only: the `dark:` variant follows <html class="dark">, not the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Theme tokens from docs/ux-spec.md §4.1 (values from docs/designs/Tokens.dc.html).
+ * Tailwind's default palette is cleared so components use these names, never raw palette classes.
+ */
+@theme {
+  --color-*: initial;
+  --color-bg: #0e1014;
+  --color-cell: #121418;
+  --color-surface: #161920;
+  --color-surface-raised: #1e222a;
+  --color-border: #2a2f38;
+  --color-text: #eceef2;
+  --color-text-muted: #9aa1ad;
+  --color-text-faint: #8c93a0;
+  --color-primary: #eceef2;
+  --color-on-primary: #0e1014;
+  --color-danger: #fb7185;
+  --color-failed: #ef4444;
+  --color-ok: #34d399;
+  --color-warn: #f5a524;
+  --color-focus: #7dd3fc;
+
+  --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Type scale, §4.3 */
+  --text-display: 28px;
+  --text-display--font-weight: 600;
+  --text-title: 18px;
+  --text-title--font-weight: 600;
+  --text-body: 16px;
+  --text-label: 14px;
+  --text-label--font-weight: 500;
+  --text-caption: 12px;
+  --text-caption--font-weight: 500;
+
+  /* Content column on wide screens, §4.4 */
+  --container-app: 480px;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    background-color: var(--color-bg);
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}

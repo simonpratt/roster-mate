@@ -23,7 +23,12 @@ When they disagree, `CONTEXT.md` wins on terms, the ticket's Spec and acceptance
 
 ## Commands
 
-Nothing is scaffolded until SIM-9 lands. It adds `make dev`, `make test` (Go and Vitest) and `make build` (the Docker image), with every environment variable in `.env.example`. As each ticket lands, record here the commands and gotchas that a look at the `Makefile` or `package.json` wouldn't reveal.
+`make dev` (Go on :8080, Vite on :5173 proxying `/api`), `make test` (go vet, go test, tsc, Vitest) and `make build` (the Docker image); every environment variable is in `.env.example`. As each ticket lands, record here the commands and gotchas that a look at the `Makefile` or `package.json` wouldn't reveal.
+
+- **Embedded web app**: Go can't embed files outside its module, so the image build copies `web/dist` into `server/internal/web/dist/` before `go build`. A plain `go build` or `make dev` embeds only `.gitkeep`, and the Go server answers `/` with 503 "web app not built"; use the Vite port in development.
+- **`make dev`** reads `.env` (else `.env.example`) line by line, not through the shell, so values may contain spaces unquoted, as Docker's `--env-file` expects. It overrides `DATA_DIR` with `DEV_DATA_DIR` (default `$TMPDIR/roster-mate-dev`).
+- **Migrations** are `server/internal/store/migrations/NNNN_name.sql`, applied in order at startup, each in a transaction with the `meta.schema_version` bump. Add a new file; never edit an applied one.
+- **Tailwind** clears its default palette (`--color-*: initial` in `web/src/index.css`), so only the theme tokens exist as colour classes.
 
 - **Viewing the app** in this sandbox: start the dev servers as background tasks listening on `0.0.0.0`, and wait until `/api/health` returns 200 and the client page loads. Then ask the user to run `sbx ports <sandbox-name> --publish <port>:<port>` on their host for the client's port, with the name from `$SANDBOX_NAME`, and to log in with the dev `APP_USERNAME`/`APP_PASSWORD`. Stop the tasks when asked.
 - **SQLite** files belong in a temp dir (tests) or a `DATA_DIR` outside the repo. The repo sits on a host mount, where SQLite can report disk I/O or locking errors.
