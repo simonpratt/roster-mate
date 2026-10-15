@@ -17,5 +17,9 @@ made most recently by the phone's clock wins, silently.
 
 - A phone with a badly wrong clock can lose or override edits. Accepted: phone clocks are network
   set.
-- Moving to multiple users or devices would need real conflict handling and a revisit of this
-  decision.
+- The same user on a second device works: each device pulls the other's edits, and a clash on a
+  date goes to the later edit. Multiple users would need real conflict handling and a revisit of
+  this decision.
+- Because every phone holds a full copy, a wiped or restored server is refilled from the phones:
+  when a phone sees the server's database ID change or its revision go backwards, it re-sends all
+  its shifts.

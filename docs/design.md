@@ -116,7 +116,7 @@ CREATE TABLE shifts (
   rev        INTEGER NOT NULL         -- server revision of the last applied write
 );
 CREATE INDEX shifts_rev ON shifts(rev);
-CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);  -- 'rev', 'session_secret', 'schema_version'
+CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);  -- 'rev', 'db_id', 'session_secret', 'schema_version'
 ```
 
 Migrations are ordered SQL files embedded in the binary and applied at startup.
@@ -126,7 +126,7 @@ Migrations are ordered SQL files embedded in the binary and applied at startup.
 - `shifts`: `{date, code | null, note, editedAt, rev}` keyed by `date`.
 - `outbox`: `{date, code | null, note, editedAt}` keyed by `date` (a newer edit to the same date
   replaces the queued one).
-- `meta`: `{key: 'lastRev', value}`.
+- `meta`: `{key: 'lastRev', value}` and `{key: 'dbId', value}`.
 
 ### Shift codes
 
@@ -160,7 +160,7 @@ Single endpoint, one round trip:
 Response:
 
 ```json
-{ "rev": 44,
+{ "rev": 44, "dbId": "9f2c4e…",
   "shifts": [ { "date": "2026-11-03", "code": "L", "note": "swapped with Sam", "editedAt": 1760500000000, "rev": 43 }, ... ] }
 ```
 
@@ -168,7 +168,9 @@ Server rules, all in one transaction:
 
 1. For each change, if no row exists or `change.editedAt >= row.edited_at`, write it with
    `rev = ++meta.rev`. Otherwise ignore it (an older edit lost to a newer one).
-2. Return every row with `rev > since` and the current `meta.rev`.
+2. Return every row with `rev > since`, the current `meta.rev`, and `meta.db_id` (a random ID
+   generated when the database is created). If `since > meta.rev`, the database has been wiped
+   or restored from a backup, so return every row.
 
 Client rules:
 
@@ -178,14 +180,25 @@ Client rules:
   schedules one follow-up run.
 - On success: delete the outbox entries that were sent (only if not replaced since), upsert
   returned shifts **unless** the outbox holds a newer local edit for that date, set `lastRev`.
-- Network failure: keep everything, retry on the next trigger. `401`: show the sign-in banner.
+- The outbox is sent in batches of at most 1000 changes (the server's limit); a run keeps
+  sending until the outbox is empty or a request fails.
+- Network failure (the server can't be reached, including on mobile data away from the home
+  network): keep everything, show `offline`, retry on the next trigger. `401`: show the sign-in
+  banner. Any other non-2xx response: show `error`.
+- **Server reset**: if the response's `dbId` differs from the stored one, or its `rev` is lower
+  than the `since` sent, the server has lost data. The client copies every local shift into the
+  outbox with its existing `editedAt` (leaving newer outbox entries alone), sets `lastRev` to 0
+  and runs again, so the phone's copy restores the server. With two devices, each re-sends its
+  copy and last-write-wins settles each date. On the first sync (no stored `dbId`) the client
+  just stores it.
 - The UI never writes `code: null`: a shift is removed by setting it to Day off (`X`), so a date
   never returns to unrostered. The protocol still accepts and returns `null` (a reserved
   tombstone for a future "remove shift" or data fix); clients render such a row as an
   unrostered date and drop its note.
 
-Conflict policy is last-write-wins on `editedAt` (the phone's clock). With one user and usually
-one device, this is enough. See `docs/adr/0001-offline-first-last-write-wins.md`.
+Conflict policy is last-write-wins on `editedAt` (the phone's clock). With one user this is enough
+for one device or a few: each device pulls the others' edits by `rev`, and a clash on a date goes
+to the later edit. See `docs/adr/0001-offline-first-last-write-wins.md`.
 
 ## Roster extraction
 
@@ -204,13 +217,14 @@ one device, this is enough. See `docs/adr/0001-offline-first-last-write-wins.md`
 - The prompt includes: `ROSTER_NAME`, today's date (for inferring missing years), the five
   standard codes with meanings, that a shift belongs to the date it starts on (a Night shift running
   past midnight is dated by its start, as rosters print it), and instructions to map synonyms
-  (e.g. "OFF", "RDO" → `X`), to set
+  (e.g. "OFF", "RDO" → `X`; "AM" → `E`; "PM" → `L`) before any other rule, to
   return any other cell text of one or two letters as an Other code (uppercased, e.g. "se" →
   `SE`), to set `code: null` with the original text in `rawCode` only when a cell can't be a code
   (longer than two letters or not letters, e.g. "A/L"), and to mark
   low-confidence reads `uncertain`.
 - The server validates dates and codes (`^[A-Z]{1,2}$` or null), drops malformed entries into `warnings`, and returns
-  `200` with the validated payload. Anthropic errors → `502` with a short message; timeout 90s.
+  `200` with the validated payload. Anthropic errors → `502` with a short message; timeout 90s. A
+  reverse proxy in front of the app needs a read timeout above 90s (nginx defaults to 60s).
 - Nothing is stored. The image is not kept.
 
 ### Review and apply (client)
@@ -223,7 +237,8 @@ one device, this is enough. See `docs/adr/0001-offline-first-last-write-wins.md`
    plus Other).
 4. "Save N shifts" writes the selected rows as ordinary local edits (`editedAt = now`), which
    go through the outbox and sync like any other edit.
-5. Import requires being online; the screen shows an "Import needs a connection" state offline.
+5. Import requires reaching the server: on opening, the screen calls `GET /api/health` (5s
+   timeout) and shows an "Import needs a connection" state if that fails or the phone is offline.
 
 ## UI
 

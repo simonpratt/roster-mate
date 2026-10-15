@@ -120,7 +120,8 @@ Use tabular numerals (`tabular-nums`) for dates and counts.
 ### 4.4 Spacing, size and layout
 
 - Design width 360–430 px portrait. 16 px side gutters. Base spacing unit 4 px.
-- Tap targets ≥ 44 px (SIM-13's floor is 40 px; aim for 44 where space allows).
+- Tap targets ≥ 44 px (SIM-13). At 360 px the seven grid columns leave room for gaps of 3 px or
+  less.
 - On wider screens, centre the content in a column of max 480 px; no desktop layout.
 - Respect safe areas in standalone mode: header gets `padding-top: env(safe-area-inset-top)`,
   bottom sheet and fixed bottom bars get `env(safe-area-inset-bottom)`.
@@ -170,9 +171,13 @@ A pill with a dot and short text, `role="status"` so changes are announced polit
 |---|---|---|---|
 | `synced` | `ok` | "Synced" | Trigger a sync |
 | `pending(n)` | `warn` | "N pending" (e.g. "1 pending") | Trigger a sync |
-| `offline` | `text-faint`, hollow | "Offline" | None |
+| `offline` | `text-faint`, hollow | "Offline": the phone has no connection or can't reach the server (e.g. on mobile data away from home) | None |
 | `unauthorized` | `danger` | "Sign in needed", plus the sign-in banner (§5.7) | Go to `/login` |
 | `error` | `failed` | "Sync failed" with a "↻ Retry" affordance; the whole pill is a `<button>` on a red-tinted background (`docs/designs/CalendarFailed.dc.html`) | Trigger a sync |
+
+One status shows at a time, in this order of precedence: `unauthorized`, `error`, `offline`,
+`pending(n)`, `synced`. The pending count is available on its own as well (the sign-out dialog
+needs it while offline).
 
 While a background run is in flight, keep the current text (no spinner, no text change), so the
 pill doesn't flicker every 60 s. After the user taps Retry, show "Syncing…" (hollow `focus`
@@ -329,7 +334,9 @@ Header: back arrow (to `/`) and title "Import roster". Four steps share one scre
 
 **Offline** — cloud-off icon, heading "Import needs a connection", text "Reconnect to your home
 network to import a roster. You can still view and edit shifts while you’re away." and
-"Back to calendar". No file input (SIM-16).
+"Back to calendar". No file input (SIM-16). Shown when the phone is offline or when
+`GET /api/health` fails on opening the screen (5 s timeout), so being on mobile data away from
+home counts as offline here too.
 
 **Step 1 — Choose a photo** (`docs/designs/Import.dc.html`)
 
@@ -407,7 +414,7 @@ Not found and Nothing found reuse the Step 2 layout (dimmed photo, message, [Try
 | Cause | Message |
 |---|---|
 | `413` / `415` | "That image is too large or not a supported format." |
-| `502` / timeout | "Couldn't read the roster. Try again, or use a clearer photo." |
+| Any `5xx` (incl. a proxy's `504`) / timeout | "Couldn't read the roster. Try again, or use a clearer photo." |
 | Network failure | "Lost connection while reading. Try again when you're online." |
 | `401` | Go to `/login` (SIM-16) |
 
