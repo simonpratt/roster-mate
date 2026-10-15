@@ -7,14 +7,16 @@ import (
 	"time"
 
 	"github.com/simonpratt/roster-mate/server/internal/auth"
+	"github.com/simonpratt/roster-mate/server/internal/store"
 )
 
 // NewRouter returns the server's handler. app serves the web app for every path outside /api/;
 // it and /api/health, /api/login need no session, and every other /api/ route does.
-func NewRouter(app http.Handler, a *auth.Auth) http.Handler {
+func NewRouter(app http.Handler, a *auth.Auth, st *store.Store) http.Handler {
 	private := http.NewServeMux()
 	private.HandleFunc("POST /api/logout", logout(a))
 	private.HandleFunc("GET /api/session", sessionInfo)
+	private.HandleFunc("POST /api/sync", sync(st))
 	// Any other /api/ path is a 404, never the web app's index.html.
 	private.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})

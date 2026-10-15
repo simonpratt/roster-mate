@@ -54,7 +54,7 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer) int 
 
 	srv := &http.Server{
 		Addr:              net.JoinHostPort("", strconv.Itoa(cfg.Port)),
-		Handler:           api.NewRouter(web.Handler(web.Dist()), a),
+		Handler:           api.NewRouter(web.Handler(web.Dist()), a, st),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	errc := make(chan error, 1)

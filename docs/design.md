@@ -175,6 +175,11 @@ Server rules, all in one transaction:
    generated when the database is created). If `since > meta.rev`, the database has been wiped
    or restored from a backup, so return every row.
 
+Validation happens before anything is written, and a request with any invalid change applies none
+of them (`400 {"error": …}`): `since` ≥ 0; at most 1000 changes; `date` is `YYYY-MM-DD`; `code` is
+`null` or matches `^[A-Z]{1,2}$`; `note` is at most 500 characters (Unicode code points);
+`editedAt` > 0. Without a valid session the call returns `401`.
+
 Client rules:
 
 - After any local edit: write `shifts` and `outbox` in one Dexie transaction, then trigger sync.

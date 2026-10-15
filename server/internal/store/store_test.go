@@ -23,8 +23,8 @@ func TestOpenCreatesDBInWALModeWithMeta(t *testing.T) {
 		t.Errorf("journal_mode = %q, %v; want wal", mode, err)
 	}
 	v, err := s.SchemaVersion()
-	if err != nil || v != 1 {
-		t.Errorf("SchemaVersion = %d, %v; want 1", v, err)
+	if err != nil || v != 2 {
+		t.Errorf("SchemaVersion = %d, %v; want 2", v, err)
 	}
 }
 

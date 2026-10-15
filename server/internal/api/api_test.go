@@ -30,7 +30,7 @@ func newAuthServer(t *testing.T) (*httptest.Server, *auth.Auth) {
 	})
 	a := auth.New("simon", "secret", []byte("0123456789abcdef0123456789abcdef"))
 	a.FailDelay = 0
-	srv := httptest.NewServer(NewRouter(app, a))
+	srv := httptest.NewServer(NewRouter(app, a, newStore(t)))
 	t.Cleanup(srv.Close)
 	return srv, a
 }

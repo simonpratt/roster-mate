@@ -46,7 +46,7 @@ func TestSessionSurvivesRestartWithoutSessionSecret(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		return st, api.NewRouter(app, a)
+		return st, api.NewRouter(app, a, st)
 	}
 
 	st, h := start()
