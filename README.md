@@ -15,6 +15,10 @@ docker run -d --name roster-mate --restart unless-stopped \
   --env-file .env -p 8080:8080 -v "$PWD/data:/data" roster-mate
 ```
 
+Every push to `master` also builds the image for amd64 and arm64 and pushes it to
+`ghcr.io/simonpratt/roster-mate:sha-<short commit SHA>` (`.github/workflows/image.yml`); use that
+tag in place of `roster-mate` to skip the local build.
+
 Open `http://<host>:8080`. `GET /api/health` returns `{"ok":true}`. The database is
 `/data/roster-mate.db`; keep the volume to keep your shifts across restarts and upgrades.
 
