@@ -4,13 +4,16 @@ Roster Mate is a single-user, mobile-first progressive web app (PWA) for keeping
 work shifts. The user photographs a printed or on-screen roster, an LLM extracts their shifts,
 and the app shows them in a simple calendar that keeps working offline.
 
+Domain terms (Shift, Day off, Roster, Roster photo, Proposed shift, Pending edit, …) are defined
+in `CONTEXT.md`. Decisions are recorded in `docs/adr/`.
+
 Source: Linear SIM-8 ("Initial scope").
 
 ## Goals
 
-- Upload a photo of a roster; Claude extracts the user's shifts; the user reviews and saves them.
+- Upload a roster photo; Claude extracts the user's shifts; the user reviews and saves them.
 - View shifts on a phone in a simple, dark-mode-only UI.
-- Edit or clear a single shift (e.g. after a swap).
+- Edit a single shift (e.g. after a swap). Setting a date to Day off is how a shift is removed.
 - View and edit while away from the home network; edits sync when the phone reconnects.
 
 ## Non-goals
@@ -23,14 +26,11 @@ Source: Linear SIM-8 ("Initial scope").
 
 ## Glossary
 
+Domain terms live in `CONTEXT.md`. These are implementation terms only.
+
 | Term | Meaning |
 |---|---|
-| **Shift** | What the user works on one calendar date. At most one per date. |
-| **Shift code** | One of `D` Day, `E` Early, `L` Late, `N` Night, `X` Day off. |
-| **Cleared** | A date that had a shift and was explicitly emptied. Stored as a tombstone so the deletion syncs. |
-| **Roster** | The image the user uploads. Usually a grid of many staff × many dates. |
-| **Extraction** | One call to Claude that turns a roster image into proposed shifts. Stateless; nothing is saved until the user confirms. |
-| **Outbox** | Client-side queue of local edits not yet acknowledged by the server. |
+| **Outbox** | Client-side store of pending edits, one per date, removed once the server has acknowledged them. |
 | **Revision (`rev`)** | Server-wide, monotonically increasing integer stamped on every shift write. Clients pull "everything since rev N". |
 
 ## Architecture
@@ -67,7 +67,7 @@ Source: Linear SIM-8 ("Initial scope").
   src/db           Dexie schema
   src/sync         sync engine
   src/shifts       shift codes, labels, colours (mirrors server)
-  src/routes       Login, Roster, Import
+  src/routes       Login, Calendar, Import
 /docs              design docs
 Dockerfile, Makefile, .env.example, README.md
 ```
@@ -110,7 +110,7 @@ The server refuses to start, with a message naming the variable, if a required o
 ```sql
 CREATE TABLE shifts (
   date       TEXT PRIMARY KEY,        -- 'YYYY-MM-DD', a local calendar date
-  code       TEXT,                    -- 'D','E','L','N','X'; NULL when cleared
+  code       TEXT,                    -- 'D','E','L','N','X'; NULL is reserved (see Sync protocol)
   note       TEXT NOT NULL DEFAULT '',
   edited_at  INTEGER NOT NULL,        -- client edit time, unix ms (last-write-wins key)
   rev        INTEGER NOT NULL         -- server revision of the last applied write
@@ -140,7 +140,7 @@ Defined once per side (`server/internal/store/codes.go`, `web/src/shifts/codes.t
 | N | Night | indigo |
 | X | Day off | neutral / muted |
 
-The server rejects any other code with `400`.
+The server rejects any other code with `400`. Shifts have no times; see `docs/adr/0002-shifts-are-codes-not-times.md`.
 
 ## Sync protocol
 
@@ -165,7 +165,7 @@ Server rules, all in one transaction:
 
 1. For each change, if no row exists or `change.editedAt >= row.edited_at`, write it with
    `rev = ++meta.rev`. Otherwise ignore it (an older edit lost to a newer one).
-2. Return every row with `rev > since`, including cleared rows, and the current `meta.rev`.
+2. Return every row with `rev > since` and the current `meta.rev`.
 
 Client rules:
 
@@ -176,10 +176,13 @@ Client rules:
 - On success: delete the outbox entries that were sent (only if not replaced since), upsert
   returned shifts **unless** the outbox holds a newer local edit for that date, set `lastRev`.
 - Network failure: keep everything, retry on the next trigger. `401`: show the sign-in banner.
-- Cleared rows are kept locally with `code: null` and rendered as empty days.
+- The UI never writes `code: null`: a shift is removed by setting it to Day off (`X`), so a date
+  never returns to unrostered. The protocol still accepts and returns `null` (a reserved
+  tombstone for a future "remove shift" or data fix); clients render such a row as an
+  unrostered date and drop its note.
 
 Conflict policy is last-write-wins on `editedAt` (the phone's clock). With one user and usually
-one device, this is enough.
+one device, this is enough. See `docs/adr/0001-offline-first-last-write-wins.md`.
 
 ## Roster extraction
 
@@ -196,7 +199,9 @@ one device, this is enough.
 ```
 
 - The prompt includes: `ROSTER_NAME`, today's date (for inferring missing years), the five
-  codes with meanings, and instructions to map synonyms (e.g. "OFF", "RDO" → `X`), to set
+  codes with meanings, that a shift belongs to the date it starts on (a Night shift running
+  past midnight is dated by its start, as rosters print it), and instructions to map synonyms
+  (e.g. "OFF", "RDO" → `X`), to set
   `code: null` with the original text in `rawCode` when a cell does not map, and to mark
   low-confidence reads `uncertain`.
 - The server validates dates and codes, drops malformed entries into `warnings`, and returns
@@ -223,12 +228,13 @@ Dark mode only (`<html class="dark">`, dark palette baked into Tailwind theme, `
 desktop.
 
 - **Login**: username, password, submit, error message.
-- **Roster** (home):
+- **Calendar** (home, `/`):
   - Header: next upcoming shift ("Tomorrow · Late"), sync status dot (synced / pending N /
     offline / sign-in needed), Import button.
-  - Month grid, Monday-first, with previous/next month controls and a "Today" jump. Each day
-    shows its code in a coloured chip; today is outlined; days with notes show a dot.
-  - Tapping a day opens the **edit sheet**: five code buttons, "Clear", a note field, Save/Cancel.
+  - Month grid, Monday-first, with previous/next month controls and a "Today" jump. Each date
+    shows its shift code in a coloured chip; today is outlined; shifts with notes show a dot.
+  - Tapping a date opens the **edit sheet**: five code buttons, a note field, Save/Cancel. There
+    is no "Clear"; choosing Day off (`X`) is how a shift is removed.
 - **Import**: as described above.
 
 ## PWA
@@ -256,7 +262,7 @@ desktop.
 2. Authentication
 3. Shift storage and sync API
 4. Offline store, sync engine and PWA shell
-5. Roster view
+5. Calendar view
 6. Shift editing
 7. Roster extraction API
 8. Import and review UI
