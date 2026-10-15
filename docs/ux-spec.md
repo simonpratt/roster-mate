@@ -77,7 +77,7 @@ colour.
 
 Codes, labels and colour families come from `web/src/shifts/codes.ts` (SIM-12). Chips use a
 tinted background with a light text colour of the same family, which keeps contrast high on the
-dark surface and lets five colours sit side by side without glare.
+dark surface and lets six colours sit side by side without glare.
 
 | Code | Label | Chip background | Chip text | Notes |
 |---|---|---|---|---|
@@ -86,9 +86,12 @@ dark surface and lets five colours sit side by side without glare.
 | L | Late | `violet-400/15` | `violet-300` | |
 | N | Night | `indigo-400/20` | `indigo-300` | Slightly stronger fill to separate it from Late |
 | X | Day off | none | `neutral-500` | Rendered as a quiet letter, not a chip — days off should recede |
+| Other (`SE`, `XD`, …) | the code itself | `teal-400/15` | `teal-300` | One shared colour for every Other code; the chip shows both letters |
 
-- Chip: rounded-md, letter in semibold, centred. In the grid the chip shows the letter only; in
-  the header, edit sheet and review list it shows the label too ("L · Late" or "Late").
+- Chip: rounded-md, code in semibold, centred. In the grid the chip shows the code only; in the
+  header, edit sheet and review list a standard code shows its label too ("L · Late" or "Late").
+  An Other code has no label, so it shows just its letters ("SE") everywhere. Two-letter codes
+  use 1 px tighter letter-spacing so they fit a 46 px cell.
 - Selected state (edit sheet, review picker): solid ring `ring-2` in the chip's text colour plus a
   check icon, so selection does not rely on colour.
 - All chip text colours meet WCAG AA (≥ 4.5:1) against `surface` and `bg`; verify with a contrast
@@ -141,8 +144,8 @@ cloud-off (offline). Icon-only buttons always carry an `aria-label`.
 └──────────────────────────────────────────┘
 ```
 
-- **Next shift line** (rules from SIM-13): first working shift (`D`/`E`/`L`/`N`) dated
-  today or later. Formats: "Today · Day", "Tomorrow · Late", "Fri 6 Nov · Night", or "No upcoming shifts"
+- **Next shift line** (rules from SIM-13): first working shift (any code except `X`,
+  including Other codes) dated today or later. An Other code shows its letters: "Tomorrow · SE". Formats: "Today · Day", "Tomorrow · Late", "Fri 6 Nov · Night", or "No upcoming shifts"
   in `text-muted`. Tapping it jumps the grid to that date's month and opens nothing else.
 - **Import** button: camera icon with visible label "Import" if width allows, otherwise
   icon-only with `aria-label="Import roster"`. When offline it stays visible; the Import screen
@@ -195,8 +198,12 @@ so the indicator doesn't flicker every 60 s.
 
 ### 5.4 Code picker
 
-A row of five chip buttons (D E L N X) with labels underneath. There is no "Clear": choosing
-Day off (`X`) is how a shift is removed. Used in the edit sheet and (compact, letters only) in
+A row of five standard chip buttons (D E L N X) with labels underneath, then an "Other" button.
+Choosing Other reveals a short text input (`maxlength=2`, `autocapitalize="characters"`, letters
+only, shown uppercase) with placeholder "SE"; the selection is valid once it holds one or two
+letters. Typing a standard code there (e.g. "D") selects that standard chip instead. Opening the
+picker on a shift with an Other code selects Other with its letters filled in. There is no
+"Clear": choosing Day off (`X`) is how a shift is removed. Used in the edit sheet and (compact, letters only) in
 the review list. One selected, or none only on an unrostered date that hasn't been picked yet;
 `role="radiogroup"` with each chip `role="radio"`.
 
@@ -256,7 +263,7 @@ indicator carries routine status.
 ### 6.2 Calendar (`/`)
 
 Layout top to bottom: header (§5.1), month controls, weekday row, grid (§5.3). Below the grid,
-a short legend line in Caption: "D Day · E Early · L Late · N Night · X Off" — useful on first
+a short legend line in Caption: "D Day · E Early · L Late · N Night · X Off · other codes as shown" — useful on first
 use, cheap to keep.
 
 States:
@@ -277,8 +284,9 @@ Tapping a date opens the edit sheet (§6.3). Long-press does nothing (avoid conf
 ```
   ───                                     ← drag handle
   Wednesday 4 November                    ← Title
-  [ D ] [ E ] [ L✓] [ N ] [ X ]           ← code picker
+  [ D ] [ E ] [ L✓] [ N ] [ X ] [Other]   ← code picker
    Day  Early Late  Night Off
+                              [ SE ]      ← only when Other is selected
   Note
   ┌──────────────────────────────────┐
   │ swapped with Sam                 │
@@ -291,7 +299,8 @@ Tapping a date opens the edit sheet (§6.3). Long-press does nothing (avoid conf
 - Opens with the current code selected and note filled. Tapping the selected code again does
   nothing; to remove a shift, choose Day off (`X`).
 - **Unrostered date**: opens with no code selected. A note can't be saved on its own, because a
-  note needs a shift: Save stays disabled until a code is picked.
+  note needs a shift: Save stays disabled until a code is picked. With Other selected, Save also
+  needs one or two letters in its input.
 - **Save** disabled until the code or note differs from the stored value (SIM-14). On Save: write
   locally, close, and the cell updates immediately. No toast — the grid change and the
   indicator going to "1 pending" are the feedback.
@@ -339,7 +348,8 @@ plus "Back to calendar". No file input (SIM-16).
   │ ☑ Mon 2 Nov   —  →  [N]   New        │
   │ ☑ Tue 3 Nov   E  →  [L]   Changed    │
   │ ☐ Wed 4 Nov   X  →  [X]   Same       │
-  │ ☐ Thu 5 Nov   —  →  [ ? ] Unmapped "AL"│ ← disabled until a code is picked
+  │ ☐ Thu 5 Nov   —  →  [ ? ] Unmapped "A/L"│ ← disabled until a code is picked
+  │ ☑ Sat 7 Nov   —  →  [SE]  New        │  ← Other code
   │ ☑ Fri 6 Nov   —  →  [D]   Uncertain  │
   └──────────────────────────────────────┘
   [          Save 8 shifts          ]       ← sticky footer
@@ -357,9 +367,11 @@ plus "Back to calendar". No file input (SIM-16).
   | Changed | Local code differs | `warn` text | Checked |
   | Same | Matches local | `text-muted` | Unchecked |
   | Uncertain | The roster cell was hard to read | `warn` outline | Checked if New/Changed |
-  | Unmapped "AL" | Unmapped code; the cell text is shown | `danger` text | Unchecked, disabled |
+  | Unmapped "A/L" | Unmapped code; the cell text is shown | `danger` text | Unchecked, disabled |
 
   A row can be both Changed and Uncertain; show both badges.
+- Other codes from the roster (e.g. `SE`) are ordinary proposed shifts: they get New / Changed /
+  Same like any other code. The row picker includes Other (§5.4).
 - Picking a code on an Unmapped row enables and checks it, and replaces the badge with New or
   Changed. Changing the proposed code on any row re-evaluates its badge against the local value.
 - Changed rows show the local note, if any, under the date in Caption so the user knows it will
@@ -429,7 +441,7 @@ plus "Back to calendar". No file input (SIM-16).
 | Key | Text |
 |---|---|
 | App name | Roster Mate |
-| Next shift | "Today · {Label}", "Tomorrow · {Label}", "{Ddd d Mmm} · {Label}" |
+| Next shift | "Today · {Label}", "Tomorrow · {Label}", "{Ddd d Mmm} · {Label}"; {Label} is the code itself for an Other code |
 | No next shift | No upcoming shifts |
 | Sync | Synced · {n} pending · Offline · Sign in to sync · Sync failed · retry |
 | Empty roster | Import a photo of your roster to get started. |

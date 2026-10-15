@@ -17,11 +17,21 @@ one shift, and a shift belongs to the date it starts on, even when it runs past 
 _Avoid_: assignment, entry, booking
 
 **Shift code**:
-One of `D` Day, `E` Early, `L` Late, `N` Night or `X` Day off. There are no others.
+One or two letters naming what a shift is: either a standard code or an Other code.
 _Avoid_: shift type, roster code
 
+**Standard code**:
+One of the five shift codes the app knows the meaning of: `D` Day, `E` Early, `L` Late, `N` Night
+and `X` Day off.
+_Avoid_: built-in code, fixed code
+
+**Other code**:
+Any shift code of one or two letters that is not a standard code, such as `SE` or `XD`, for shift
+types too rare to warrant a standard code. It means nothing to the app beyond its letters.
+_Avoid_: custom code, extra code, misc
+
 **Working shift**:
-A shift whose code is `D`, `E`, `L` or `N`.
+A shift whose code is anything except `X`: `D`, `E`, `L`, `N` or an Other code.
 
 **Day off**:
 A shift with code `X`. It is how the user records that they are not working on a date.
@@ -75,8 +85,9 @@ Said of a proposed shift whose roster cell was hard to read, so the user should 
 _Avoid_: low confidence, check
 
 **Unmapped code**:
-Text in a roster cell that does not correspond to any shift code, such as "AL". The user picks a
-shift code for it before it can be saved.
+Text in a roster cell that cannot be a shift code because it is longer than two letters or not
+letters at all, such as "A/L" or "08-16". The user picks a shift code for it before it can be
+saved.
 _Avoid_: unknown code, raw code, invalid code
 
 **Review**:

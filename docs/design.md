@@ -110,7 +110,7 @@ The server refuses to start, with a message naming the variable, if a required o
 ```sql
 CREATE TABLE shifts (
   date       TEXT PRIMARY KEY,        -- 'YYYY-MM-DD', a local calendar date
-  code       TEXT,                    -- 'D','E','L','N','X'; NULL is reserved (see Sync protocol)
+  code       TEXT,                    -- 1-2 uppercase letters; NULL is reserved (see Sync protocol)
   note       TEXT NOT NULL DEFAULT '',
   edited_at  INTEGER NOT NULL,        -- client edit time, unix ms (last-write-wins key)
   rev        INTEGER NOT NULL         -- server revision of the last applied write
@@ -139,8 +139,11 @@ Defined once per side (`server/internal/store/codes.go`, `web/src/shifts/codes.t
 | L | Late | violet |
 | N | Night | indigo |
 | X | Day off | neutral / muted |
+| any other 1–2 letters | Other (the code itself is shown, e.g. `SE`) | teal |
 
-The server rejects any other code with `400`. Shifts have no times; see `docs/adr/0002-shifts-are-codes-not-times.md`.
+A shift code must match `^[A-Z]{1,2}$`; the five above are the standard codes and anything else
+that matches is an Other code (see `CONTEXT.md`). The client uppercases what the user types; the
+server rejects any code that doesn't match (lowercase, digits, three or more letters) with `400`. Shifts have no times; see `docs/adr/0002-shifts-are-codes-not-times.md`.
 
 ## Sync protocol
 
@@ -199,12 +202,14 @@ one device, this is enough. See `docs/adr/0001-offline-first-last-write-wins.md`
 ```
 
 - The prompt includes: `ROSTER_NAME`, today's date (for inferring missing years), the five
-  codes with meanings, that a shift belongs to the date it starts on (a Night shift running
+  standard codes with meanings, that a shift belongs to the date it starts on (a Night shift running
   past midnight is dated by its start, as rosters print it), and instructions to map synonyms
   (e.g. "OFF", "RDO" → `X`), to set
-  `code: null` with the original text in `rawCode` when a cell does not map, and to mark
+  return any other cell text of one or two letters as an Other code (uppercased, e.g. "se" →
+  `SE`), to set `code: null` with the original text in `rawCode` only when a cell can't be a code
+  (longer than two letters or not letters, e.g. "A/L"), and to mark
   low-confidence reads `uncertain`.
-- The server validates dates and codes, drops malformed entries into `warnings`, and returns
+- The server validates dates and codes (`^[A-Z]{1,2}$` or null), drops malformed entries into `warnings`, and returns
   `200` with the validated payload. Anthropic errors → `502` with a short message; timeout 90s.
 - Nothing is stored. The image is not kept.
 
@@ -214,7 +219,8 @@ one device, this is enough. See `docs/adr/0001-offline-first-last-write-wins.md`
 2. The review list shows each proposed date with: the existing shift (from IndexedDB), the
    proposed code, and a marker for new / changed / same / uncertain / unmapped.
 3. Each row has a checkbox (default checked for new and changed; unmapped rows default
-   unchecked and need a code picked to be included) and a code picker.
+   unchecked and need a code picked to be included) and a code picker (the five standard codes
+   plus Other).
 4. "Save N shifts" writes the selected rows as ordinary local edits (`editedAt = now`), which
    go through the outbox and sync like any other edit.
 5. Import requires being online; the screen shows an "Import needs a connection" state offline.
@@ -233,7 +239,8 @@ desktop.
     offline / sign-in needed), Import button.
   - Month grid, Monday-first, with previous/next month controls and a "Today" jump. Each date
     shows its shift code in a coloured chip; today is outlined; shifts with notes show a dot.
-  - Tapping a date opens the **edit sheet**: five code buttons, a note field, Save/Cancel. There
+  - Tapping a date opens the **edit sheet**: five standard code buttons plus "Other"
+    (a two-letter input), a note field, Save/Cancel. There
     is no "Clear"; choosing Day off (`X`) is how a shift is removed.
 - **Import**: as described above.
 
