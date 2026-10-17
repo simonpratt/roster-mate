@@ -27,11 +27,12 @@ import (
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	os.Exit(run(ctx, os.Getenv, os.Stderr))
+	os.Exit(run(ctx, os.Getenv, os.Stderr, nil))
 }
 
 // run starts the server and blocks until ctx is cancelled. It returns the process exit code.
-func run(ctx context.Context, getenv func(string) string, stderr io.Writer) int {
+// onListen, if set, is called with the bound address once the server is listening.
+func run(ctx context.Context, getenv func(string) string, stderr io.Writer, onListen func(net.Addr)) int {
 	log := slog.New(slog.NewTextHandler(stderr, nil))
 
 	cfg, err := config.Load(getenv)
@@ -55,13 +56,21 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer) int 
 
 	ex := extract.NewClaude(cfg.AnthropicAPIKey, cfg.AnthropicModel, cfg.RosterName, log)
 	srv := &http.Server{
-		Addr:              net.JoinHostPort("", strconv.Itoa(cfg.Port)),
 		Handler:           api.NewRouter(web.Handler(web.Dist()), a, st, ex),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
+	addr := net.JoinHostPort("", strconv.Itoa(cfg.Port))
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		fmt.Fprintf(stderr, "roster-mate: listening on %s: %v\n", addr, err)
+		return 1
+	}
+	log.Info("listening", "addr", ln.Addr().String(), "dataDir", cfg.DataDir, "model", cfg.AnthropicModel)
+	if onListen != nil {
+		onListen(ln.Addr())
+	}
 	errc := make(chan error, 1)
-	go func() { errc <- srv.ListenAndServe() }()
-	log.Info("listening", "addr", srv.Addr, "dataDir", cfg.DataDir, "model", cfg.AnthropicModel)
+	go func() { errc <- srv.Serve(ln) }()
 
 	select {
 	case err := <-errc:
