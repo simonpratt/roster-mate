@@ -162,7 +162,7 @@ cloud-off (offline). Icon-only buttons always carry an `aria-label`.
 - **Import** button: camera icon with visible label "Import". When offline it stays visible;
   the Import screen explains why it cannot proceed.
 - **Menu (⋮)**: a small popover with "Babysitters" (users icon, goes to `/babysitters`, §6.5)
-  above "Sign out" (`docs/designs/CalendarMenu.dc.html` shows Sign out only). With an
+  above "Sign out" (`docs/designs/CalendarMenu.dc.html`). With an
   empty outbox, Sign out goes straight to `/login`. Otherwise it opens a centred dialog
   (`docs/designs/CalendarSignOut.dc.html`): "Sign out?" / "You have N pending edits. Signing out
   keeps them on this phone, but they won't sync until you sign in again." [Cancel] [Sign out].

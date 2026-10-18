@@ -74,7 +74,7 @@ describe("Calendar month grid", () => {
     );
   });
 
-  it("marks event dots and dates that need a babysitter", async () => {
+  it("marks event dots and each date's babysitter with its avatar", async () => {
     stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
     await seed({
       "2026-11-10": "D", // past
@@ -83,11 +83,14 @@ describe("Calendar month grid", () => {
       "2026-11-17": "L",
       "2026-11-18": "X",
       "2026-11-21": "SE",
+      "2026-11-09": "N", // past, with a babysitter
       "2026-12-01": "N", // next month
       "2026-12-02": "D",
     });
     await db.babysitters.bulkPut([
+      { date: "2026-11-09", name: "Mel", confirmed: true, editedAt: 1 },
       { date: "2026-11-17", name: "Mum", confirmed: false, editedAt: 1 },
+      { date: "2026-11-24", name: "Mum", confirmed: true, editedAt: 1 }, // unrostered
       { date: "2026-12-02", name: "Dad", confirmed: true, editedAt: 1 },
       { date: "2026-11-21", name: "", confirmed: false, editedAt: 1 }, // cleared
     ]);
@@ -98,33 +101,62 @@ describe("Calendar month grid", () => {
 
     const cell = (name: string) => screen.findByRole("button", { name });
     const dots = (el: HTMLElement) => within(el).getByTestId("event-dots").children;
+    const avatar = (el: HTMLElement) => within(el).queryByTestId("babysitter-avatar");
 
     const today = await cell("Sunday 15 November, Early, no babysitter, today");
-    expect(today).toHaveClass("border-dashed", "border-warn", "bg-warn-fill", "ring-text");
+    expect(today).toHaveClass("border-text", "bg-surface", "ring-text");
+    expect(avatar(today)).toHaveAttribute("data-status", "needs");
+    expect(avatar(today)).toHaveClass("size-2", "bg-sitter-need", "ring-surface", "-top-0.75", "-right-0.75");
+    expect(avatar(today)).toHaveTextContent("");
     const needs = await cell("Monday 16 November, Day, no babysitter");
-    expect(needs).toHaveClass("border-dashed", "border-warn", "bg-warn-fill");
+    expect(needs).toHaveClass("border-cell-line", "bg-cell");
+    expect(avatar(needs)).toHaveClass("bg-sitter-need", "ring-cell");
     expect(dots(needs)).toHaveLength(0);
-    const minded = await cell("Tuesday 17 November, Late, babysitter Mum, 1 event");
-    expect(minded).not.toHaveClass("border-dashed");
-    expect(dots(minded)).toHaveLength(1);
-    expect(dots(minded)[0]).toHaveClass("bg-text");
-    expect(await cell("Saturday 21 November, SE, no babysitter")).toHaveClass("border-dashed");
-    expect(await cell("Wednesday 18 November, Day off")).not.toHaveClass("border-dashed");
-    const past = await cell("Tuesday 10 November, Day, 2 events");
-    expect(past).not.toHaveClass("border-dashed");
-    expect(dots(past)).toHaveLength(2);
+
+    // Tentative: dashed initials, 7 px past the chip's corner. Mum and Mel share an initial.
+    const tentative = await cell("Tuesday 17 November, Late, babysitter Mum, tentative, 1 event");
+    expect(avatar(tentative)).toHaveAttribute("data-status", "tentative");
+    expect(avatar(tentative)).toHaveClass("size-4", "border-dashed", "border-text-disabled", "bg-cell", "text-text-muted");
+    expect(avatar(tentative)).toHaveClass("-top-1.75", "-right-1.75");
+    expect(avatar(tentative)).toHaveTextContent(/^Mu$/);
+    expect(dots(tentative)).toHaveLength(1);
+    expect(dots(tentative)[0]).toHaveClass("bg-text");
+
+    // Confirmed, and on a past date too.
+    const past = await cell("Monday 9 November, Night, babysitter Mel, confirmed");
+    expect(avatar(past)).toHaveAttribute("data-status", "confirmed");
+    expect(avatar(past)).toHaveClass("bg-border-strong", "text-text");
+    expect(avatar(past)).not.toHaveClass("border-dashed");
+    expect(avatar(past)).toHaveTextContent(/^Me$/);
+
+    // An unrostered date with a babysitter: the avatar alone, centred where the chip would be.
+    const unrostered = await cell("Tuesday 24 November, no shift, babysitter Mum, confirmed");
+    expect(avatar(unrostered)).toHaveClass("top-1/2", "right-1/2");
+    expect(unrostered).toHaveTextContent(/^24Mu$/);
+
+    // No avatar: a day off, a past shift, a date with no shift.
+    expect(avatar(await cell("Wednesday 18 November, Day off"))).toBeNull();
+    const pastShift = await cell("Tuesday 10 November, Day, 2 events");
+    expect(avatar(pastShift)).toBeNull();
+    expect(dots(pastShift)).toHaveLength(2);
+    expect(avatar(await cell("Saturday 21 November, SE, no babysitter"))).toHaveAttribute("data-status", "needs");
     // At most four dots.
     const busy = await cell("Thursday 19 November, no shift, 6 events");
     expect(dots(busy)).toHaveLength(4);
-    // Outside the month: the dim border, no fill.
-    const next = await cell("Tuesday 1 December, Night, no babysitter");
-    expect(next).toHaveClass("border-dashed", "border-warn-dim");
-    expect(next).not.toHaveClass("bg-warn-fill");
-    expect(await cell("Wednesday 2 December, Day, babysitter Dad")).not.toHaveClass("border-dashed");
+    expect(avatar(busy)).toBeNull();
 
-    // The dashed border is on exactly the cells that need a babysitter.
+    // Outside the month: no fill, and the chip and avatar dimmed together, ringed in bg.
+    const next = await cell("Tuesday 1 December, Night, no babysitter");
+    expect(next).not.toHaveClass("bg-cell");
+    expect(avatar(next)).toHaveClass("ring-bg");
+    expect(avatar(next)!.parentElement).toHaveClass("opacity-45");
+    expect(avatar(await cell("Wednesday 2 December, Day, babysitter Dad, confirmed"))).toHaveTextContent(/^D$/);
+
+    // No cell has a dashed or warn border any more; the needs dot is on exactly the cells that need one.
     for (const c of within(screen.getByTestId("month-grid")).getAllByRole("button")) {
-      expect(c.classList.contains("border-dashed")).toBe(c.getAttribute("aria-label")!.includes("no babysitter"));
+      expect(c.className).not.toMatch(/dashed|warn/);
+      const needsDot = within(c).queryByTestId("babysitter-avatar")?.getAttribute("data-status") === "needs";
+      expect(needsDot).toBe(c.getAttribute("aria-label")!.includes("no babysitter"));
     }
     expect(screen.getAllByRole("button", { name: /no babysitter/ })).toHaveLength(4);
   });
@@ -248,6 +280,18 @@ describe("Sync pill and sign-in banner", () => {
     expect(screen.queryByText(BANNER)).not.toBeInTheDocument();
     await answerSync();
     expect(await screen.findByText("Synced")).toBeInTheDocument();
+  });
+});
+
+describe("Menu", () => {
+  it("shows Babysitters above Sign out, and Babysitters opens /babysitters", async () => {
+    stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
+    renderApp("/");
+    fireEvent.click(await screen.findByRole("button", { name: "More" }));
+    const items = within(screen.getByRole("menu", { name: "More" })).getAllByRole("menuitem");
+    expect(items.map((i) => i.textContent)).toEqual(["Babysitters", "Sign out"]);
+    fireEvent.click(items[0]!);
+    expect(await screen.findByRole("heading", { level: 1, name: "Babysitters" })).toBeInTheDocument();
   });
 });
 

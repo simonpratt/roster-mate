@@ -3,13 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "../db";
 import { sync } from "../sync/engine";
 import {
+  confirmBabysitter,
   knownBabysitters,
   needsBabysitter,
   saveDate,
   useBabysittersInRange,
   useDate,
+  useDatesNeedingBabysitter,
   useEventCounts,
   useKnownBabysitters,
+  useUpcomingBabysitters,
 } from "./repo";
 
 const ID_1 = "00000000-0000-4000-8000-000000000001";
@@ -153,6 +156,90 @@ describe("date queries", () => {
     const { result } = renderHook(() => useKnownBabysitters());
     await waitFor(() => expect(result.current).toEqual(["Dad", "Mum"]));
     expect(knownBabysitters(["nan", "Aunty Jo", "Nan"])).toEqual(["Aunty Jo", "nan"]);
+  });
+});
+
+describe("babysitter queries", () => {
+  const today = "2026-11-15";
+
+  beforeEach(async () => {
+    await db.shifts.bulkPut([
+      { date: "2026-11-14", code: "D", editedAt: 1 }, // past
+      { date: "2026-11-15", code: "E", editedAt: 1 },
+      { date: "2026-11-16", code: "X", editedAt: 1 }, // day off
+      { date: "2026-11-17", code: "L", editedAt: 1 },
+      { date: "2026-11-18", code: "SE", editedAt: 1 },
+      { date: "2026-11-19", code: null, editedAt: 1 }, // unrostered
+      { date: "2026-11-20", code: "N", editedAt: 1 },
+    ]);
+    await db.babysitters.bulkPut([
+      { date: "2026-11-14", name: "Mum", confirmed: false, editedAt: 1 },
+      { date: "2026-11-17", name: "Mum", confirmed: true, editedAt: 1 },
+      { date: "2026-11-18", name: "", confirmed: false, editedAt: 1 }, // cleared
+      { date: "2026-11-19", name: "Dad", confirmed: false, editedAt: 1 },
+      { date: "2026-11-21", name: "mum", confirmed: false, editedAt: 1 }, // no shift row at all
+    ]);
+  });
+
+  it("useUpcomingBabysitters gives each named babysitter from today on, with its shift code", async () => {
+    const { result } = renderHook(() => useUpcomingBabysitters(today));
+    await waitFor(() =>
+      expect(result.current).toEqual([
+        { date: "2026-11-17", name: "Mum", confirmed: true, code: "L" },
+        { date: "2026-11-19", name: "Dad", confirmed: false, code: null },
+        { date: "2026-11-21", name: "mum", confirmed: false, code: null },
+      ]),
+    );
+  });
+
+  it("useDatesNeedingBabysitter gives working shifts from today on with no named babysitter", async () => {
+    const { result } = renderHook(() => useDatesNeedingBabysitter(today));
+    await waitFor(() =>
+      expect(result.current).toEqual([
+        { date: "2026-11-15", code: "E" },
+        { date: "2026-11-18", code: "SE" },
+        { date: "2026-11-20", code: "N" },
+      ]),
+    );
+  });
+});
+
+describe("confirmBabysitter", () => {
+  it("confirms the matching tentative dates with one editedAt in one transaction, then syncs once", async () => {
+    await db.babysitters.bulkPut([
+      { date: "2026-11-14", name: "Mum", confirmed: false, editedAt: 1 }, // not asked for
+      { date: "2026-11-17", name: "Mum", confirmed: false, editedAt: 1 },
+      { date: "2026-11-18", name: "mum", confirmed: false, editedAt: 1 },
+      { date: "2026-11-19", name: "Dad", confirmed: false, editedAt: 1 }, // renamed since
+      { date: "2026-11-20", name: "Mum", confirmed: true, editedAt: 2 }, // already confirmed
+      { date: "2026-11-21", name: "", confirmed: false, editedAt: 1 }, // cleared
+    ]);
+    vi.spyOn(Date, "now").mockReturnValue(7000);
+    const transaction = vi.spyOn(db, "transaction");
+
+    await confirmBabysitter("Mum", ["2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20", "2026-11-21", "2026-11-22"]);
+
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(sync.trigger).toHaveBeenCalledTimes(1);
+    expect(await db.babysitters.toArray()).toEqual([
+      { date: "2026-11-14", name: "Mum", confirmed: false, editedAt: 1 },
+      { date: "2026-11-17", name: "Mum", confirmed: true, editedAt: 7000 },
+      { date: "2026-11-18", name: "mum", confirmed: true, editedAt: 7000 },
+      { date: "2026-11-19", name: "Dad", confirmed: false, editedAt: 1 },
+      { date: "2026-11-20", name: "Mum", confirmed: true, editedAt: 2 },
+      { date: "2026-11-21", name: "", confirmed: false, editedAt: 1 },
+    ]);
+    expect(await db.babysitterOutbox.toArray()).toEqual([
+      { date: "2026-11-17", name: "Mum", confirmed: true, editedAt: 7000 },
+      { date: "2026-11-18", name: "mum", confirmed: true, editedAt: 7000 },
+    ]);
+  });
+
+  it("writes nothing and doesn't sync when nothing matches", async () => {
+    await confirmBabysitter("Mum", ["2026-11-17"]);
+    expect(await db.babysitterOutbox.count()).toBe(0);
+    expect(sync.trigger).not.toHaveBeenCalled();
+    await expect(confirmBabysitter("Mum", ["17/11/2026"])).rejects.toThrow("invalid date");
   });
 });
 

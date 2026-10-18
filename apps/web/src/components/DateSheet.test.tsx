@@ -290,7 +290,7 @@ describe("Date sheet", () => {
       events: { added: ["Swimming"], changed: [{ id: "e1", text: "Dentist 4pm" }], removed: ["e2", "e3"] },
     });
     expect(
-      await screen.findByRole("button", { name: "Tuesday 24 November, Night, babysitter Mum, 2 events" }),
+      await screen.findByRole("button", { name: "Tuesday 24 November, Night, babysitter Mum, tentative, 2 events" }),
     ).toBeInTheDocument();
     expect((await db.events.where("date").equals("2026-11-24").sortBy("createdAt")).map((e) => e.text)).toEqual([
       "Dentist 4pm",
@@ -303,14 +303,14 @@ describe("Date sheet", () => {
   it("changes and clears the babysitter", async () => {
     await seed({ "2026-11-24": "N", "2026-11-25": "D" });
     await seedBabysitters({ "2026-11-24": "Mum", "2026-11-25": "Dad" });
-    let { sheet } = await openSheet("Tuesday 24 November, Night, babysitter Mum");
+    let { sheet } = await openSheet("Tuesday 24 November, Night, babysitter Mum, tentative");
     expect(sitterChip(sheet, "Mum")).toBeChecked();
     expect(saveButton(sheet)).toBeDisabled();
     fireEvent.click(sitterChip(sheet, "Dad"));
     fireEvent.click(saveButton(sheet));
-    expect(await screen.findByRole("button", { name: "Tuesday 24 November, Night, babysitter Dad" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Tuesday 24 November, Night, babysitter Dad, tentative" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Wednesday 25 November, Day, babysitter Dad" }));
+    fireEvent.click(screen.getByRole("button", { name: "Wednesday 25 November, Day, babysitter Dad, tentative" }));
     sheet = await screen.findByRole("dialog");
     fireEvent.click(sitterChip(sheet, "None"));
     fireEvent.click(saveButton(sheet));
@@ -325,7 +325,7 @@ describe("Date sheet", () => {
     await seed({ "2026-11-24": "N" });
     await seedBabysitters({ "2026-11-24": ["Mum", true], "2026-11-25": "Dad" });
     const confirmedSwitch = (sheet: HTMLElement) => within(sheet).queryByRole("switch", { name: "Confirmed" });
-    const { sheet } = await openSheet("Tuesday 24 November, Night, babysitter Mum");
+    const { sheet } = await openSheet("Tuesday 24 November, Night, babysitter Mum, confirmed");
 
     // Opens with the stored status; a different name starts tentative, and the stored one is back.
     expect(confirmedSwitch(sheet)).toHaveAttribute("aria-checked", "true");
@@ -367,7 +367,7 @@ describe("Date sheet", () => {
   it("confirms a tentative babysitter, and None on a confirmed date saves tentative", async () => {
     await seed({ "2026-11-24": "N", "2026-11-25": "D" });
     await seedBabysitters({ "2026-11-24": "Mum", "2026-11-25": ["Dad", true] });
-    let { sheet } = await openSheet("Tuesday 24 November, Night, babysitter Mum");
+    let { sheet } = await openSheet("Tuesday 24 November, Night, babysitter Mum, tentative");
     const confirmedSwitch = within(sheet).getByRole("switch", { name: "Confirmed" });
     expect(confirmedSwitch).toHaveAttribute("aria-checked", "false");
     fireEvent.click(confirmedSwitch);
@@ -375,7 +375,7 @@ describe("Date sheet", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(await db.babysitters.get("2026-11-24")).toMatchObject({ name: "Mum", confirmed: true });
 
-    fireEvent.click(screen.getByRole("button", { name: "Wednesday 25 November, Day, babysitter Dad" }));
+    fireEvent.click(screen.getByRole("button", { name: "Wednesday 25 November, Day, babysitter Dad, confirmed" }));
     sheet = await screen.findByRole("dialog");
     fireEvent.click(sitterChip(sheet, "None"));
     fireEvent.click(saveButton(sheet));
@@ -419,7 +419,7 @@ describe("Date sheet", () => {
       }),
     );
     expect(
-      await screen.findByRole("button", { name: "Thursday 26 November, no shift, babysitter Aunty Bec, 1 event" }),
+      await screen.findByRole("button", { name: "Thursday 26 November, no shift, babysitter Aunty Bec, tentative, 1 event" }),
     ).toBeInTheDocument();
     expect(await db.shifts.get("2026-11-26")).toBeUndefined();
     expect(await db.outbox.count()).toBe(0);

@@ -6,7 +6,6 @@ import { Button, buttonClassName } from "../components/Button";
 import {
   AlertTriangleIcon,
   CameraIcon,
-  ChevronLeftIcon,
   CloudOffIcon,
   HelpCircleIcon,
   ImageIcon,
@@ -15,6 +14,7 @@ import {
   WifiOffIcon,
 } from "../components/icons";
 import { ReviewList } from "../components/ReviewList";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { formatShortDate, monthOf } from "../lib/dates";
 import { downscaleImage } from "../lib/image";
 import { setShifts, useShiftsOn } from "../shifts/repo";
@@ -131,17 +131,7 @@ export function Import() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-app flex-col pt-[env(safe-area-inset-top)]">
-      <header className="flex h-15 flex-none items-center gap-1 py-2 pr-4 pl-1">
-        <button
-          type="button"
-          aria-label="Back to calendar"
-          onClick={back}
-          className="flex size-11 items-center justify-center rounded-field text-text-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-        >
-          <ChevronLeftIcon className="size-5.5" />
-        </button>
-        <h1 className="m-0 text-title">Import roster</h1>
-      </header>
+      <ScreenHeader title="Import roster" onBack={back} />
 
       {(stage.name === "checking" || stage.name === "pick") && (
         <PickStep checking={stage.name === "checking"} onPhoto={(e) => void onPhoto(e)} />

@@ -15,7 +15,7 @@ test("saves a date's shift, babysitter and event, and a second phone sees them @
   await expect(sheet).toBeHidden();
 
   const cell = decemberCell(page, 14);
-  await expect(cell).toHaveAccessibleName(/^\w+ 14 December, Night, babysitter Mum, \d+ events?$/);
+  await expect(cell).toHaveAccessibleName(/^\w+ 14 December, Night, babysitter Mum, (tentative|confirmed), \d+ events?$/);
   await expect(cell).toContainText("N");
   await expect(syncPill(page)).toHaveText("Synced");
   const shown = (await cell.getAttribute("aria-label"))!;

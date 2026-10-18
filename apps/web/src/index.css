@@ -23,7 +23,7 @@
   --color-failed: #ef4444;
   --color-ok: #34d399;
   --color-warn: #f5a524;
-  --color-warn-fill: #2a1f0a; /* a cell that needs a babysitter */
+  --color-sitter-need: #c98a2a; /* the needs-a-babysitter dot, "No babysitter" (§5.10, §6.5) */
   --color-focus: #7dd3fc;
 
   /* Further values from docs/designs/ (Login, Tokens) that the §4.1 table doesn't name. */
@@ -45,7 +45,6 @@
   --color-cell-line: #1c2027; /* calendar cell border */
   --color-cell-line-dim: #15181d; /* adjacent-month cell border */
   --color-text-dim: #5a616d; /* adjacent-month day numbers and event dots */
-  --color-warn-dim: #7a5512; /* an adjacent-month cell that needs a babysitter */
   --color-on-danger: #1a0a0d; /* text on the danger-filled Sign in button */
   --color-failed-surface: #2a1416; /* Sync failed pill */
   --color-failed-line: #5a2228;
@@ -124,8 +123,12 @@
   --text-label--line-height: 1.4;
   --text-footnote: 13px;
   --text-footnote--line-height: 1.5;
+  --text-initials: 8px; /* a babysitter avatar on a chip, §5.10 */
+  --text-initials--font-weight: 700;
   --text-caption: 12px;
   --text-caption--font-weight: 500;
+  --text-code-sm: 13px; /* shift code in a Babysitters row chip (Babysitters.dc.html) */
+  --text-code-sm--font-weight: 700;
   --text-code: 14px; /* shift code in a grid chip */
   --text-code--font-weight: 700;
   --text-code-lg: 20px; /* shift code in the next-shift chip */
@@ -146,6 +149,7 @@
   }
 
   /* Corner radii from the designs */
+  --radius-chip-sm: 9px; /* a Babysitters row chip (Babysitters.dc.html) */
   --radius-control: 10px;
   --radius-field: 12px;
   --radius-card: 14px;

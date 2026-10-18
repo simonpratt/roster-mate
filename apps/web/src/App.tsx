@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { getSession, UnauthorizedError } from "./api";
+import { Babysitters } from "./routes/Babysitters";
 import { Calendar } from "./routes/Calendar";
 import { Import } from "./routes/Import";
 import { Login } from "./routes/Login";
@@ -14,6 +15,7 @@ export function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/import" element={<Import />} />
+      <Route path="/babysitters" element={<Babysitters />} />
       <Route path="*" element={<Calendar />} />
     </Routes>
   );

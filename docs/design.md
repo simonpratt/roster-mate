@@ -73,7 +73,7 @@ package.json, pnpm-workspace.yaml, pnpm-lock.yaml   the pnpm workspace
   src/db                Dexie schema
   src/sync              sync engine
   src/shifts            shift codes, labels, colours (mirrors server)
-  src/routes            Login, Calendar, Import
+  src/routes            Login, Calendar, Import, Babysitters
 /test/e2e               Playwright suite (own workspace package, roster-mate-e2e)
   playwright.config.ts  phone project, webServer for the binary and the fake Claude
   fixtures/             test (reset + clock), env, files/roster.jpg

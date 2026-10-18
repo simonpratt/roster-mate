@@ -10,7 +10,7 @@ import { CameraIcon } from "../components/icons";
 import { MonthGrid } from "../components/MonthGrid";
 import { NextShift } from "../components/NextShift";
 import { SyncIndicator } from "../components/SyncIndicator";
-import { useBabysittersInRange, useEventCounts } from "../dates/repo";
+import { useBabysittersInRange, useEventCounts, useKnownBabysitters } from "../dates/repo";
 import { monthGridDates, monthOf, type DateString } from "../lib/dates";
 import { useToday } from "../lib/useToday";
 import { useHasLocalShifts, useNextShift, useShiftsInRange } from "../shifts/repo";
@@ -30,6 +30,7 @@ export function Calendar() {
   const shifts = useShiftsInRange(first, last);
   const eventCounts = useEventCounts(first, last);
   const babysitters = useBabysittersInRange(first, last);
+  const knownBabysitters = useKnownBabysitters();
   const next = useNextShift(today);
   const hasShifts = useHasLocalShifts();
   const { status } = useSyncStatus();
@@ -109,6 +110,7 @@ export function Calendar() {
         shifts={shifts}
         eventCounts={eventCounts}
         babysitters={babysitters}
+        knownBabysitters={knownBabysitters ?? NONE}
         onMonthChange={setMonth}
         onSelectDay={setEditing}
       />
@@ -140,6 +142,8 @@ export function Calendar() {
     </main>
   );
 }
+
+const NONE: string[] = [];
 
 // The count can reach 0 while the dialog is open, if a sync finishes; it still reads as one.
 function pendingEditsText(count: number): string {

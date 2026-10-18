@@ -2,23 +2,22 @@ import { useMemo, useRef, type TouchEvent } from "react";
 import {
   addMonths,
   dayOfMonth,
-  formatLongDate,
   formatMonth,
   monthGridDates,
   monthOf,
   type DateString,
   type MonthString,
 } from "../lib/dates";
-import { needsBabysitter, type BabysitterStatus } from "../dates/repo";
-import { codeInfo } from "../shifts/codes";
+import { babysitterInitials, dateLabel } from "../dates/babysitters";
+import { NO_BABYSITTER, needsBabysitter, type BabysitterStatus } from "../dates/repo";
 import type { Shift } from "../shifts/repo";
-import { CodeChip } from "./CodeChip";
+import { ChipWithAvatar, type AvatarStatus } from "./BabysitterAvatar";
 import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 
 // The month grid, docs/ux-spec.md §5.3 and docs/designs/Main.dc.html: month controls, a
 // Monday-first weekday row and six rows of date cells. Each cell is a button showing the date
-// number, the shift's code chip and a row of event dots; a dashed amber border marks a date that
-// needs a babysitter.
+// number, the shift's code chip with the babysitter avatar on its corner (§5.10), and a row of
+// event dots. The cell's border and fill never depend on the babysitter.
 type MonthGridProps = {
   month: MonthString;
   today: DateString;
@@ -28,6 +27,8 @@ type MonthGridProps = {
   eventCounts: Map<string, number> | undefined;
   /** The babysitter on each date that has one; undefined while loading. */
   babysitters: Map<string, BabysitterStatus> | undefined;
+  /** Every known babysitter name, for telling initials apart. */
+  knownBabysitters: readonly string[];
   onMonthChange: (month: MonthString) => void;
   onSelectDay: (date: DateString) => void;
 };
@@ -48,6 +49,7 @@ export function MonthGrid({
   shifts,
   eventCounts,
   babysitters,
+  knownBabysitters,
   onMonthChange,
   onSelectDay,
 }: MonthGridProps) {
@@ -118,8 +120,9 @@ export function MonthGrid({
             date={date}
             shift={byDate.get(date)}
             events={eventCounts?.get(date) ?? 0}
-            babysitter={babysitters?.get(date)?.name ?? ""}
-            // Unmarked until the babysitters have loaded, so a cell doesn't flash amber.
+            babysitter={babysitters?.get(date) ?? NO_BABYSITTER}
+            known={knownBabysitters}
+            // Unmarked until the babysitters have loaded, so a cell doesn't flash the amber dot.
             needsBabysitter={babysitters !== undefined && needsBabysitter(byDate.get(date), babysitters.get(date)?.name ?? "", date, today)}
             inMonth={monthOf(date) === month}
             today={today}
@@ -135,29 +138,22 @@ type DayCellProps = {
   date: DateString;
   shift: Shift | undefined;
   events: number;
-  /** The babysitter's name, or "" for none. */
-  babysitter: string;
+  /** The babysitter, or NO_BABYSITTER for none. */
+  babysitter: BabysitterStatus;
+  known: readonly string[];
   needsBabysitter: boolean;
   inMonth: boolean;
   today: DateString;
   onSelect: (date: DateString) => void;
 };
 
-function DayCell({ date, shift, events, babysitter, needsBabysitter, inMonth, today, onSelect }: DayCellProps) {
+function DayCell({ date, shift, events, babysitter, known, needsBabysitter, inMonth, today, onSelect }: DayCellProps) {
   const isToday = date === today;
-  const name =
-    formatLongDate(date) +
-    ", " +
-    (shift ? codeInfo(shift.code).label : "no shift") +
-    (babysitter ? `, babysitter ${babysitter}` : needsBabysitter ? ", no babysitter" : "") +
-    (events === 0 ? "" : events === 1 ? ", 1 event" : `, ${events} events`) +
-    (isToday ? ", today" : "");
+  const code = shift?.code ?? null;
+  const name = dateLabel({ date, code, babysitter, needsBabysitter, events, today });
 
-  // Needs a babysitter: the dashed border stays outside, and today's ring sits inside it.
-  const border = needsBabysitter
-    ? `border-[1.5px] border-dashed ${inMonth ? "border-warn" : "border-warn-dim"}`
-    : `border ${isToday ? "border-text" : inMonth ? "border-cell-line" : "border-cell-line-dim"}`;
-  const fill = !inMonth ? "" : needsBabysitter ? "bg-warn-fill" : isToday ? "bg-surface" : "bg-cell";
+  const border = `border ${isToday ? "border-text" : inMonth ? "border-cell-line" : "border-cell-line-dim"}`;
+  const fill = !inMonth ? "" : isToday ? "bg-surface" : "bg-cell";
   const cell = `${border} ${fill} ${isToday ? "ring-1 ring-inset ring-text" : ""}`;
   const number = !inMonth
     ? "text-text-dim"
@@ -166,6 +162,13 @@ function DayCell({ date, shift, events, babysitter, needsBabysitter, inMonth, to
       : date < today
         ? "text-text-disabled"
         : "text-text-soft";
+  const status: AvatarStatus | null = babysitter.name
+    ? babysitter.confirmed
+      ? "confirmed"
+      : "tentative"
+    : needsBabysitter
+      ? "needs"
+      : null;
 
   return (
     <button
@@ -177,8 +180,14 @@ function DayCell({ date, shift, events, babysitter, needsBabysitter, inMonth, to
       className={`flex h-17.5 min-w-0 flex-col items-center justify-between rounded-field pt-1.5 pb-1.75 ${cell} ${focus}`}
     >
       <span className={`font-mono text-caption tabular-nums ${number}`}>{dayOfMonth(date)}</span>
-      {shift ? (
-        <CodeChip code={shift.code} size="grid" className={inMonth ? "" : "opacity-45"} />
+      {code || status ? (
+        <ChipWithAvatar
+          code={code}
+          size="grid"
+          avatar={status && { status, initials: babysitterInitials(babysitter.name, known) }}
+          ring={!inMonth ? "bg" : isToday ? "surface" : "cell"}
+          className={inMonth ? "" : "opacity-45"}
+        />
       ) : (
         <span className="h-8" />
       )}

@@ -8,6 +8,7 @@ import { newId } from "../lib/uuid";
 import type { ShiftCode } from "../shifts/codes";
 import { checkCode, checkDate, toShift, type Shift } from "../shifts/repo";
 import { sync } from "../sync/engine";
+import type { DatedBabysitter } from "./babysitters";
 
 /** An event on a date, as the UI shows it. */
 export interface Event {
@@ -191,4 +192,56 @@ export function needsBabysitter(
   today: string,
 ): boolean {
   return !!shift && shift.code !== "X" && date >= today && babysitter === "";
+}
+
+/**
+ * Every babysitter dated today or later, with its date's shift code, in date order; undefined
+ * while loading. Dates whose babysitter was cleared (name "") are left out.
+ */
+export function useUpcomingBabysitters(today: string): DatedBabysitter[] | undefined {
+  return useLiveQuery(async () => {
+    const rows = (await db.babysitters.where("date").aboveOrEqual(today).toArray()).filter((b) => b.name !== "");
+    const shifts = await db.shifts.bulkGet(rows.map((b) => b.date));
+    return rows.map((b, i) => ({
+      date: b.date,
+      name: b.name,
+      confirmed: b.confirmed,
+      code: toShift(shifts[i])?.code ?? null,
+    }));
+  }, [today]);
+}
+
+/** Every date from today on that needs a babysitter, as its shift, in date order; undefined while loading. */
+export function useDatesNeedingBabysitter(today: string): Shift[] | undefined {
+  return useLiveQuery(async () => {
+    const shifts = (await db.shifts.where("date").aboveOrEqual(today).toArray())
+      .map(toShift)
+      .filter((s): s is Shift => s !== undefined);
+    const sitters = await db.babysitters.bulkGet(shifts.map((s) => s.date));
+    return shifts.filter((s, i) => needsBabysitter(s, sitters[i]?.name ?? "", s.date, today));
+  }, [today]);
+}
+
+/**
+ * Confirms a babysitter on the given dates in one save: one editedAt, one transaction over
+ * `babysitters` and `babysitterOutbox`, then one sync. Each date keeps its stored spelling of the
+ * name. A date whose stored name no longer matches (ignoring case), or that is already confirmed,
+ * is left alone.
+ */
+export async function confirmBabysitter(name: string, dates: readonly string[]): Promise<void> {
+  dates.forEach(checkDate);
+  const key = name.trim().toLocaleLowerCase();
+  const editedAt = Date.now();
+  let changed = 0;
+  await db.transaction("rw", db.babysitters, db.babysitterOutbox, async () => {
+    const rows = await db.babysitters.bulkGet([...dates]);
+    for (const row of rows) {
+      if (!row || row.name === "" || row.name.toLocaleLowerCase() !== key || row.confirmed) continue;
+      const next = { date: row.date, name: row.name, confirmed: true, editedAt };
+      await db.babysitters.put(next);
+      await db.babysitterOutbox.put(next);
+      changed++;
+    }
+  });
+  if (changed > 0) void sync.trigger();
 }
