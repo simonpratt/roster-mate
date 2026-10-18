@@ -144,7 +144,8 @@ CREATE TABLE babysitters (
   date       TEXT PRIMARY KEY,        -- 'YYYY-MM-DD'; at most one babysitter per date
   name       TEXT NOT NULL,           -- '' = no babysitter
   edited_at  INTEGER NOT NULL,
-  rev        INTEGER NOT NULL
+  rev        INTEGER NOT NULL,
+  confirmed  INTEGER NOT NULL DEFAULT 0 -- 1 = confirmed, 0 = tentative (migration 0004)
 );
 CREATE INDEX babysitters_rev ON babysitters(rev);
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);  -- 'rev', 'db_id', 'session_secret', 'schema_version'
@@ -153,7 +154,8 @@ CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);  -- 'rev', 'db_id
 Migrations are ordered SQL files embedded in the binary and applied at startup. Migration 0003
 added `events` and `babysitters` and dropped the shift `note` column; existing notes were not
 carried over. Events and babysitters are records of their own, not fields on a shift; see
-`docs/adr/0003-events-and-babysitters-sync-separately.md`.
+`docs/adr/0003-events-and-babysitters-sync-separately.md`. Migration 0004 added the babysitter's
+`confirmed` column; existing babysitters became tentative and kept their `rev`.
 
 ### Client (Dexie / IndexedDB)
 
@@ -164,12 +166,14 @@ carried over. Events and babysitters are records of their own, not fields on a s
   events only: removing an event deletes its row and queues a tombstone in `eventOutbox`, and a
   pulled tombstone deletes the row.
 - `eventOutbox`: `{id, date, text, deleted, createdAt, editedAt}` keyed by `id`.
-- `babysitters`: `{date, name, editedAt, rev}` keyed by `date`; `name: ''` is no babysitter.
-- `babysitterOutbox`: `{date, name, editedAt}` keyed by `date`.
+- `babysitters`: `{date, name, confirmed, editedAt, rev}` keyed by `date`; `name: ''` is no
+  babysitter, and `confirmed: false` is tentative.
+- `babysitterOutbox`: `{date, name, confirmed, editedAt}` keyed by `date`.
 - `meta`: `{key: 'lastRev', value}` and `{key: 'dbId', value}`.
 
 Dexie version 2 added the four event and babysitter tables and stripped `note` from existing
-`shifts` and `outbox` rows. The UI reaches them through `apps/web/src/dates/repo.ts`, whose
+`shifts` and `outbox` rows. Dexie version 3 has no index changes; its upgrade sets
+`confirmed: false` on every `babysitters` and `babysitterOutbox` row. The UI reaches them through `apps/web/src/dates/repo.ts`, whose
 `saveDate` writes a date's code, babysitter and events with one `editedAt` in one transaction.
 Event ids come from `crypto.randomUUID()`, or `crypto.getRandomValues` over plain HTTP where
 `randomUUID` is missing.
@@ -204,11 +208,14 @@ Single endpoint, one round trip:
   "events": [ { "id": "0b6f3e1c-2f4a-4c1d-9e8b-1a2b3c4d5e6f", "date": "2026-11-03",
                 "text": "Dentist 3pm", "deleted": false,
                 "createdAt": 1760400000000, "editedAt": 1760500002000 } ],
-  "babysitters": [ { "date": "2026-11-03", "name": "Mum", "editedAt": 1760500003000 } ] }
+  "babysitters": [ { "date": "2026-11-03", "name": "Mum", "confirmed": true,
+                     "editedAt": 1760500003000 } ] }
 ```
 
-`events` and `babysitters` are optional (absent means none). A `note` in a change, sent by an
-older cached client, is ignored.
+`events` and `babysitters` are optional (absent means none). A babysitter's `confirmed` is an
+optional boolean, `false` (tentative) when absent. A `note` in a change, sent by an older cached
+client, is ignored. Clients always send `confirmed: false` with `name: ""`; the server stores
+whatever it is sent.
 
 Response:
 
@@ -217,10 +224,12 @@ Response:
   "shifts": [ { "date": "2026-11-03", "code": "L", "editedAt": 1760500000000, "rev": 42 }, ... ],
   "events": [ { "id": "0b6f3e1c-…", "date": "2026-11-03", "text": "Dentist 3pm", "deleted": false,
                 "createdAt": 1760400000000, "editedAt": 1760500002000, "rev": 43 }, ... ],
-  "babysitters": [ { "date": "2026-11-03", "name": "Mum", "editedAt": 1760500003000, "rev": 44 }, ... ] }
+  "babysitters": [ { "date": "2026-11-03", "name": "Mum", "confirmed": true,
+                     "editedAt": 1760500003000, "rev": 44 }, ... ] }
 ```
 
-`shifts`, `events` and `babysitters` are always present, `[]` when empty.
+`shifts`, `events` and `babysitters` are always present, `[]` when empty, and every babysitter
+carries `confirmed`.
 
 Server rules, all in one transaction:
 
@@ -238,7 +247,8 @@ the row as a tombstone so the deletion reaches other devices; tombstones are nev
 Validation happens before anything is written, and a request with any invalid item applies none
 of them (`400 {"error": …}`): `since` ≥ 0; at most 1000 items across `changes`, `events` and
 `babysitters`; every `date` is `YYYY-MM-DD`; `code` is `null` or matches `^[A-Z]{1,2}$`; an event
-`id` is a canonical lowercase UUID; `text` is at most 200 characters and `name` at most 40
+`id` is a canonical lowercase UUID; a babysitter's `confirmed`, if present, is a boolean; `text`
+is at most 200 characters and `name` at most 40
 (Unicode code points; the client trims them, the server only checks length); `createdAt` and
 `editedAt` > 0. Without a valid session the call returns `401`.
 
@@ -341,7 +351,8 @@ desktop.
     shows its shift code in a coloured chip and one dot per event (at most 4); today is outlined;
     a date that needs a babysitter has a dashed `warn` border (`docs/ux-spec.md` §5.3).
   - Tapping a date opens the **date sheet**: five standard code buttons plus "Other"
-    (a two-letter input), the babysitter picker and the date's events, Save/Cancel. There is no
+    (a two-letter input), the babysitter picker with its Confirmed switch and the date's events,
+    Save/Cancel. There is no
     note field and no "Clear"; choosing Day off (`X`) is how a shift is removed.
 - **Import**: as described above.
 

@@ -36,7 +36,7 @@ describe("saveDate", () => {
 
     await saveDate("2026-11-03", {
       code: "L",
-      babysitter: "  Mum ",
+      babysitter: { name: "  Mum ", confirmed: true },
       events: { added: [" School concert "], changed: [{ id: ID_1, text: "Dentist 4pm " }], removed: [ID_2] },
     });
 
@@ -44,8 +44,13 @@ describe("saveDate", () => {
     expect(sync.trigger).toHaveBeenCalledTimes(1);
     expect(await db.shifts.get("2026-11-03")).toEqual({ date: "2026-11-03", code: "L", editedAt: 5000 });
     expect(await db.outbox.get("2026-11-03")).toEqual({ date: "2026-11-03", code: "L", editedAt: 5000 });
-    expect(await db.babysitters.get("2026-11-03")).toEqual({ date: "2026-11-03", name: "Mum", editedAt: 5000 });
-    expect(await db.babysitterOutbox.get("2026-11-03")).toEqual({ date: "2026-11-03", name: "Mum", editedAt: 5000 });
+    expect(await db.babysitters.get("2026-11-03")).toEqual({ date: "2026-11-03", name: "Mum", confirmed: true, editedAt: 5000 });
+    expect(await db.babysitterOutbox.get("2026-11-03")).toEqual({
+      date: "2026-11-03",
+      name: "Mum",
+      confirmed: true,
+      editedAt: 5000,
+    });
 
     const events = await db.events.toArray();
     const added = events.find((e) => e.id !== ID_1)!;
@@ -68,8 +73,8 @@ describe("saveDate", () => {
   });
 
   it("writes only the parts given", async () => {
-    await saveDate("2026-11-03", { babysitter: "" });
-    expect(await db.babysitters.get("2026-11-03")).toMatchObject({ name: "" });
+    await saveDate("2026-11-03", { babysitter: { name: "", confirmed: false } });
+    expect(await db.babysitters.get("2026-11-03")).toMatchObject({ name: "", confirmed: false });
     expect(await db.shifts.count()).toBe(0);
     expect(await db.outbox.count()).toBe(0);
     expect(await db.eventOutbox.count()).toBe(0);
@@ -80,7 +85,7 @@ describe("saveDate", () => {
     await expect(saveDate("2026-11-03", { code: "l" as never })).rejects.toThrow("invalid shift code");
     await expect(saveDate("2026-11-03", { code: "L", events: { added: ["  "] } })).rejects.toThrow("empty");
     await expect(saveDate("2026-11-03", { events: { added: ["a".repeat(201)] } })).rejects.toThrow("longer");
-    await expect(saveDate("2026-11-03", { babysitter: "b".repeat(41) })).rejects.toThrow("longer");
+    await expect(saveDate("2026-11-03", { babysitter: { name: "b".repeat(41), confirmed: false } })).rejects.toThrow("longer");
     expect(await db.shifts.count()).toBe(0);
     expect(await db.events.count()).toBe(0);
     expect(sync.trigger).not.toHaveBeenCalled();
@@ -90,7 +95,7 @@ describe("saveDate", () => {
 describe("date queries", () => {
   it("useDate gives the shift, babysitter and events in the order they were added", async () => {
     await db.shifts.put({ date: "2026-11-03", code: "E", editedAt: 1 });
-    await db.babysitters.put({ date: "2026-11-03", name: "Mum", editedAt: 1 });
+    await db.babysitters.put({ date: "2026-11-03", name: "Mum", confirmed: true, editedAt: 1 });
     await db.events.bulkPut([
       { id: ID_2, date: "2026-11-03", text: "Second", createdAt: 200, editedAt: 1 },
       { id: ID_1, date: "2026-11-03", text: "First", createdAt: 100, editedAt: 1 },
@@ -100,7 +105,7 @@ describe("date queries", () => {
     await waitFor(() =>
       expect(result.current).toEqual({
         shift: { date: "2026-11-03", code: "E" },
-        babysitter: "Mum",
+        babysitter: { name: "Mum", confirmed: true },
         events: [
           { id: ID_1, date: "2026-11-03", text: "First", createdAt: 100 },
           { id: ID_2, date: "2026-11-03", text: "Second", createdAt: 200 },
@@ -108,7 +113,7 @@ describe("date queries", () => {
       }),
     );
     rerender({ date: "2026-11-05" });
-    await waitFor(() => expect(result.current).toEqual({ shift: null, babysitter: "", events: [] }));
+    await waitFor(() => expect(result.current).toEqual({ shift: null, babysitter: { name: "", confirmed: false }, events: [] }));
   });
 
   it("useEventCounts and useBabysittersInRange cover the range, with named babysitters only", async () => {
@@ -119,9 +124,9 @@ describe("date queries", () => {
       { id: "00000000-0000-4000-8000-000000000004", date: "2026-12-01", text: "d", createdAt: 1, editedAt: 1 },
     ]);
     await db.babysitters.bulkPut([
-      { date: "2026-11-03", name: "Mum", editedAt: 1 },
-      { date: "2026-11-04", name: "", editedAt: 1 },
-      { date: "2026-12-01", name: "Dad", editedAt: 1 },
+      { date: "2026-11-03", name: "Mum", confirmed: true, editedAt: 1 },
+      { date: "2026-11-04", name: "", confirmed: false, editedAt: 1 },
+      { date: "2026-12-01", name: "Dad", confirmed: false, editedAt: 1 },
     ]);
     const { result } = renderHook(() => ({
       counts: useEventCounts("2026-11-01", "2026-11-30"),
@@ -133,17 +138,17 @@ describe("date queries", () => {
           ["2026-11-03", 2],
           ["2026-11-30", 1],
         ]),
-        sitters: new Map([["2026-11-03", "Mum"]]),
+        sitters: new Map([["2026-11-03", { name: "Mum", confirmed: true }]]),
       }),
     );
   });
 
   it("useKnownBabysitters gives each name once, ignoring case, sorted A–Z", async () => {
     await db.babysitters.bulkPut([
-      { date: "2026-11-03", name: "Mum", editedAt: 1 },
-      { date: "2026-11-04", name: "mum", editedAt: 1 },
-      { date: "2026-11-05", name: "Dad", editedAt: 1 },
-      { date: "2026-11-06", name: "", editedAt: 1 },
+      { date: "2026-11-03", name: "Mum", confirmed: false, editedAt: 1 },
+      { date: "2026-11-04", name: "mum", confirmed: false, editedAt: 1 },
+      { date: "2026-11-05", name: "Dad", confirmed: false, editedAt: 1 },
+      { date: "2026-11-06", name: "", confirmed: false, editedAt: 1 },
     ]);
     const { result } = renderHook(() => useKnownBabysitters());
     await waitFor(() => expect(result.current).toEqual(["Dad", "Mum"]));

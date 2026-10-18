@@ -79,7 +79,7 @@ describe("Import review", () => {
     await seed({ "2026-12-08": "X", "2026-12-09": "N" });
     // The dates' events and babysitters are records of their own, which an import leaves alone.
     await db.events.put({ id: EVENT_ID, date: "2026-12-08", text: "Dentist 3pm", createdAt: 5, editedAt: 5, rev: 1 });
-    await db.babysitters.put({ date: "2026-12-08", name: "Mum", editedAt: 5, rev: 2 });
+    await db.babysitters.put({ date: "2026-12-08", name: "Mum", confirmed: false, editedAt: 5, rev: 2 });
     renderApp("/import");
     await choosePhoto();
     expect(await screen.findByRole("heading", { name: "6 shifts found" })).toBeInTheDocument();
@@ -144,7 +144,7 @@ describe("Import review", () => {
     expect(await db.events.toArray()).toEqual([
       { id: EVENT_ID, date: "2026-12-08", text: "Dentist 3pm", createdAt: 5, editedAt: 5, rev: 1 },
     ]);
-    expect(await db.babysitters.toArray()).toEqual([{ date: "2026-12-08", name: "Mum", editedAt: 5, rev: 2 }]);
+    expect(await db.babysitters.toArray()).toEqual([{ date: "2026-12-08", name: "Mum", confirmed: false, editedAt: 5, rev: 2 }]);
     expect(await db.eventOutbox.count()).toBe(0);
     expect(await db.babysitterOutbox.count()).toBe(0);
   });

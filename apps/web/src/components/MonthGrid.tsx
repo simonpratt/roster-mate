@@ -9,7 +9,7 @@ import {
   type DateString,
   type MonthString,
 } from "../lib/dates";
-import { needsBabysitter } from "../dates/repo";
+import { needsBabysitter, type BabysitterStatus } from "../dates/repo";
 import { codeInfo } from "../shifts/codes";
 import type { Shift } from "../shifts/repo";
 import { CodeChip } from "./CodeChip";
@@ -27,7 +27,7 @@ type MonthGridProps = {
   /** The number of events on each date that has any; undefined while loading. */
   eventCounts: Map<string, number> | undefined;
   /** The babysitter on each date that has one; undefined while loading. */
-  babysitters: Map<string, string> | undefined;
+  babysitters: Map<string, BabysitterStatus> | undefined;
   onMonthChange: (month: MonthString) => void;
   onSelectDay: (date: DateString) => void;
 };
@@ -118,9 +118,9 @@ export function MonthGrid({
             date={date}
             shift={byDate.get(date)}
             events={eventCounts?.get(date) ?? 0}
-            babysitter={babysitters?.get(date) ?? ""}
+            babysitter={babysitters?.get(date)?.name ?? ""}
             // Unmarked until the babysitters have loaded, so a cell doesn't flash amber.
-            needsBabysitter={babysitters !== undefined && needsBabysitter(byDate.get(date), babysitters.get(date) ?? "", date, today)}
+            needsBabysitter={babysitters !== undefined && needsBabysitter(byDate.get(date), babysitters.get(date)?.name ?? "", date, today)}
             inMonth={monthOf(date) === month}
             today={today}
             onSelect={onSelectDay}

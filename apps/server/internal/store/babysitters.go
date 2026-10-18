@@ -6,22 +6,24 @@ import (
 	"fmt"
 )
 
-// Babysitter is the babysitter named for one date. An empty Name means no babysitter.
+// Babysitter is the babysitter named for one date. An empty Name means no babysitter. Confirmed
+// is false for a tentative babysitter.
 type Babysitter struct {
-	Date     string
-	Name     string
-	EditedAt int64
-	Rev      int64
+	Date      string
+	Name      string
+	Confirmed bool
+	EditedAt  int64
+	Rev       int64
 }
 
 func applyBabysitters(ctx context.Context, tx *sql.Tx, rev *int64, babysitters []Babysitter) error {
 	for _, b := range babysitters {
 		if err := applyLWW(ctx, tx, rev, "babysitter "+b.Date,
 			`SELECT edited_at FROM babysitters WHERE date = ?`, []any{b.Date}, b.EditedAt,
-			`INSERT INTO babysitters (date, name, edited_at, rev) VALUES (?, ?, ?, ?)
-			 ON CONFLICT (date) DO UPDATE SET name = excluded.name,
+			`INSERT INTO babysitters (date, name, confirmed, edited_at, rev) VALUES (?, ?, ?, ?, ?)
+			 ON CONFLICT (date) DO UPDATE SET name = excluded.name, confirmed = excluded.confirmed,
 			   edited_at = excluded.edited_at, rev = excluded.rev`,
-			b.Date, b.Name, b.EditedAt); err != nil {
+			b.Date, b.Name, b.Confirmed, b.EditedAt); err != nil {
 			return err
 		}
 	}
@@ -30,7 +32,7 @@ func applyBabysitters(ctx context.Context, tx *sql.Tx, rev *int64, babysitters [
 
 func babysittersAfter(ctx context.Context, tx *sql.Tx, rev int64) ([]Babysitter, error) {
 	rows, err := tx.QueryContext(ctx,
-		`SELECT date, name, edited_at, rev FROM babysitters WHERE rev > ? ORDER BY rev`, rev)
+		`SELECT date, name, confirmed, edited_at, rev FROM babysitters WHERE rev > ? ORDER BY rev`, rev)
 	if err != nil {
 		return nil, fmt.Errorf("read babysitters: %w", err)
 	}
@@ -38,7 +40,7 @@ func babysittersAfter(ctx context.Context, tx *sql.Tx, rev int64) ([]Babysitter,
 	babysitters := []Babysitter{}
 	for rows.Next() {
 		var b Babysitter
-		if err := rows.Scan(&b.Date, &b.Name, &b.EditedAt, &b.Rev); err != nil {
+		if err := rows.Scan(&b.Date, &b.Name, &b.Confirmed, &b.EditedAt, &b.Rev); err != nil {
 			return nil, fmt.Errorf("read babysitters: %w", err)
 		}
 		babysitters = append(babysitters, b)

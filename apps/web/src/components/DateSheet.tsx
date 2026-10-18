@@ -9,9 +9,10 @@ import { CodePicker, pickedCode, pickerValueFor, type PickerValue } from "./Code
 import { EventList, eventChanges, eventDraftsFor, type EventDraft } from "./EventList";
 
 // The date sheet, docs/ux-spec.md §6.3 and docs/designs/EditSheet.dc.html,
-// DateSheetNewSitter.dc.html and DateSheetUnrostered.dc.html (markup in Main.dc.html): the date,
-// its shift now, the code picker, the babysitter, the events, Cancel and Save. Save writes what
-// changed locally through saveDate (pending edits) and closes; the grid updates from IndexedDB.
+// DateSheetNewSitter.dc.html, DateSheetConfirmed.dc.html and DateSheetUnrostered.dc.html (markup in
+// Main.dc.html): the date, its shift now, the code picker, the babysitter with its Confirmed
+// switch, the events, Cancel and Save. Save writes what changed locally through saveDate (pending
+// edits) and closes; the grid updates from IndexedDB.
 type DateSheetProps = {
   date: DateString;
   today: DateString;
@@ -39,7 +40,10 @@ function DateForm({ date, today, contents, known, onClose }: DateFormProps) {
   // so a part the user left alone keeps whatever a sync brought in.
   const [initial] = useState(contents);
   const [picker, setPicker] = useState<PickerValue>(() => pickerValueFor(initial.shift?.code ?? null));
-  const [sitter, setSitter] = useState<BabysitterValue>(() => babysitterValueFor(initial.babysitter));
+  const [sitter, setSitter] = useState<BabysitterValue>(() => babysitterValueFor(initial.babysitter.name));
+  // The Confirmed switch as last toggled, and for which name (lower case). Another name picked
+  // since makes it moot: the switch then shows that name's stored status, off for a new name.
+  const [toggled, setToggled] = useState<{ key: string; on: boolean } | null>(null);
   const [events, setEvents] = useState<EventDraft[]>(() => eventDraftsFor(initial.events));
   const [saving, setSaving] = useState(false);
 
@@ -51,7 +55,15 @@ function DateForm({ date, today, contents, known, onClose }: DateFormProps) {
   // code needs its letters, and Someone else needs a name.
   const valid = (code === null || isValidCode(code)) && name !== null;
   const codeChanged = code !== null && code !== initial.shift?.code;
-  const sitterChanged = name !== null && name !== initial.babysitter;
+  const nameKey = name?.toLocaleLowerCase() ?? "";
+  const confirmed =
+    name === null || name === ""
+      ? false
+      : toggled?.key === nameKey
+        ? toggled.on
+        : nameKey === initial.babysitter.name.toLocaleLowerCase() && initial.babysitter.confirmed;
+  const sitterChanged =
+    name !== null && (name !== initial.babysitter.name || confirmed !== initial.babysitter.confirmed);
   const canSave = valid && (codeChanged || sitterChanged || eventEdit !== undefined) && !saving;
 
   // While Someone else is open the user is naming one, so the warning stays away.
@@ -62,7 +74,7 @@ function DateForm({ date, today, contents, known, onClose }: DateFormProps) {
     if (!canSave) return;
     const edit: DateEdit = {};
     if (codeChanged) edit.code = code!;
-    if (sitterChanged) edit.babysitter = name!;
+    if (sitterChanged) edit.babysitter = { name: name!, confirmed };
     if (eventEdit) edit.events = eventEdit;
     setSaving(true);
     await saveDate(date, edit);
@@ -95,7 +107,14 @@ function DateForm({ date, today, contents, known, onClose }: DateFormProps) {
 
           <CodePicker value={picker} onChange={setPicker} />
 
-          <BabysitterPicker value={sitter} onChange={setSitter} known={known} needed={needed} />
+          <BabysitterPicker
+            value={sitter}
+            onChange={setSitter}
+            known={known}
+            needed={needed}
+            confirmed={name === null || name === "" ? null : confirmed}
+            onConfirmedChange={(on) => setToggled({ key: nameKey, on })}
+          />
 
           <EventList value={events} onChange={setEvents} />
 

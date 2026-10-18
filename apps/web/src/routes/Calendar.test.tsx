@@ -87,9 +87,9 @@ describe("Calendar month grid", () => {
       "2026-12-02": "D",
     });
     await db.babysitters.bulkPut([
-      { date: "2026-11-17", name: "Mum", editedAt: 1 },
-      { date: "2026-12-02", name: "Dad", editedAt: 1 },
-      { date: "2026-11-21", name: "", editedAt: 1 }, // cleared
+      { date: "2026-11-17", name: "Mum", confirmed: false, editedAt: 1 },
+      { date: "2026-12-02", name: "Dad", confirmed: true, editedAt: 1 },
+      { date: "2026-11-21", name: "", confirmed: false, editedAt: 1 }, // cleared
     ]);
     const events = (date: string, n: number) =>
       Array.from({ length: n }, (_, i) => ({ id: `${date}-${i}`, date, text: `Event ${i}`, createdAt: i, editedAt: 1 }));

@@ -25,8 +25,8 @@ func TestOpenCreatesDBInWALModeWithMeta(t *testing.T) {
 		t.Errorf("journal_mode = %q, %v; want wal", mode, err)
 	}
 	v, err := s.SchemaVersion()
-	if err != nil || v != 3 {
-		t.Errorf("SchemaVersion = %d, %v; want 3", v, err)
+	if err != nil || v != 4 {
+		t.Errorf("SchemaVersion = %d, %v; want 4", v, err)
 	}
 }
 
@@ -79,6 +79,41 @@ func TestMigration3DropsNoteAndKeepsShifts(t *testing.T) {
 	want := []string{"2026-11-03 L 1000 1", "2026-11-04 <nil> 2000 2", "2026-11-05 SE 3000 3"}
 	if fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Errorf("shifts = %q; want %q", got, want)
+	}
+}
+
+// Migration 0004 makes every existing babysitter tentative and leaves its rev alone.
+func TestMigration4MakesExistingBabysittersTentative(t *testing.T) {
+	dir := t.TempDir()
+	upTo3 := fstest.MapFS{}
+	for _, name := range []string{"0001_meta.sql", "0002_shifts.sql", "0003_events_babysitters.sql"} {
+		body, err := migrationFiles.ReadFile("migrations/" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		upTo3[name] = &fstest.MapFile{Data: body}
+	}
+	s, err := open(dir, upTo3)
+	if err != nil {
+		t.Fatalf("open at version 3: %v", err)
+	}
+	if _, err := s.DB.Exec(`INSERT INTO babysitters (date, name, edited_at, rev) VALUES ('2026-11-03', 'Nan', 1000, 7)`); err != nil {
+		t.Fatal(err)
+	}
+	s.Close()
+
+	s, err = Open(dir)
+	if err != nil {
+		t.Fatalf("Open with 0004: %v", err)
+	}
+	defer s.Close()
+	var confirmed int
+	if err := s.DB.QueryRow(`SELECT confirmed FROM babysitters WHERE date = '2026-11-03'`).Scan(&confirmed); err != nil || confirmed != 0 {
+		t.Errorf("confirmed = %d, %v; want 0", confirmed, err)
+	}
+	all := syncPush(t, s, 0, Push{})
+	if want := (Babysitter{"2026-11-03", "Nan", false, 1000, 7}); len(all.Babysitters) != 1 || all.Babysitters[0] != want {
+		t.Errorf("babysitters = %+v; want %+v", all.Babysitters, want)
 	}
 }
 

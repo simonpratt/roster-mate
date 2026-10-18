@@ -31,3 +31,26 @@ test("saves a date's shift, babysitter and event, and a second phone sees them @
   await expect(otherSheet.getByRole("textbox", { name: "Event", exact: true }).first()).toHaveValue("Dentist 3pm");
   await other.context().close();
 });
+
+test("confirms a babysitter, and the date sheet still shows it confirmed after a reload", async ({ page }) => {
+  await signIn(page);
+
+  await decemberCell(page, 15).click();
+  let sheet = page.getByRole("dialog");
+  const confirmed = sheet.getByRole("switch", { name: "Confirmed" });
+  await expect(confirmed).toBeHidden();
+  await sheet.getByRole("radio", { name: "Someone else" }).click();
+  await sheet.getByRole("textbox", { name: "Name" }).fill("Mum");
+  await expect(confirmed).toHaveAttribute("aria-checked", "false");
+  await confirmed.click();
+  await expect(confirmed).toHaveAttribute("aria-checked", "true");
+  await sheet.getByRole("button", { name: "Save" }).click();
+  await expect(sheet).toBeHidden();
+  await expect(syncPill(page)).toHaveText("Synced");
+
+  await page.reload();
+  await decemberCell(page, 15).click();
+  sheet = page.getByRole("dialog");
+  await expect(sheet.getByRole("radio", { name: "Mum" })).toBeChecked();
+  await expect(sheet.getByRole("switch", { name: "Confirmed" })).toHaveAttribute("aria-checked", "true");
+});

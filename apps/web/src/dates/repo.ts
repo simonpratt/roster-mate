@@ -21,11 +21,20 @@ export interface Event {
 export const EVENT_TEXT_MAX = 200;
 export const BABYSITTER_NAME_MAX = 40;
 
+/** A date's babysitter: `name: ""` is none, and `confirmed: false` is tentative. */
+export interface BabysitterStatus {
+  name: string;
+  confirmed: boolean;
+}
+
+/** None: no babysitter on the date. */
+export const NO_BABYSITTER: BabysitterStatus = { name: "", confirmed: false };
+
 /** What a save changes on a date; absent parts are left as they are. */
 export interface DateEdit {
   code?: ShiftCode;
-  /** The babysitter's name; "" clears it. */
-  babysitter?: string;
+  /** The babysitter; name "" clears it, and is always sent with `confirmed: false`. */
+  babysitter?: BabysitterStatus;
   events?: {
     added?: string[];
     changed?: { id: string; text: string }[];
@@ -52,8 +61,8 @@ function checkEventText(text: string) {
 export async function saveDate(date: string, edit: DateEdit): Promise<void> {
   checkDate(date);
   if (edit.code !== undefined) checkCode(edit.code);
-  const babysitter = edit.babysitter?.trim();
-  if (babysitter !== undefined) checkText(babysitter, BABYSITTER_NAME_MAX, "babysitter name");
+  const babysitter = edit.babysitter && { ...edit.babysitter, name: edit.babysitter.name.trim() };
+  if (babysitter !== undefined) checkText(babysitter.name, BABYSITTER_NAME_MAX, "babysitter name");
   const added = (edit.events?.added ?? []).map((t) => t.trim());
   const changed = (edit.events?.changed ?? []).map((c) => ({ id: c.id, text: c.text.trim() }));
   const removed = edit.events?.removed ?? [];
@@ -75,7 +84,7 @@ export async function saveDate(date: string, edit: DateEdit): Promise<void> {
       await db.outbox.put(row);
     }
     if (babysitter !== undefined) {
-      const row = { date, name: babysitter, editedAt };
+      const row = { date, name: babysitter.name, confirmed: babysitter.confirmed, editedAt };
       await db.babysitters.put(row);
       await db.babysitterOutbox.put(row);
     }
@@ -106,8 +115,8 @@ const toEvent = ({ id, date, text, createdAt }: EventRow): Event => ({ id, date,
 
 export interface DateContents {
   shift: Shift | null;
-  /** The babysitter's name, or "" for none. */
-  babysitter: string;
+  /** The babysitter, or NO_BABYSITTER for none. */
+  babysitter: BabysitterStatus;
   /** In the order they were added. */
   events: Event[];
 }
@@ -124,7 +133,7 @@ export function useDate(date: string): DateContents | undefined {
       date,
       contents: {
         shift: toShift(shift) ?? null,
-        babysitter: babysitter?.name ?? "",
+        babysitter: babysitter ? { name: babysitter.name, confirmed: babysitter.confirmed } : NO_BABYSITTER,
         events: events.sort(byCreated).map(toEvent),
       },
     };
@@ -145,11 +154,13 @@ export function useEventCounts(from: string, to: string): Map<string, number> | 
   }, [from, to]);
 }
 
-/** The babysitter's name on each date from..to (inclusive) that has one; undefined while loading. */
-export function useBabysittersInRange(from: string, to: string): Map<string, string> | undefined {
+/** The babysitter on each date from..to (inclusive) that has one; undefined while loading. */
+export function useBabysittersInRange(from: string, to: string): Map<string, BabysitterStatus> | undefined {
   return useLiveQuery(async () => {
     const rows = await db.babysitters.where("date").between(from, to, true, true).toArray();
-    return new Map(rows.filter((b) => b.name !== "").map((b) => [b.date, b.name]));
+    return new Map(
+      rows.filter((b) => b.name !== "").map((b) => [b.date, { name: b.name, confirmed: b.confirmed }]),
+    );
   }, [from, to]);
 }
 

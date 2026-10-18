@@ -55,12 +55,14 @@ type syncEvent struct {
 	Rev       int64  `json:"rev"`
 }
 
-// syncBabysitter is a babysitter both in a request (rev ignored) and in a response.
+// syncBabysitter is a babysitter both in a request (rev ignored) and in a response. A request
+// without confirmed (an older client) means tentative.
 type syncBabysitter struct {
-	Date     string `json:"date"`
-	Name     string `json:"name"`
-	EditedAt int64  `json:"editedAt"`
-	Rev      int64  `json:"rev"`
+	Date      string `json:"date"`
+	Name      string `json:"name"`
+	Confirmed bool   `json:"confirmed"`
+	EditedAt  int64  `json:"editedAt"`
+	Rev       int64  `json:"rev"`
 }
 
 type syncResponse struct {

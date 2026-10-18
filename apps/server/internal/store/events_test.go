@@ -57,7 +57,7 @@ func TestBabysittersRoundTripWithLastWriteWinsPerDate(t *testing.T) {
 		{Date: "2026-11-03", Name: "Nan", EditedAt: 1000},
 		{Date: "2026-11-04", Name: "Sam", EditedAt: 1000},
 	}})
-	want := []Babysitter{{"2026-11-03", "Nan", 1000, 1}, {"2026-11-04", "Sam", 1000, 2}}
+	want := []Babysitter{{"2026-11-03", "Nan", false, 1000, 1}, {"2026-11-04", "Sam", false, 1000, 2}}
 	if pull.Rev != 2 || fmt.Sprint(pull.Babysitters) != fmt.Sprint(want) {
 		t.Fatalf("first sync = rev %d, %+v; want %+v", pull.Rev, pull.Babysitters, want)
 	}
@@ -67,8 +67,29 @@ func TestBabysittersRoundTripWithLastWriteWinsPerDate(t *testing.T) {
 		{Date: "2026-11-03", Name: "stale", EditedAt: 999},
 		{Date: "2026-11-04", Name: "", EditedAt: 1000},
 	}})
-	if pull.Rev != 3 || len(pull.Babysitters) != 1 || pull.Babysitters[0] != (Babysitter{"2026-11-04", "", 1000, 3}) {
+	if pull.Rev != 3 || len(pull.Babysitters) != 1 || pull.Babysitters[0] != (Babysitter{"2026-11-04", "", false, 1000, 3}) {
 		t.Errorf("second sync = rev %d, %+v; want only the 4th cleared at rev 3", pull.Rev, pull.Babysitters)
+	}
+}
+
+// The confirmed status rides the babysitter's last-write-wins: an older tentative edit doesn't
+// overwrite a newer confirmed one, and a newer one does.
+func TestBabysitterConfirmedFollowsLastWriteWins(t *testing.T) {
+	s := openTemp(t)
+	syncPush(t, s, 0, Push{Babysitters: []Babysitter{{Date: "2026-11-03", Name: "Mum", Confirmed: true, EditedAt: 2000}}})
+
+	pull := syncPush(t, s, 1, Push{Babysitters: []Babysitter{{Date: "2026-11-03", Name: "Mum", EditedAt: 1000}}})
+	if pull.Rev != 1 || len(pull.Babysitters) != 0 {
+		t.Errorf("older tentative edit = rev %d, %+v; want ignored", pull.Rev, pull.Babysitters)
+	}
+	all := syncPush(t, s, 0, Push{})
+	if want := (Babysitter{"2026-11-03", "Mum", true, 2000, 1}); len(all.Babysitters) != 1 || all.Babysitters[0] != want {
+		t.Errorf("babysitters = %+v; want %+v", all.Babysitters, want)
+	}
+
+	pull = syncPush(t, s, 1, Push{Babysitters: []Babysitter{{Date: "2026-11-03", Name: "Mum", EditedAt: 3000}}})
+	if want := (Babysitter{"2026-11-03", "Mum", false, 3000, 2}); len(pull.Babysitters) != 1 || pull.Babysitters[0] != want {
+		t.Errorf("newer tentative edit = %+v; want %+v", pull.Babysitters, want)
 	}
 }
 

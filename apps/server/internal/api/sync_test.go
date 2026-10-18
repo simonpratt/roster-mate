@@ -230,8 +230,9 @@ func TestSyncEventsBabysittersAndTombstone(t *testing.T) {
 	if e := got.Events[0]; e != (syncEvent{uuidA, "2026-11-03", "Dentist 3pm", false, 10, 20, 2}) {
 		t.Errorf("event = %+v", e)
 	}
-	if b := got.Babysitters[0]; b != (syncBabysitter{"2026-11-03", "Nan", 30, 3}) {
-		t.Errorf("babysitter = %+v", b)
+	// The request had no confirmed field: stored tentative, and the response still carries it.
+	if b := got.Babysitters[0]; b != (syncBabysitter{"2026-11-03", "Nan", false, 30, 3}) || !strings.Contains(out, `"confirmed":false`) {
+		t.Errorf("babysitter = %+v in %s; want tentative with confirmed false", b, out)
 	}
 
 	body = fullBody(3, nil, []string{event(uuidA, "2026-11-03", "", true, 10, 40)}, nil)
@@ -243,5 +244,19 @@ func TestSyncEventsBabysittersAndTombstone(t *testing.T) {
 	got = decodeSync(t, out)
 	if got.Rev != 4 || len(got.Events) != 1 || !got.Events[0].Deleted || got.Events[0].ID != uuidA || len(got.Shifts) != 0 || len(got.Babysitters) != 0 {
 		t.Errorf("pull from rev 3 = %s; want only the tombstone", out)
+	}
+}
+
+// A confirmed babysitter is stored, and a later pull returns it confirmed.
+func TestSyncConfirmedBabysitter(t *testing.T) {
+	base, c := newSyncServer(t, newStore(t))
+	body := fullBody(0, nil, nil, []string{`{"date":"2026-11-03","name":"Mum","confirmed":true,"editedAt":30}`})
+	if res, out := do(t, "POST", base+"/api/sync", body, c); res.StatusCode != 200 {
+		t.Fatalf("push: %d %q", res.StatusCode, out)
+	}
+	_, out := do(t, "POST", base+"/api/sync", syncBody(0), c)
+	got := decodeSync(t, out)
+	if len(got.Babysitters) != 1 || got.Babysitters[0] != (syncBabysitter{"2026-11-03", "Mum", true, 30, 1}) {
+		t.Errorf("pull = %s; want Mum confirmed", out)
 	}
 }

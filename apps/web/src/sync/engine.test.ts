@@ -208,9 +208,9 @@ describe("sync engine", () => {
         { id: ID_2, date: "2026-11-04", text: "School concert", createdAt: 130, editedAt: 130, rev: 9 },
       ]);
       await db.babysitters.bulkPut([
-        { date: "2026-11-03", name: "Mum", editedAt: 140, rev: 10 },
+        { date: "2026-11-03", name: "Mum", confirmed: true, editedAt: 140, rev: 10 },
         // Cleared: nothing to restore.
-        { date: "2026-11-04", name: "", editedAt: 150, rev: 11 },
+        { date: "2026-11-04", name: "", confirmed: false, editedAt: 150, rev: 11 },
       ]);
       // Pending edits newer than the stored rows stay as they are.
       await db.outbox.put({ date: "2026-11-06", code: "N", editedAt: 555 });
@@ -232,7 +232,7 @@ describe("sync engine", () => {
         { id: ID_1, date: "2026-11-03", text: "Dentist 3pm", deleted: false, createdAt: 100, editedAt: 120 },
         { id: ID_2, date: "2026-11-04", text: "Concert", deleted: false, createdAt: 130, editedAt: 666 },
       ],
-      babysitters: [{ date: "2026-11-03", name: "Mum", editedAt: 140 }],
+      babysitters: [{ date: "2026-11-03", name: "Mum", confirmed: true, editedAt: 140 }],
     };
 
     it("re-queues every local shift, live event and named babysitter when the dbId changes", async () => {
@@ -318,7 +318,7 @@ describe("sync engine", () => {
         editedAt: 1,
       })),
     );
-    await db.babysitterOutbox.bulkPut(Array.from({ length: 300 }, (_, i) => ({ date: dateAt(i), name: "Mum", editedAt: 1 })));
+    await db.babysitterOutbox.bulkPut(Array.from({ length: 300 }, (_, i) => ({ date: dateAt(i), name: "Mum", confirmed: false, editedAt: 1 })));
     const { bodies } = serve((_b, call) => ok(call));
     await sync.trigger();
 
@@ -335,7 +335,7 @@ describe("sync engine", () => {
   it("counts every queued item offline, then one sync empties all three outboxes", async () => {
     setOnline(false);
     const { fetchMock } = serve(() => ok(1));
-    await saveDate("2026-11-03", { code: "L", babysitter: "Mum", events: { added: ["Dentist 3pm", "Pick up parcel"] } });
+    await saveDate("2026-11-03", { code: "L", babysitter: { name: "Mum", confirmed: true }, events: { added: ["Dentist 3pm", "Pick up parcel"] } });
     await sync.idle();
     expect(fetchMock).not.toHaveBeenCalled();
     const { result } = renderHook(() => ({ ...useSyncStatus(), count: usePendingCount() }));
@@ -348,12 +348,14 @@ describe("sync engine", () => {
     expect(bodies).toHaveLength(1);
     expect(bodies[0]!.changes).toHaveLength(1);
     expect(bodies[0]!.events.map((e) => e.text)).toEqual(expect.arrayContaining(["Dentist 3pm", "Pick up parcel"]));
-    expect(bodies[0]!.babysitters).toEqual([{ date: "2026-11-03", name: "Mum", editedAt: expect.any(Number) }]);
+    expect(bodies[0]!.babysitters).toEqual([
+      { date: "2026-11-03", name: "Mum", confirmed: true, editedAt: expect.any(Number) },
+    ]);
     expect(await db.outbox.count()).toBe(0);
     expect(await db.eventOutbox.count()).toBe(0);
     expect(await db.babysitterOutbox.count()).toBe(0);
     expect(await db.events.where("date").equals("2026-11-03").count()).toBe(2);
-    expect(await db.babysitters.get("2026-11-03")).toMatchObject({ name: "Mum", rev: 4 });
+    expect(await db.babysitters.get("2026-11-03")).toMatchObject({ name: "Mum", confirmed: true, rev: 4 });
     await waitFor(() => expect(result.current.count).toBe(0));
   });
 
@@ -368,7 +370,11 @@ describe("sync engine", () => {
           { id: ID_1, date: "2026-11-03", text: "", deleted: true, createdAt: 100, editedAt: 200, rev: 3 },
           { id: ID_2, date: "2026-11-04", text: "Concert", deleted: false, createdAt: 150, editedAt: 150, rev: 4 },
         ],
-        [{ date: "2026-11-04", name: "Dad", editedAt: 160, rev: 5 }],
+        [
+          { date: "2026-11-04", name: "Dad", confirmed: true, editedAt: 160, rev: 5 },
+          // From a server older than SIM-41: no confirmed, so tentative.
+          { date: "2026-11-05", name: "Mum", editedAt: 170, rev: 6 },
+        ],
       ),
     );
     await sync.trigger();
@@ -382,7 +388,20 @@ describe("sync engine", () => {
       editedAt: 150,
       rev: 4,
     });
-    expect(await db.babysitters.get("2026-11-04")).toEqual({ date: "2026-11-04", name: "Dad", editedAt: 160, rev: 5 });
+    expect(await db.babysitters.get("2026-11-04")).toEqual({
+      date: "2026-11-04",
+      name: "Dad",
+      confirmed: true,
+      editedAt: 160,
+      rev: 5,
+    });
+    expect(await db.babysitters.get("2026-11-05")).toEqual({
+      date: "2026-11-05",
+      name: "Mum",
+      confirmed: false,
+      editedAt: 170,
+      rev: 6,
+    });
   });
 
   it("skips pulled events and babysitters older than a pending local edit", async () => {
@@ -395,8 +414,8 @@ describe("sync engine", () => {
       { id: ID_1, date: "2026-11-03", text: "Mine", deleted: false, createdAt: 100, editedAt: 5000 },
       { id: ID_3, date: "2026-11-03", text: "", deleted: true, createdAt: 100, editedAt: 5000 },
     ]);
-    await db.babysitters.put({ date: "2026-11-03", name: "Mum", editedAt: 5000 });
-    await db.babysitterOutbox.put({ date: "2026-11-03", name: "Mum", editedAt: 5000 });
+    await db.babysitters.put({ date: "2026-11-03", name: "Mum", confirmed: false, editedAt: 5000 });
+    await db.babysitterOutbox.put({ date: "2026-11-03", name: "Mum", confirmed: false, editedAt: 5000 });
     first.resolve(
       ok(
         3,

@@ -5,7 +5,8 @@ import { CheckIcon } from "./icons";
 // The babysitter picker, docs/ux-spec.md §5.8 and docs/designs/DateSheetNewSitter.dc.html (markup
 // in Main.dc.html): "None", every name used before and "+ Someone else" as a radio group, then
 // (when Someone else is chosen) a Name input. Typing a known name there selects its chip instead;
-// the input stays open, as the code picker's Other input does.
+// the input stays open, as the code picker's Other input does. While a name is picked, a Confirmed
+// switch sits below (§5.8 Confirmed switch, docs/designs/DateSheetConfirmed.dc.html).
 
 /** What the picker holds: a name picked by its chip ("" for None), or an open Name input. */
 export type BabysitterValue = {
@@ -44,11 +45,14 @@ type BabysitterPickerProps = {
   known: readonly string[];
   /** Shows "Needs a babysitter" beside the label. */
   needed: boolean;
+  /** The Confirmed switch's state, or null to hide it (no name picked). */
+  confirmed: boolean | null;
+  onConfirmedChange: (confirmed: boolean) => void;
 };
 
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 
-export function BabysitterPicker({ value, onChange, known, needed }: BabysitterPickerProps) {
+export function BabysitterPicker({ value, onChange, known, needed, confirmed, onConfirmedChange }: BabysitterPickerProps) {
   const labelId = useId();
   const inputId = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -108,7 +112,32 @@ export function BabysitterPicker({ value, onChange, known, needed }: BabysitterP
           />
         </div>
       )}
+      {confirmed !== null && <ConfirmedSwitch on={confirmed} onChange={onConfirmedChange} />}
     </div>
+  );
+}
+
+// On: a text-muted track with a bg knob on the right holding a check. Off: a border-strong track
+// with a text-soft knob on the left. The knob's side and the check carry the state, not colour.
+function ConfirmedSwitch({ on, onChange }: { on: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className={`flex h-11 w-full items-center justify-between text-callout font-medium text-text-soft ${focus}`}
+    >
+      <span>Confirmed</span>
+      <span
+        aria-hidden="true"
+        className={`flex h-6.5 w-11 flex-none rounded-full p-0.75 ${on ? "justify-end bg-text-muted" : "justify-start bg-border-strong"}`}
+      >
+        <span className={`flex size-5 items-center justify-center rounded-full text-text ${on ? "bg-bg" : "bg-text-soft"}`}>
+          {on && <CheckIcon className="size-3" />}
+        </span>
+      </span>
+    </button>
   );
 }
 

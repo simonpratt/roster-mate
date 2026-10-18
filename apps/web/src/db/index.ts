@@ -41,10 +41,11 @@ export interface EventOutboxRow {
   editedAt: number;
 }
 
-/** The babysitter for a date; `name: ""` means none. */
+/** The babysitter for a date; `name: ""` means none. `confirmed: false` is a tentative babysitter. */
 export interface BabysitterRow {
   date: string;
   name: string;
+  confirmed: boolean;
   editedAt: number;
   rev?: number;
 }
@@ -85,6 +86,15 @@ db.version(2)
     await tx.table("shifts").toCollection().modify(dropNote);
     await tx.table("outbox").toCollection().modify(dropNote);
   });
+
+// Version 3 adds the babysitter's confirmed status; every existing babysitter becomes tentative.
+db.version(3).upgrade(async (tx) => {
+  const tentative = (row: { confirmed?: boolean }) => {
+    row.confirmed ??= false;
+  };
+  await tx.table("babysitters").toCollection().modify(tentative);
+  await tx.table("babysitterOutbox").toCollection().modify(tentative);
+});
 
 /** Every table, for transactions that span them all. */
 export function allTables(): Table[] {

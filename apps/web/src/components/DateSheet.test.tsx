@@ -15,8 +15,14 @@ function seed(rows: Record<string, string>) {
   return db.shifts.bulkPut(shifts);
 }
 
-function seedBabysitters(rows: Record<string, string>) {
-  return db.babysitters.bulkPut(Object.entries(rows).map(([date, name]) => ({ date, name, editedAt: 1 })));
+/** Seeds babysitters by date: a name (tentative) or [name, confirmed]. */
+function seedBabysitters(rows: Record<string, string | [string, boolean]>) {
+  return db.babysitters.bulkPut(
+    Object.entries(rows).map(([date, v]) => {
+      const [name, confirmed] = typeof v === "string" ? [v, false] : v;
+      return { date, name, confirmed, editedAt: 1 };
+    }),
+  );
 }
 
 /** Seeds events as [id, date, text], added in that order. */
@@ -280,7 +286,7 @@ describe("Date sheet", () => {
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(saveDate).toHaveBeenCalledExactlyOnceWith("2026-11-24", {
-      babysitter: "Mum",
+      babysitter: { name: "Mum", confirmed: false },
       events: { added: ["Swimming"], changed: [{ id: "e1", text: "Dentist 4pm" }], removed: ["e2", "e3"] },
     });
     expect(
@@ -310,8 +316,73 @@ describe("Date sheet", () => {
     fireEvent.click(saveButton(sheet));
     expect(await screen.findByRole("button", { name: "Wednesday 25 November, Day, no babysitter" })).toBeInTheDocument();
     expect(vi.mocked(saveDate).mock.calls).toEqual([
-      ["2026-11-24", { babysitter: "Dad" }],
-      ["2026-11-25", { babysitter: "" }],
+      ["2026-11-24", { babysitter: { name: "Dad", confirmed: false } }],
+      ["2026-11-25", { babysitter: { name: "", confirmed: false } }],
+    ]);
+  });
+
+  it("shows the Confirmed switch only while a name is picked, with the stored status", async () => {
+    await seed({ "2026-11-24": "N" });
+    await seedBabysitters({ "2026-11-24": ["Mum", true], "2026-11-25": "Dad" });
+    const confirmedSwitch = (sheet: HTMLElement) => within(sheet).queryByRole("switch", { name: "Confirmed" });
+    const { sheet } = await openSheet("Tuesday 24 November, Night, babysitter Mum");
+
+    // Opens with the stored status; a different name starts tentative, and the stored one is back.
+    expect(confirmedSwitch(sheet)).toHaveAttribute("aria-checked", "true");
+    expect(saveButton(sheet)).toBeDisabled();
+    fireEvent.click(sitterChip(sheet, "Dad"));
+    expect(confirmedSwitch(sheet)).toHaveAttribute("aria-checked", "false");
+    fireEvent.click(sitterChip(sheet, "Mum"));
+    expect(confirmedSwitch(sheet)).toHaveAttribute("aria-checked", "true");
+
+    // Someone else: hidden until a name is typed; a typed name differing from the stored one is off.
+    fireEvent.click(sitterChip(sheet, "Someone else"));
+    expect(confirmedSwitch(sheet)).not.toBeInTheDocument();
+    const name = within(sheet).getByRole("textbox", { name: "Name" });
+    fireEvent.change(name, { target: { value: "Aunty Bec" } });
+    expect(confirmedSwitch(sheet)).toHaveAttribute("aria-checked", "false");
+    fireEvent.change(name, { target: { value: "MUM" } });
+    expect(confirmedSwitch(sheet)).toHaveAttribute("aria-checked", "true");
+
+    // None hides it.
+    fireEvent.click(sitterChip(sheet, "None"));
+    expect(confirmedSwitch(sheet)).not.toBeInTheDocument();
+
+    // Toggling it alone enables Save and saves the same name with the new status.
+    fireEvent.click(sitterChip(sheet, "Mum"));
+    expect(saveButton(sheet)).toBeDisabled();
+    fireEvent.click(confirmedSwitch(sheet)!);
+    expect(confirmedSwitch(sheet)).toHaveAttribute("aria-checked", "false");
+    expect(saveButton(sheet)).toBeEnabled();
+    fireEvent.click(confirmedSwitch(sheet)!);
+    expect(saveButton(sheet)).toBeDisabled();
+    fireEvent.click(confirmedSwitch(sheet)!);
+    fireEvent.click(saveButton(sheet));
+    await waitFor(() =>
+      expect(saveDate).toHaveBeenCalledExactlyOnceWith("2026-11-24", { babysitter: { name: "Mum", confirmed: false } }),
+    );
+    expect(await db.babysitterOutbox.get("2026-11-24")).toMatchObject({ name: "Mum", confirmed: false });
+  });
+
+  it("confirms a tentative babysitter, and None on a confirmed date saves tentative", async () => {
+    await seed({ "2026-11-24": "N", "2026-11-25": "D" });
+    await seedBabysitters({ "2026-11-24": "Mum", "2026-11-25": ["Dad", true] });
+    let { sheet } = await openSheet("Tuesday 24 November, Night, babysitter Mum");
+    const confirmedSwitch = within(sheet).getByRole("switch", { name: "Confirmed" });
+    expect(confirmedSwitch).toHaveAttribute("aria-checked", "false");
+    fireEvent.click(confirmedSwitch);
+    fireEvent.click(saveButton(sheet));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(await db.babysitters.get("2026-11-24")).toMatchObject({ name: "Mum", confirmed: true });
+
+    fireEvent.click(screen.getByRole("button", { name: "Wednesday 25 November, Day, babysitter Dad" }));
+    sheet = await screen.findByRole("dialog");
+    fireEvent.click(sitterChip(sheet, "None"));
+    fireEvent.click(saveButton(sheet));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(vi.mocked(saveDate).mock.calls).toEqual([
+      ["2026-11-24", { babysitter: { name: "Mum", confirmed: true } }],
+      ["2026-11-25", { babysitter: { name: "", confirmed: false } }],
     ]);
   });
 
@@ -343,7 +414,7 @@ describe("Date sheet", () => {
 
     await waitFor(() =>
       expect(saveDate).toHaveBeenCalledExactlyOnceWith("2026-11-26", {
-        babysitter: "Aunty Bec",
+        babysitter: { name: "Aunty Bec", confirmed: false },
         events: { added: ["School concert"], changed: [], removed: [] },
       }),
     );
@@ -379,7 +450,7 @@ describe("Date sheet", () => {
     expect(saveButton(sheet)).toBeEnabled();
     fireEvent.click(saveButton(sheet));
     // The known spelling is saved.
-    await waitFor(() => expect(saveDate).toHaveBeenCalledExactlyOnceWith("2026-11-24", { code: "L", babysitter: "Mum" }));
+    await waitFor(() => expect(saveDate).toHaveBeenCalledExactlyOnceWith("2026-11-24", { code: "L", babysitter: { name: "Mum", confirmed: false } }));
   });
 
   it("shows Needs a babysitter while a working shift from today on has none", async () => {

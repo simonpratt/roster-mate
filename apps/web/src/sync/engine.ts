@@ -30,7 +30,8 @@ interface SyncResponse {
   shifts: (ShiftRow & { rev: number })[];
   // Always sent by the server; read as [] when missing, as from a server older than ADR 0003.
   events?: (EventOutboxRow & { rev: number })[];
-  babysitters?: (BabysitterRow & { rev: number })[];
+  // confirmed is read as false when missing, as from a server older than SIM-41.
+  babysitters?: (Omit<BabysitterRow, "confirmed"> & { confirmed?: boolean; rev: number })[];
 }
 
 /** One request's worth of pending edits. */
@@ -158,7 +159,7 @@ async function post(since: number, batch: Batch): Promise<SyncResponse> {
       createdAt,
       editedAt,
     })),
-    babysitters: batch.babysitters.map(({ date, name, editedAt }) => ({ date, name, editedAt })),
+    babysitters: batch.babysitters.map(({ date, name, confirmed, editedAt }) => ({ date, name, confirmed, editedAt })),
   };
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
@@ -222,7 +223,13 @@ async function apply(sent: Batch, res: SyncResponse) {
     for (const b of res.babysitters ?? []) {
       const pending = await db.babysitterOutbox.get(b.date);
       if (pending && pending.editedAt > b.editedAt) continue;
-      await db.babysitters.put({ date: b.date, name: b.name, editedAt: b.editedAt, rev: b.rev });
+      await db.babysitters.put({
+        date: b.date,
+        name: b.name,
+        confirmed: b.confirmed ?? false,
+        editedAt: b.editedAt,
+        rev: b.rev,
+      });
     }
 
     await db.meta.bulkPut([
@@ -255,7 +262,7 @@ async function requeueAll(dbId: string) {
       if (b.name === "") continue;
       const pending = await db.babysitterOutbox.get(b.date);
       if (pending && pending.editedAt >= b.editedAt) continue;
-      await db.babysitterOutbox.put({ date: b.date, name: b.name, editedAt: b.editedAt });
+      await db.babysitterOutbox.put({ date: b.date, name: b.name, confirmed: b.confirmed, editedAt: b.editedAt });
     }
     await db.meta.bulkPut([
       { key: "lastRev", value: 0 },
