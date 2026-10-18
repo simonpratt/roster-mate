@@ -16,6 +16,8 @@ import (
 	"time"
 	_ "time/tzdata" // TZ works on any base image, including ones without zoneinfo
 
+	"github.com/anthropics/anthropic-sdk-go/option"
+
 	"github.com/simonpratt/roster-mate/apps/server/internal/api"
 	"github.com/simonpratt/roster-mate/apps/server/internal/auth"
 	"github.com/simonpratt/roster-mate/apps/server/internal/config"
@@ -55,9 +57,18 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer, onLi
 		return 1
 	}
 
-	ex := extract.NewClaude(cfg.AnthropicAPIKey, cfg.AnthropicModel, cfg.RosterName, log)
+	var opts []option.RequestOption
+	if cfg.AnthropicBaseURL != "" {
+		opts = append(opts, option.WithBaseURL(cfg.AnthropicBaseURL))
+	}
+	ex := extract.NewClaude(cfg.AnthropicAPIKey, cfg.AnthropicModel, cfg.RosterName, log, opts...)
+	handler := api.NewRouter(web.Handler(client.Dist()), a, st, ex)
+	if cfg.TestMode {
+		log.Warn("test mode is on: POST /api/test/reset deletes every shift, event and babysitter without a session; never set APP_TEST_MODE in production")
+		handler = api.WithTestRoutes(handler, st)
+	}
 	srv := &http.Server{
-		Handler:           api.NewRouter(web.Handler(client.Dist()), a, st, ex),
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	addr := net.JoinHostPort("", strconv.Itoa(cfg.Port))

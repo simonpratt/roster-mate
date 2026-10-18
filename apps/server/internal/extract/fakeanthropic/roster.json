@@ -1,0 +1,11 @@
+{
+  "personFound": true,
+  "shifts": [
+    { "date": "2026-12-08", "code": "D", "rawCode": "D", "uncertain": false },
+    { "date": "2026-12-09", "code": "E", "rawCode": "E", "uncertain": false },
+    { "date": "2026-12-10", "code": "N", "rawCode": "N", "uncertain": false },
+    { "date": "2026-12-11", "code": "X", "rawCode": "X", "uncertain": false },
+    { "date": "2026-12-12", "code": "SE", "rawCode": "SE", "uncertain": false }
+  ],
+  "warnings": []
+}

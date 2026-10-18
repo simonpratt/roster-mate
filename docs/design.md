@@ -60,11 +60,13 @@ Domain terms live in `CONTEXT.md`. These are implementation terms only.
 go.mod, go.sum          one Go module (github.com/simonpratt/roster-mate)
 package.json, pnpm-workspace.yaml, pnpm-lock.yaml   the pnpm workspace
 /apps/server            Go server (cmd/roster-mate/main.go, internal/...)
+  cmd/fake-anthropic    standalone fake Messages API for the browser suite
   internal/config       env loading + validation
   internal/auth         login, sessions, middleware
   internal/store        SQLite open, migrations, shift queries
   internal/api          HTTP handlers (sync, extract, session)
   internal/extract      Anthropic client + prompt + response parsing
+  internal/extract/fakeanthropic   the one shared fake Messages API (fixture: roster.json)
   internal/web          serves the built frontend + SPA fallback
 /apps/web               Vite + React + TypeScript + Tailwind app
   embed.go              package web: embeds dist/ (dist/.gitkeep committed)
@@ -89,6 +91,8 @@ Dockerfile, Makefile, .env.example, README.md
 | `PORT` | no | `8080` | Listen port |
 | `DATA_DIR` | no | `/data` | Holds `roster-mate.db` |
 | `TZ` | no | container default | Used only for "today" in the extraction prompt |
+| `ANTHROPIC_BASE_URL` | no | the SDK's default | Messages API address; an absolute `http`/`https` URL. Tests point it at the fake |
+| `APP_TEST_MODE` | no | off | Test only; never set in production. `1` (and only `1`) mounts `POST /api/test/reset`, which needs no session and deletes every shift, event and babysitter (204), keeping `meta` so sessions and the rev counter survive. Off, the path is the usual `/api/` 404. The server logs a warning at startup when it is on |
 
 The server refuses to start, with a message naming the variable, if a required one is missing.
 
@@ -355,6 +359,14 @@ desktop.
 
 - Go: `go test ./...`; store and handler tests against a temp-dir SQLite file and `httptest`.
   The extraction client is behind an interface so handler tests use a fake.
+- Fake Claude: `internal/extract/fakeanthropic` is the one fake of the Messages API. It accepts
+  one API key (401 otherwise, in the API's error shape), records each request's method, path,
+  image count and body, and answers with `roster.json`: 5 shifts on 8–12 Dec 2026 coded D, E,
+  N, X and SE. `Down` (529), `Slow`, `StopReason`/`Text` and `Set` change its answer mid-test.
+  The extraction client tests and the app tests in `cmd/roster-mate` (booted through `run()`
+  with `ANTHROPIC_BASE_URL`) use it, and `go run ./apps/server/cmd/fake-anthropic` serves it for
+  the browser suite on `FAKE_ANTHROPIC_ADDR` (default `127.0.0.1:18081`) with key
+  `FAKE_ANTHROPIC_KEY` (default `sk-ant-e2e`), plus `GET /health`.
 - Web: Vitest + Testing Library; `fake-indexeddb` for Dexie and sync-engine tests with a mocked
   `fetch`.
 - `make test` runs both; `make build` builds the image; `docker run` with `.env.example` values

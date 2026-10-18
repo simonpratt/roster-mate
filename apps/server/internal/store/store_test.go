@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -201,5 +202,53 @@ func TestBadMigrationNames(t *testing.T) {
 				t.Fatal("want error")
 			}
 		})
+	}
+}
+
+// Reset empties shifts, events and babysitters and keeps meta: the session secret, the
+// database id and the rev counter.
+func TestResetClearsRowsAndKeepsMeta(t *testing.T) {
+	s := openTemp(t)
+	ctx := context.Background()
+	secret, err := s.SessionSecret()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dbID, err := s.DBID(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pull := syncPush(t, s, 0, Push{
+		Shifts:      []Change{{Date: "2026-12-08", Code: code("D"), EditedAt: 1000}},
+		Events:      []Event{{ID: eventA, Date: "2026-12-08", Text: "Dentist", CreatedAt: 100, EditedAt: 1000}},
+		Babysitters: []Babysitter{{Date: "2026-12-08", Name: "Nan", EditedAt: 1000}},
+	})
+	if pull.Rev != 3 {
+		t.Fatalf("rev before reset = %d; want 3", pull.Rev)
+	}
+
+	if err := s.Reset(ctx); err != nil {
+		t.Fatalf("Reset: %v", err)
+	}
+
+	for _, table := range []string{"shifts", "events", "babysitters"} {
+		var n int
+		if err := s.DB.QueryRow("SELECT count(*) FROM " + table).Scan(&n); err != nil || n != 0 {
+			t.Errorf("%s rows after reset = %d, %v; want 0", table, n, err)
+		}
+	}
+	all := syncPush(t, s, 0, Push{})
+	if all.Rev != 3 || len(all.Shifts)+len(all.Events)+len(all.Babysitters) != 0 {
+		t.Errorf("pull after reset = %+v; want rev 3 and nothing else", all)
+	}
+	if got, err := s.SessionSecret(); err != nil || string(got) != string(secret) {
+		t.Errorf("session secret changed by reset (%v)", err)
+	}
+	if got, err := s.DBID(ctx); err != nil || got != dbID {
+		t.Errorf("DBID after reset = %q, %v; want %q", got, err, dbID)
+	}
+	next := syncPush(t, s, 3, Push{Shifts: []Change{{Date: "2026-12-09", Code: code("E"), EditedAt: 2000}}})
+	if next.Rev != 4 {
+		t.Errorf("rev of the first write after reset = %d; want 4", next.Rev)
 	}
 }

@@ -3,6 +3,7 @@
 package store
 
 import (
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"embed"
@@ -182,4 +183,20 @@ func schemaVersion(db *sql.DB) (int, error) {
 		return 0, fmt.Errorf("meta.schema_version %q is not a number", v)
 	}
 	return version, nil
+}
+
+// Reset deletes every shift, event and babysitter in one transaction, for the test-only reset
+// route. meta is kept, so the session secret, database id and rev counter survive.
+func (s *Store) Reset(ctx context.Context) error {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	for _, table := range []string{"shifts", "events", "babysitters"} {
+		if _, err := tx.ExecContext(ctx, "DELETE FROM "+table); err != nil {
+			return fmt.Errorf("reset %s: %w", table, err)
+		}
+	}
+	return tx.Commit()
 }

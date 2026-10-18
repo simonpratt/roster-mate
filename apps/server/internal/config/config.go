@@ -4,6 +4,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +26,11 @@ type Config struct {
 	DataDir       string
 	// TZ is the raw TZ value, empty when unset. Go applies it to time.Local itself.
 	TZ string
+	// AnthropicBaseURL, when set, points extraction at another Messages API address (a fake
+	// in tests). Empty means the SDK's default.
+	AnthropicBaseURL string
+	// TestMode (APP_TEST_MODE=1) mounts the test-only routes such as POST /api/test/reset.
+	TestMode bool
 }
 
 // Load reads the configuration through getenv (os.Getenv in production).
@@ -33,14 +39,16 @@ func Load(getenv func(string) string) (Config, error) {
 	get := func(key string) string { return strings.TrimSpace(getenv(key)) }
 
 	cfg := Config{
-		Username:        get("APP_USERNAME"),
-		Password:        getenv("APP_PASSWORD"), // a password may legitimately start or end with spaces
-		AnthropicAPIKey: get("ANTHROPIC_API_KEY"),
-		AnthropicModel:  get("ANTHROPIC_MODEL"),
-		RosterName:      get("ROSTER_NAME"),
-		SessionSecret:   get("SESSION_SECRET"),
-		DataDir:         get("DATA_DIR"),
-		TZ:              get("TZ"),
+		Username:         get("APP_USERNAME"),
+		Password:         getenv("APP_PASSWORD"), // a password may legitimately start or end with spaces
+		AnthropicAPIKey:  get("ANTHROPIC_API_KEY"),
+		AnthropicModel:   get("ANTHROPIC_MODEL"),
+		RosterName:       get("ROSTER_NAME"),
+		SessionSecret:    get("SESSION_SECRET"),
+		DataDir:          get("DATA_DIR"),
+		TZ:               get("TZ"),
+		AnthropicBaseURL: get("ANTHROPIC_BASE_URL"),
+		TestMode:         get("APP_TEST_MODE") == "1",
 	}
 
 	var missing []string
@@ -79,6 +87,13 @@ func Load(getenv func(string) string) (Config, error) {
 	if cfg.TZ != "" {
 		if _, err := time.LoadLocation(cfg.TZ); err != nil {
 			return Config{}, fmt.Errorf("TZ %q is not a known time zone: %v", cfg.TZ, err)
+		}
+	}
+
+	if cfg.AnthropicBaseURL != "" {
+		u, err := url.Parse(cfg.AnthropicBaseURL)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return Config{}, fmt.Errorf("ANTHROPIC_BASE_URL must be an absolute http or https URL, got %q", cfg.AnthropicBaseURL)
 		}
 	}
 
