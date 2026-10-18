@@ -1,7 +1,10 @@
+import { writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
+import type { Plugin } from "vite";
 
 // The Go server listens on API_PORT (default 8080) during `make dev`; Vite proxies /api to it.
 const apiPort = process.env.API_PORT ?? "8080";
@@ -9,8 +12,19 @@ const apiPort = process.env.API_PORT ?? "8080";
 // Page background (docs/ux-spec.md §4.1), also the manifest's theme and background colour.
 const BG = "#0E1014";
 
+// embed.go embeds dist/, so a fresh clone needs the committed dist/.gitkeep to compile. The build
+// empties dist/ first; this puts .gitkeep back so a build leaves the working tree clean.
+const keepGitkeep: Plugin = {
+  name: "keep-dist-gitkeep",
+  apply: "build",
+  closeBundle() {
+    writeFileSync(resolve(import.meta.dirname, "dist/.gitkeep"), "");
+  },
+};
+
 export default defineConfig({
   plugins: [
+    keepGitkeep,
     react(),
     tailwindcss(),
     // docs/design.md § PWA. The service worker precaches the built shell, serves index.html for

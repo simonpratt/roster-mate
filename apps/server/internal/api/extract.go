@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/simonpratt/roster-mate/server/internal/extract"
+	"github.com/simonpratt/roster-mate/apps/server/internal/extract"
 )
 
 const (

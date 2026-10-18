@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simonpratt/roster-mate/server/internal/store"
+	"github.com/simonpratt/roster-mate/apps/server/internal/store"
 )
 
 // Extractor reads the configured person's shifts from a roster image. mediaType is

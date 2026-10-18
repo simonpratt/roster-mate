@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/simonpratt/roster-mate/server/internal/store"
+	"github.com/simonpratt/roster-mate/apps/server/internal/store"
 )
 
 // BuildPrompt returns the system prompt for reading name's shifts, with today (a local

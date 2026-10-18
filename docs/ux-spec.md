@@ -80,7 +80,7 @@ colour.
 
 ### 4.2 Shift codes
 
-Codes, labels and colour families come from `web/src/shifts/codes.ts` (SIM-12). Chips use a
+Codes, labels and colour families come from `apps/web/src/shifts/codes.ts` (SIM-12). Chips use a
 dark fill with a light text colour of the same family, which keeps contrast high on the dark
 surface and lets six colours sit side by side without glare.
 

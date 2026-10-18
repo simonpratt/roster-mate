@@ -1,30 +1,14 @@
-// Package web serves the built frontend (web/dist, copied into ./dist before go build) from the
-// binary, with an SPA fallback to index.html.
+// Package web serves a built frontend, such as the client embedded by package
+// github.com/simonpratt/roster-mate/apps/web, from the binary, with an SPA fallback to index.html.
 package web
 
 import (
-	"embed"
 	"errors"
 	"io/fs"
 	"net/http"
 	"path"
 	"strings"
 )
-
-// dist holds the built web app. The Makefile and Dockerfile copy web/dist here before go build;
-// in a fresh checkout it holds only .gitkeep and the handler reports that the app isn't built.
-//
-//go:embed all:dist
-var dist embed.FS
-
-// Dist returns the embedded build of the web app.
-func Dist() fs.FS {
-	sub, err := fs.Sub(dist, "dist")
-	if err != nil {
-		panic(err) // the directory is embedded at compile time
-	}
-	return sub
-}
 
 // Handler serves files from fsys. A GET or HEAD for a path that isn't a file gets index.html,
 // so client-side routes such as /import load the app. Mount it outside /api/.

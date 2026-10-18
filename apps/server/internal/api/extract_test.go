@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/simonpratt/roster-mate/server/internal/auth"
-	"github.com/simonpratt/roster-mate/server/internal/extract"
+	"github.com/simonpratt/roster-mate/apps/server/internal/auth"
+	"github.com/simonpratt/roster-mate/apps/server/internal/extract"
 )
 
 type fakeExtractor struct {

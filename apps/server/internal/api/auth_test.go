@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/simonpratt/roster-mate/server/internal/auth"
+	"github.com/simonpratt/roster-mate/apps/server/internal/auth"
 )
 
 const goodCreds = `{"username":"simon","password":"secret"}`

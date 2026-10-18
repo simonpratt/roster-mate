@@ -1,0 +1,11 @@
+{
+  "name": "roster-mate",
+  "private": true,
+  "packageManager": "pnpm@12.14.0",
+  "scripts": {
+    "dev": "pnpm --filter ./apps/web dev",
+    "build": "pnpm --filter ./apps/web build",
+    "typecheck": "pnpm --filter ./apps/web typecheck",
+    "test": "pnpm --filter ./apps/web test"
+  }
+}

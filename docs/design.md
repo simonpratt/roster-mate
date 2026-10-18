@@ -49,26 +49,29 @@ Domain terms live in `CONTEXT.md`. These are implementation terms only.
 
 - **The UI reads and writes only IndexedDB.** The sync engine moves data between IndexedDB and
   the server. The service worker only precaches the app shell; it never caches API responses.
-- **One container**: a multi-stage Dockerfile builds the web app, embeds `web/dist` into the
+- **One container**: a multi-stage Dockerfile builds the web app, embeds `apps/web/dist` into the
   Go binary with `embed.FS`, and ships a static binary. SQLite via `modernc.org/sqlite`
   (pure Go, no CGO).
 
 ### Repository layout
 
 ```
-/server            Go module (cmd/roster-mate/main.go, internal/...)
-  internal/config  env loading + validation
-  internal/auth    login, sessions, middleware
-  internal/store   SQLite open, migrations, shift queries
-  internal/api     HTTP handlers (sync, extract, session)
-  internal/extract Anthropic client + prompt + response parsing
-  internal/web     embed of the built frontend + SPA fallback
-/web               Vite + React + TypeScript + Tailwind app
-  src/db           Dexie schema
-  src/sync         sync engine
-  src/shifts       shift codes, labels, colours (mirrors server)
-  src/routes       Login, Calendar, Import
-/docs              design docs
+go.mod, go.sum          one Go module (github.com/simonpratt/roster-mate)
+package.json, pnpm-workspace.yaml, pnpm-lock.yaml   the pnpm workspace
+/apps/server            Go server (cmd/roster-mate/main.go, internal/...)
+  internal/config       env loading + validation
+  internal/auth         login, sessions, middleware
+  internal/store        SQLite open, migrations, shift queries
+  internal/api          HTTP handlers (sync, extract, session)
+  internal/extract      Anthropic client + prompt + response parsing
+  internal/web          serves the built frontend + SPA fallback
+/apps/web               Vite + React + TypeScript + Tailwind app
+  embed.go              package web: embeds dist/ (dist/.gitkeep committed)
+  src/db                Dexie schema
+  src/sync              sync engine
+  src/shifts            shift codes, labels, colours (mirrors server)
+  src/routes            Login, Calendar, Import
+/docs                   design docs
 Dockerfile, Makefile, .env.example, README.md
 ```
 
@@ -133,7 +136,7 @@ Migrations are ordered SQL files embedded in the binary and applied at startup.
 
 ### Shift codes
 
-Defined once per side (`server/internal/store/codes.go`, `web/src/shifts/codes.ts`):
+Defined once per side (`apps/server/internal/store/codes.go`, `apps/web/src/shifts/codes.ts`):
 
 | Code | Label | Colour token |
 |---|---|---|

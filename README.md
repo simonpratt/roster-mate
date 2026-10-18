@@ -16,7 +16,7 @@ docker run -d --name roster-mate --restart unless-stopped \
 ```
 
 Every push to `master` also builds the image for amd64 and arm64 and pushes it to
-`ghcr.io/simonpratt/roster-mate:sha-<short commit SHA>` (`.github/workflows/image.yml`); use that
+`ghcr.io/simonpratt/roster-mate:sha-<short commit SHA>` (`.github/workflows/ci.yml`); use that
 tag in place of `roster-mate` to skip the local build.
 
 Open `http://<host>:8080`. `GET /api/health` returns `{"ok":true}`. The database is
@@ -70,7 +70,9 @@ read the roster.
 
 ## Develop
 
-Needs Go 1.26+, Node 22 and Docker.
+Needs Go 1.26+, Node 22 (with `corepack enable`, for pnpm) and Docker. One Go module sits at the
+root, with the server in `apps/server/` and the React client in `apps/web/`, which embeds its
+build through `apps/web/embed.go`; a pnpm workspace at the root holds the client.
 
 ```sh
 make dev     # Go server on :8080 and Vite on :5173 (proxying /api); open http://localhost:5173

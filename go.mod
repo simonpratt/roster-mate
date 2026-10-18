@@ -1,6 +1,12 @@
-module github.com/simonpratt/roster-mate/server
+module github.com/simonpratt/roster-mate
 
 go 1.26.0
+
+// pnpm's installs hold no Go code; keep ./... from walking them.
+ignore (
+	./apps/web/node_modules
+	./node_modules
+)
 
 require (
 	github.com/anthropics/anthropic-sdk-go v1.81.0

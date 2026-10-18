@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/simonpratt/roster-mate/server/internal/auth"
-	"github.com/simonpratt/roster-mate/server/internal/store"
+	"github.com/simonpratt/roster-mate/apps/server/internal/auth"
+	"github.com/simonpratt/roster-mate/apps/server/internal/store"
 )
 
 // newStore opens a fresh database in a temp dir (never on the repo's host mount).

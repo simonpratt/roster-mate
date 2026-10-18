@@ -164,7 +164,9 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  apps/web:
     dependencies:
       '@fontsource/jetbrains-mono':
         specifier: ^5.3.0

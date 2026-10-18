@@ -8,8 +8,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/simonpratt/roster-mate/server/internal/auth"
-	"github.com/simonpratt/roster-mate/server/internal/web"
+	"github.com/simonpratt/roster-mate/apps/server/internal/auth"
+	"github.com/simonpratt/roster-mate/apps/server/internal/web"
 )
 
 const indexHTML = `<!doctype html><html class="dark"><div id="root"></div></html>`

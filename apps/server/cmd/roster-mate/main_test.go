@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/simonpratt/roster-mate/server/internal/api"
-	"github.com/simonpratt/roster-mate/server/internal/config"
-	"github.com/simonpratt/roster-mate/server/internal/store"
+	"github.com/simonpratt/roster-mate/apps/server/internal/api"
+	"github.com/simonpratt/roster-mate/apps/server/internal/config"
+	"github.com/simonpratt/roster-mate/apps/server/internal/store"
 )
 
 func TestRunWithoutAppPasswordExitsNonZero(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/simonpratt/roster-mate/server/internal/auth"
-	"github.com/simonpratt/roster-mate/server/internal/extract"
-	"github.com/simonpratt/roster-mate/server/internal/store"
+	"github.com/simonpratt/roster-mate/apps/server/internal/auth"
+	"github.com/simonpratt/roster-mate/apps/server/internal/extract"
+	"github.com/simonpratt/roster-mate/apps/server/internal/store"
 )
 
 // NewRouter returns the server's handler. app serves the web app for every path outside /api/;

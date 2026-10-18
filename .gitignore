@@ -1,10 +1,9 @@
 node_modules/
 .pnpm-store/
-web/dist/
-# The web build is copied here only while building the image.
-server/internal/web/dist/*
-!server/internal/web/dist/.gitkeep
-server/roster-mate
+# The web build; .gitkeep stays so apps/web/embed.go compiles in a fresh clone.
+apps/web/dist/*
+!apps/web/dist/.gitkeep
+/roster-mate
 .env
 /data/
 *.db

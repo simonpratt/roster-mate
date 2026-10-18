@@ -1,5 +1,5 @@
 // Draws the app icons in public/icons/ from the Roster Mate mark (src/components/Logo.tsx).
-// Placeholder artwork with no image dependencies: run `node scripts/icons.mjs` from web/ after
+// Placeholder artwork with no image dependencies: run `node scripts/icons.mjs` from apps/web/ after
 // changing the mark, and commit the PNGs.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { deflateSync } from "node:zlib";

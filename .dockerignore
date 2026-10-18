@@ -5,5 +5,5 @@ data
 docs
 **/node_modules
 .pnpm-store
-web/dist
-server/roster-mate
+apps/web/dist
+roster-mate

@@ -16,12 +16,13 @@ import (
 	"time"
 	_ "time/tzdata" // TZ works on any base image, including ones without zoneinfo
 
-	"github.com/simonpratt/roster-mate/server/internal/api"
-	"github.com/simonpratt/roster-mate/server/internal/auth"
-	"github.com/simonpratt/roster-mate/server/internal/config"
-	"github.com/simonpratt/roster-mate/server/internal/extract"
-	"github.com/simonpratt/roster-mate/server/internal/store"
-	"github.com/simonpratt/roster-mate/server/internal/web"
+	"github.com/simonpratt/roster-mate/apps/server/internal/api"
+	"github.com/simonpratt/roster-mate/apps/server/internal/auth"
+	"github.com/simonpratt/roster-mate/apps/server/internal/config"
+	"github.com/simonpratt/roster-mate/apps/server/internal/extract"
+	"github.com/simonpratt/roster-mate/apps/server/internal/store"
+	"github.com/simonpratt/roster-mate/apps/server/internal/web"
+	client "github.com/simonpratt/roster-mate/apps/web"
 )
 
 func main() {
@@ -56,7 +57,7 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer, onLi
 
 	ex := extract.NewClaude(cfg.AnthropicAPIKey, cfg.AnthropicModel, cfg.RosterName, log)
 	srv := &http.Server{
-		Handler:           api.NewRouter(web.Handler(web.Dist()), a, st, ex),
+		Handler:           api.NewRouter(web.Handler(client.Dist()), a, st, ex),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	addr := net.JoinHostPort("", strconv.Itoa(cfg.Port))
