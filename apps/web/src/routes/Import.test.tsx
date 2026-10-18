@@ -16,6 +16,7 @@ vi.mock("../shifts/repo", async (importOriginal) => {
 const SESSION = { status: 200, body: { username: "simon" } };
 const SYNCED = { status: 200, body: { rev: 0, dbId: "db", shifts: [] } };
 const HEALTHY = { status: 200, body: { ok: true } };
+const EVENT_ID = "0b6f3e1c-2f4a-4c1d-9e8b-1a2b3c4d5e6f";
 
 // Mon 7 Dec to Sat 12 Dec 2026, a month after "today" (Sun 15 Nov).
 const RESULT = {
@@ -32,13 +33,8 @@ const RESULT = {
   warnings: ["Week of 7 Dec is partly obscured."],
 };
 
-function seed(rows: Record<string, string>, notes: Record<string, string> = {}) {
-  const shifts: ShiftRow[] = Object.entries(rows).map(([date, code]) => ({
-    date,
-    code,
-    note: notes[date] ?? "",
-    editedAt: 1,
-  }));
+function seed(rows: Record<string, string>) {
+  const shifts: ShiftRow[] = Object.entries(rows).map(([date, code]) => ({ date, code, editedAt: 1 }));
   return db.shifts.bulkPut(shifts);
 }
 
@@ -80,7 +76,10 @@ describe("Import review", () => {
       "/api/health": HEALTHY,
       "/api/extract": { status: 200, body: RESULT },
     });
-    await seed({ "2026-12-08": "X", "2026-12-09": "N" }, { "2026-12-08": "swapped with Sam" });
+    await seed({ "2026-12-08": "X", "2026-12-09": "N" });
+    // The dates' events and babysitters are records of their own, which an import leaves alone.
+    await db.events.put({ id: EVENT_ID, date: "2026-12-08", text: "Dentist 3pm", createdAt: 5, editedAt: 5, rev: 1 });
+    await db.babysitters.put({ date: "2026-12-08", name: "Mum", editedAt: 5, rev: 2 });
     renderApp("/import");
     await choosePhoto();
     expect(await screen.findByRole("heading", { name: "6 shifts found" })).toBeInTheDocument();
@@ -134,13 +133,20 @@ describe("Import review", () => {
     expect(await screen.findByRole("heading", { level: 2, name: "December 2026" })).toBeInTheDocument();
     expect(setShifts).toHaveBeenCalledTimes(1);
     expect(vi.mocked(setShifts).mock.calls[0]![0]).toEqual([
-      { date: "2026-12-07", code: "D", note: "" },
-      { date: "2026-12-08", code: "E", note: "swapped with Sam" },
-      { date: "2026-12-10", code: "SE", note: "" },
-      { date: "2026-12-11", code: "X", note: "" },
+      { date: "2026-12-07", code: "D" },
+      { date: "2026-12-08", code: "E" },
+      { date: "2026-12-10", code: "SE" },
+      { date: "2026-12-11", code: "X" },
     ]);
     const saved = await db.shifts.bulkGet(["2026-12-08", "2026-12-09", "2026-12-12"]);
-    expect(saved.map((s) => s && [s.code, s.note])).toEqual([["E", "swapped with Sam"], ["N", ""], undefined]);
+    expect(saved.map((s) => s?.code)).toEqual(["E", "N", undefined]);
+    expect(saved[0]).toEqual({ date: "2026-12-08", code: "E", editedAt: expect.any(Number) });
+    expect(await db.events.toArray()).toEqual([
+      { id: EVENT_ID, date: "2026-12-08", text: "Dentist 3pm", createdAt: 5, editedAt: 5, rev: 1 },
+    ]);
+    expect(await db.babysitters.toArray()).toEqual([{ date: "2026-12-08", name: "Mum", editedAt: 5, rev: 2 }]);
+    expect(await db.eventOutbox.count()).toBe(0);
+    expect(await db.babysitterOutbox.count()).toBe(0);
   });
 
   it("re-evaluates a row when its code changes", async () => {

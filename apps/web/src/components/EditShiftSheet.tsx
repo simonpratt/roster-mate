@@ -5,19 +5,15 @@ import { setShift, useShift, type Shift } from "../shifts/repo";
 import { BottomSheet } from "./BottomSheet";
 import { Button } from "./Button";
 import { CodePicker, pickedCode, pickerValueFor, type PickerValue } from "./CodePicker";
-import { TextField } from "./TextField";
 
 // The edit sheet, docs/ux-spec.md §6.3 and docs/designs/EditSheet.dc.html (markup in
-// Main.dc.html): the date, what it holds now, the code picker, a note, Cancel and Save. Save
+// Main.dc.html): the date, what it holds now, the code picker, Cancel and Save. Save
 // writes locally through setShift (a pending edit) and closes; the grid updates from IndexedDB.
 type EditShiftSheetProps = {
   date: DateString;
   today: DateString;
   onClose: () => void;
 };
-
-/** Notes are short; the input stops at this many characters. */
-export const NOTE_MAX = 500;
 
 export function EditShiftSheet({ date, today, onClose }: EditShiftSheetProps) {
   const shift = useShift(date);
@@ -36,19 +32,18 @@ function EditShiftForm({ date, today, shift, onClose }: EditShiftFormProps) {
   // The fields start from the shift as it was on opening and then hold the user's values, even if
   // a sync changes the stored shift meanwhile (§7.1): their Save wins under last-write-wins.
   const [picker, setPicker] = useState<PickerValue>(() => pickerValueFor(shift?.code ?? null));
-  const [note, setNote] = useState(() => shift?.note ?? "");
   const [saving, setSaving] = useState(false);
 
   const code = pickedCode(picker);
-  // A note needs a shift, so an unrostered date needs a code; an Other code needs its letters.
+  // An unrostered date needs a code; an Other code needs its letters.
   const valid = code !== null && isValidCode(code);
-  const changed = !shift || code !== shift.code || note !== shift.note;
+  const changed = !shift || code !== shift.code;
   const canSave = valid && changed && !saving;
 
   async function save(close: () => void) {
     if (!canSave || code === null) return;
     setSaving(true);
-    await setShift(date, code, note);
+    await setShift(date, code);
     close();
   }
 
@@ -80,17 +75,6 @@ function EditShiftForm({ date, today, shift, onClose }: EditShiftFormProps) {
             value={picker}
             onChange={setPicker}
             hint={<p className="m-0 text-footnote text-text-muted">To remove a shift, set it to Day off.</p>}
-          />
-
-          <TextField
-            id="shift-note"
-            label="Note"
-            tone="sunken"
-            maxLength={NOTE_MAX}
-            autoComplete="off"
-            placeholder="e.g. swapped with Sam"
-            value={note}
-            onChange={(e) => setNote(e.target.value.slice(0, NOTE_MAX))}
           />
 
           <div className="grid grid-cols-2 gap-2.5">

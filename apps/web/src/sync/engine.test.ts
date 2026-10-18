@@ -1,6 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { db, type OutboxRow } from "../db";
+import { db, type BabysitterOutboxRow, type EventOutboxRow, type OutboxRow } from "../db";
+import { saveDate } from "../dates/repo";
 import { setShift, useShift } from "../shifts/repo";
 import { setOnline } from "../test-utils";
 import { sync } from "./engine";
@@ -14,6 +15,8 @@ afterEach(() => {
 interface SyncBody {
   since: number;
   changes: OutboxRow[];
+  events: EventOutboxRow[];
+  babysitters: BabysitterOutboxRow[];
 }
 
 /** A response, or a value for fetch to throw (an Error or a DOMException). */
@@ -38,7 +41,26 @@ function serve(handler: (body: SyncBody, call: number) => Reply | Promise<Reply>
 }
 
 /** A 200 sync response. */
-const ok = (rev: number, shifts: unknown[] = [], dbId = "db-1") => ({ status: 200, body: { rev, dbId, shifts } });
+const ok = (rev: number, shifts: unknown[] = [], dbId = "db-1", events: unknown[] = [], babysitters: unknown[] = []) => ({
+  status: 200,
+  body: { rev, dbId, shifts, events, babysitters },
+});
+
+/** A 200 response echoing every item sent at rev, as the server stores them all. */
+const echo = (rev: number) => (b: SyncBody) => ({
+  status: 200,
+  body: {
+    rev,
+    dbId: "db-1",
+    shifts: b.changes.map((c) => ({ ...c, rev })),
+    events: b.events.map((e) => ({ ...e, rev })),
+    babysitters: b.babysitters.map((x) => ({ ...x, rev })),
+  },
+});
+
+const ID_1 = "00000000-0000-4000-8000-000000000001";
+const ID_2 = "00000000-0000-4000-8000-000000000002";
+const ID_3 = "00000000-0000-4000-8000-000000000003";
 
 function deferred<T>() {
   let resolve!: (v: T) => void;
@@ -52,20 +74,20 @@ describe("sync engine", () => {
   it("keeps an offline edit locally and in the outbox, then sends it once online", async () => {
     setOnline(false);
     const { fetchMock } = serve(() => ok(1));
-    await setShift("2026-11-03", "L", "swapped with Sam");
+    await setShift("2026-11-03", "L");
     await sync.idle();
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(await db.outbox.count()).toBe(1);
     const { result } = renderHook(() => useShift("2026-11-03"));
-    await waitFor(() => expect(result.current).toEqual({ date: "2026-11-03", code: "L", note: "swapped with Sam" }));
+    await waitFor(() => expect(result.current).toEqual({ date: "2026-11-03", code: "L" }));
 
     setOnline(true);
-    const { bodies } = serve(({ changes }) => ok(7, changes.map((c) => ({ ...c, rev: 7 }))));
+    const { bodies } = serve(echo(7));
     await sync.trigger();
 
     expect(bodies).toHaveLength(1);
-    expect(bodies[0]).toMatchObject({ since: 0, changes: [{ date: "2026-11-03", code: "L", note: "swapped with Sam" }] });
+    expect(bodies[0]).toMatchObject({ since: 0, changes: [{ date: "2026-11-03", code: "L" }] });
     expect(await db.outbox.count()).toBe(0);
     expect(await meta("lastRev")).toBe(7);
     expect(await meta("dbId")).toBe("db-1");
@@ -83,7 +105,7 @@ describe("sync engine", () => {
     await setShift("2026-11-03", "L");
     await waitFor(() => expect(bodies).toHaveLength(1));
     await setShift("2026-11-04", "E");
-    first.resolve(ok(1, [{ date: "2026-11-03", code: "L", note: "", editedAt: bodies[0]!.changes[0]!.editedAt, rev: 1 }]));
+    first.resolve(ok(1, [{ date: "2026-11-03", code: "L", editedAt: bodies[0]!.changes[0]!.editedAt, rev: 1 }]));
     await sync.idle();
 
     expect(bodies.map((b) => b.changes.map((c) => c.date))).toEqual([["2026-11-03"], ["2026-11-04"]]);
@@ -104,19 +126,19 @@ describe("sync engine", () => {
     void sync.trigger();
     await waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1));
     await setShift("2026-11-03", "N");
-    first.resolve(ok(1, [{ date: "2026-11-03", code: "D", note: "from server", editedAt: 1000, rev: 1 }]));
+    first.resolve(ok(1, [{ date: "2026-11-03", code: "D", editedAt: 1000, rev: 1 }]));
     await sync.idle();
 
     expect(localAtSecondCall).toBe("N");
-    expect(await db.shifts.get("2026-11-03")).toMatchObject({ code: "N", note: "" });
+    expect(await db.shifts.get("2026-11-03")).toMatchObject({ code: "N" });
     expect(await meta("lastRev")).toBe(3);
   });
 
   it("stores a pulled server shift when no newer edit is pending, and a null code as unrostered", async () => {
     serve(() =>
       ok(2, [
-        { date: "2026-11-03", code: "E", note: "", editedAt: 1000, rev: 1 },
-        { date: "2026-11-04", code: null, note: "", editedAt: 1001, rev: 2 },
+        { date: "2026-11-03", code: "E", editedAt: 1000, rev: 1 },
+        { date: "2026-11-04", code: null, editedAt: 1001, rev: 2 },
       ]),
     );
     await sync.trigger();
@@ -176,34 +198,59 @@ describe("sync engine", () => {
   describe("server reset", () => {
     async function seed(lastRev: number, dbId: string) {
       await db.shifts.bulkPut([
-        { date: "2026-11-03", code: "D", note: "a", editedAt: 111, rev: 4 },
-        { date: "2026-11-04", code: "E", note: "", editedAt: 222, rev: 5 },
-        { date: "2026-11-05", code: null, note: "", editedAt: 333, rev: 6 },
-        { date: "2026-11-06", code: "L", note: "", editedAt: 444, rev: 7 },
+        { date: "2026-11-03", code: "D", editedAt: 111, rev: 4 },
+        { date: "2026-11-04", code: "E", editedAt: 222, rev: 5 },
+        { date: "2026-11-05", code: null, editedAt: 333, rev: 6 },
+        { date: "2026-11-06", code: "L", editedAt: 444, rev: 7 },
       ]);
-      // A pending edit newer than the stored shift stays as it is.
-      await db.outbox.put({ date: "2026-11-06", code: "N", note: "newer", editedAt: 555 });
+      await db.events.bulkPut([
+        { id: ID_1, date: "2026-11-03", text: "Dentist 3pm", createdAt: 100, editedAt: 120, rev: 8 },
+        { id: ID_2, date: "2026-11-04", text: "School concert", createdAt: 130, editedAt: 130, rev: 9 },
+      ]);
+      await db.babysitters.bulkPut([
+        { date: "2026-11-03", name: "Mum", editedAt: 140, rev: 10 },
+        // Cleared: nothing to restore.
+        { date: "2026-11-04", name: "", editedAt: 150, rev: 11 },
+      ]);
+      // Pending edits newer than the stored rows stay as they are.
+      await db.outbox.put({ date: "2026-11-06", code: "N", editedAt: 555 });
+      await db.eventOutbox.put({ id: ID_2, date: "2026-11-04", text: "Concert", deleted: false, createdAt: 130, editedAt: 666 });
       await db.meta.bulkPut([
         { key: "lastRev", value: lastRev },
         { key: "dbId", value: dbId },
       ]);
     }
 
-    const requeued = [
-      { date: "2026-11-03", code: "D", note: "a", editedAt: 111 },
-      { date: "2026-11-04", code: "E", note: "", editedAt: 222 },
-      { date: "2026-11-06", code: "N", note: "newer", editedAt: 555 },
-    ];
+    const requeued = {
+      since: 0,
+      changes: [
+        { date: "2026-11-03", code: "D", editedAt: 111 },
+        { date: "2026-11-04", code: "E", editedAt: 222 },
+        { date: "2026-11-06", code: "N", editedAt: 555 },
+      ],
+      events: [
+        { id: ID_1, date: "2026-11-03", text: "Dentist 3pm", deleted: false, createdAt: 100, editedAt: 120 },
+        { id: ID_2, date: "2026-11-04", text: "Concert", deleted: false, createdAt: 130, editedAt: 666 },
+      ],
+      babysitters: [{ date: "2026-11-03", name: "Mum", editedAt: 140 }],
+    };
 
-    it("re-queues every local shift when the dbId changes", async () => {
+    it("re-queues every local shift, live event and named babysitter when the dbId changes", async () => {
       await seed(10, "db-old");
       const { bodies } = serve((_b, call) => (call === 1 ? ok(0, [], "db-new") : ok(3, [], "db-new")));
       await sync.trigger();
 
       expect(bodies).toHaveLength(2);
-      expect(bodies[0]).toEqual({ since: 10, changes: [{ date: "2026-11-06", code: "N", note: "newer", editedAt: 555 }] });
-      expect(bodies[1]).toEqual({ since: 0, changes: requeued });
+      expect(bodies[0]).toEqual({
+        since: 10,
+        changes: [{ date: "2026-11-06", code: "N", editedAt: 555 }],
+        events: [requeued.events[1]],
+        babysitters: [],
+      });
+      expect(bodies[1]).toEqual(requeued);
       expect(await db.outbox.count()).toBe(0);
+      expect(await db.eventOutbox.count()).toBe(0);
+      expect(await db.babysitterOutbox.count()).toBe(0);
       expect(await meta("dbId")).toBe("db-new");
       expect(await meta("lastRev")).toBe(3);
       expect(sync.getOutcome()).toBe("ok");
@@ -215,13 +262,13 @@ describe("sync engine", () => {
       await sync.trigger();
 
       expect(bodies).toHaveLength(2);
-      expect(bodies[1]).toEqual({ since: 0, changes: requeued });
+      expect(bodies[1]).toEqual(requeued);
       expect(await db.outbox.count()).toBe(0);
       expect(await meta("lastRev")).toBe(5);
     });
 
     it("just stores the dbId on the first sync", async () => {
-      await db.shifts.put({ date: "2026-11-03", code: "D", note: "", editedAt: 111 });
+      await db.shifts.put({ date: "2026-11-03", code: "D", editedAt: 111 });
       const { bodies } = serve(() => ok(4, [], "db-first"));
       await sync.trigger();
 
@@ -244,7 +291,6 @@ describe("sync engine", () => {
     const rows = Array.from({ length: 1500 }, (_, i) => ({
       date: new Date(start + i * 86_400_000).toISOString().slice(0, 10), // UTC on purpose: unique keys only
       code: "D",
-      note: "",
       editedAt: 1000 + i,
     }));
     await db.outbox.bulkPut(rows);
@@ -254,6 +300,121 @@ describe("sync engine", () => {
     expect(bodies.map((b) => b.changes.length)).toEqual([1000, 500]);
     expect(bodies[1]!.since).toBe(1);
     expect(await db.outbox.count()).toBe(0);
+  });
+
+  it("sends at most 1000 items per request across the three outboxes, until all are empty", async () => {
+    const start = Date.UTC(2020, 0, 1);
+    // UTC on purpose: unique keys only.
+    const dateAt = (i: number) => new Date(start + i * 86_400_000).toISOString().slice(0, 10);
+    const id = (i: number) => `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`;
+    await db.outbox.bulkPut(Array.from({ length: 600 }, (_, i) => ({ date: dateAt(i), code: "D", editedAt: 1 })));
+    await db.eventOutbox.bulkPut(
+      Array.from({ length: 600 }, (_, i) => ({
+        id: id(i),
+        date: dateAt(i),
+        text: "x",
+        deleted: false,
+        createdAt: 1,
+        editedAt: 1,
+      })),
+    );
+    await db.babysitterOutbox.bulkPut(Array.from({ length: 300 }, (_, i) => ({ date: dateAt(i), name: "Mum", editedAt: 1 })));
+    const { bodies } = serve((_b, call) => ok(call));
+    await sync.trigger();
+
+    expect(bodies.map((b) => [b.changes.length, b.events.length, b.babysitters.length])).toEqual([
+      [600, 400, 0],
+      [0, 200, 300],
+    ]);
+    expect(await db.outbox.count()).toBe(0);
+    expect(await db.eventOutbox.count()).toBe(0);
+    expect(await db.babysitterOutbox.count()).toBe(0);
+    expect(sync.getOutcome()).toBe("ok");
+  });
+
+  it("counts every queued item offline, then one sync empties all three outboxes", async () => {
+    setOnline(false);
+    const { fetchMock } = serve(() => ok(1));
+    await saveDate("2026-11-03", { code: "L", babysitter: "Mum", events: { added: ["Dentist 3pm", "Pick up parcel"] } });
+    await sync.idle();
+    expect(fetchMock).not.toHaveBeenCalled();
+    const { result } = renderHook(() => ({ ...useSyncStatus(), count: usePendingCount() }));
+    await waitFor(() => expect(result.current).toEqual({ status: "offline", pendingCount: 4, count: 4 }));
+
+    setOnline(true);
+    const { bodies } = serve(echo(4));
+    await sync.trigger();
+
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]!.changes).toHaveLength(1);
+    expect(bodies[0]!.events.map((e) => e.text)).toEqual(expect.arrayContaining(["Dentist 3pm", "Pick up parcel"]));
+    expect(bodies[0]!.babysitters).toEqual([{ date: "2026-11-03", name: "Mum", editedAt: expect.any(Number) }]);
+    expect(await db.outbox.count()).toBe(0);
+    expect(await db.eventOutbox.count()).toBe(0);
+    expect(await db.babysitterOutbox.count()).toBe(0);
+    expect(await db.events.where("date").equals("2026-11-03").count()).toBe(2);
+    expect(await db.babysitters.get("2026-11-03")).toMatchObject({ name: "Mum", rev: 4 });
+    await waitFor(() => expect(result.current.count).toBe(0));
+  });
+
+  it("deletes the local event for a pulled tombstone, and stores pulled events and babysitters", async () => {
+    await db.events.put({ id: ID_1, date: "2026-11-03", text: "Dentist 3pm", createdAt: 100, editedAt: 100, rev: 1 });
+    serve(() =>
+      ok(
+        5,
+        [],
+        "db-1",
+        [
+          { id: ID_1, date: "2026-11-03", text: "", deleted: true, createdAt: 100, editedAt: 200, rev: 3 },
+          { id: ID_2, date: "2026-11-04", text: "Concert", deleted: false, createdAt: 150, editedAt: 150, rev: 4 },
+        ],
+        [{ date: "2026-11-04", name: "Dad", editedAt: 160, rev: 5 }],
+      ),
+    );
+    await sync.trigger();
+
+    expect(await db.events.get(ID_1)).toBeUndefined();
+    expect(await db.events.get(ID_2)).toEqual({
+      id: ID_2,
+      date: "2026-11-04",
+      text: "Concert",
+      createdAt: 150,
+      editedAt: 150,
+      rev: 4,
+    });
+    expect(await db.babysitters.get("2026-11-04")).toEqual({ date: "2026-11-04", name: "Dad", editedAt: 160, rev: 5 });
+  });
+
+  it("skips pulled events and babysitters older than a pending local edit", async () => {
+    const first = deferred<Reply>();
+    serve((_b, call) => (call === 1 ? first.promise : ok(9)));
+    void sync.trigger();
+    await waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1));
+    await db.events.put({ id: ID_1, date: "2026-11-03", text: "Mine", createdAt: 100, editedAt: 5000 });
+    await db.eventOutbox.bulkPut([
+      { id: ID_1, date: "2026-11-03", text: "Mine", deleted: false, createdAt: 100, editedAt: 5000 },
+      { id: ID_3, date: "2026-11-03", text: "", deleted: true, createdAt: 100, editedAt: 5000 },
+    ]);
+    await db.babysitters.put({ date: "2026-11-03", name: "Mum", editedAt: 5000 });
+    await db.babysitterOutbox.put({ date: "2026-11-03", name: "Mum", editedAt: 5000 });
+    first.resolve(
+      ok(
+        3,
+        [],
+        "db-1",
+        [
+          { id: ID_1, date: "2026-11-03", text: "", deleted: true, createdAt: 100, editedAt: 1000, rev: 1 },
+          // Deleted here, with the tombstone still pending: not brought back.
+          { id: ID_3, date: "2026-11-03", text: "Old", deleted: false, createdAt: 100, editedAt: 1000, rev: 2 },
+        ],
+        [{ date: "2026-11-03", name: "Dad", editedAt: 1000, rev: 3 }],
+      ),
+    );
+    await sync.idle();
+
+    expect(await db.events.get(ID_1)).toMatchObject({ text: "Mine" });
+    expect(await db.events.get(ID_3)).toBeUndefined();
+    expect(await db.babysitters.get("2026-11-03")).toMatchObject({ name: "Mum" });
   });
 
   it("runs one follow-up however many times it is triggered during a run", async () => {

@@ -93,7 +93,7 @@ describe("Login", () => {
 
   it("offline with shifts on the phone: offers Back to calendar", async () => {
     setOnline(false);
-    await db.shifts.put({ date: "2026-11-03", code: "L", note: "", editedAt: 1 });
+    await db.shifts.put({ date: "2026-11-03", code: "L", editedAt: 1 });
     const fetchMock = stubFetch({});
     renderApp("/login");
 

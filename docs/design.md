@@ -152,12 +152,19 @@ carried over. Events and babysitters are records of their own, not fields on a s
 - `shifts`: `{date, code | null, editedAt, rev}` keyed by `date`.
 - `outbox`: `{date, code | null, editedAt}` keyed by `date` (a newer edit to the same date
   replaces the queued one).
-- `events`: `{id, date, text, deleted, createdAt, editedAt, rev}` keyed by `id`, indexed by
-  `date`. Deleted events stay as tombstones and are hidden from the UI.
+- `events`: `{id, date, text, createdAt, editedAt, rev}` keyed by `id`, indexed by `date`. Live
+  events only: removing an event deletes its row and queues a tombstone in `eventOutbox`, and a
+  pulled tombstone deletes the row.
 - `eventOutbox`: `{id, date, text, deleted, createdAt, editedAt}` keyed by `id`.
 - `babysitters`: `{date, name, editedAt, rev}` keyed by `date`; `name: ''` is no babysitter.
 - `babysitterOutbox`: `{date, name, editedAt}` keyed by `date`.
 - `meta`: `{key: 'lastRev', value}` and `{key: 'dbId', value}`.
+
+Dexie version 2 added the four event and babysitter tables and stripped `note` from existing
+`shifts` and `outbox` rows. The UI reaches them through `apps/web/src/dates/repo.ts`, whose
+`saveDate` writes a date's code, babysitter and events with one `editedAt` in one transaction.
+Event ids come from `crypto.randomUUID()`, or `crypto.getRandomValues` over plain HTTP where
+`randomUUID` is missing.
 
 ### Shift codes
 
@@ -243,9 +250,9 @@ Client rules:
   network): keep everything, show `offline`, retry on the next trigger. `401`: show the sign-in
   banner. Any other non-2xx response: show `error`.
 - **Server reset**: if the response's `dbId` differs from the stored one, or its `rev` is lower
-  than the `since` sent, the server has lost data. The client copies every local shift, event (tombstones
-  included) and babysitter into its outbox with its existing `editedAt` (leaving newer outbox
-  entries alone), sets `lastRev` to 0
+  than the `since` sent, the server has lost data. The client copies every local shift with a code, every
+  live event and every babysitter with a name into its outbox with its existing `editedAt`
+  (leaving newer outbox entries alone, including pending tombstones), sets `lastRev` to 0
   and runs again, so the phone's copy restores the server. With two devices, each re-sends its
   copy and last-write-wins settles each date. On the first sync (no stored `dbId`) the client
   just stores it.

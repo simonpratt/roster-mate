@@ -9,26 +9,34 @@ import { isValidCode, type ShiftCode } from "./codes";
 export interface Shift {
   date: string;
   code: ShiftCode;
-  note: string;
 }
 
 export interface ShiftEdit {
   date: string;
   code: ShiftCode;
-  note?: string;
 }
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+/** Throws unless date is a YYYY-MM-DD string. */
+export function checkDate(date: string) {
+  if (!DATE_PATTERN.test(date)) throw new Error(`invalid date: ${date}`);
+}
+
+/** Throws unless code is a valid shift code. */
+export function checkCode(code: string) {
+  if (!isValidCode(code)) throw new Error(`invalid shift code: ${code}`);
+}
+
 function toRow(edit: ShiftEdit, editedAt: number): ShiftRow {
-  if (!DATE_PATTERN.test(edit.date)) throw new Error(`invalid date: ${edit.date}`);
-  if (!isValidCode(edit.code)) throw new Error(`invalid shift code: ${edit.code}`);
-  return { date: edit.date, code: edit.code, note: edit.note ?? "", editedAt };
+  checkDate(edit.date);
+  checkCode(edit.code);
+  return { date: edit.date, code: edit.code, editedAt };
 }
 
 /** Saves one shift. The UI always writes a code; Day off (X) is how a shift is removed. */
-export async function setShift(date: string, code: ShiftCode, note = ""): Promise<void> {
-  await setShifts([{ date, code, note }]);
+export async function setShift(date: string, code: ShiftCode): Promise<void> {
+  await setShifts([{ date, code }]);
 }
 
 /** Saves many shifts in one transaction with one sync trigger, as an import does. */
@@ -42,9 +50,9 @@ export async function setShifts(edits: ShiftEdit[]): Promise<void> {
   void sync.trigger();
 }
 
-function toShift(row: ShiftRow | undefined): Shift | undefined {
+export function toShift(row: ShiftRow | undefined): Shift | undefined {
   if (!row || row.code === null) return undefined;
-  return { date: row.date, code: row.code, note: row.note };
+  return { date: row.date, code: row.code };
 }
 
 /**

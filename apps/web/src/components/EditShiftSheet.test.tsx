@@ -10,13 +10,8 @@ vi.mock("../shifts/repo", async (importOriginal) => {
   return { ...actual, setShift: vi.fn(actual.setShift) };
 });
 
-function seed(rows: Record<string, string>, notes: Record<string, string> = {}) {
-  const shifts: ShiftRow[] = Object.entries(rows).map(([date, code]) => ({
-    date,
-    code,
-    note: notes[date] ?? "",
-    editedAt: 1,
-  }));
+function seed(rows: Record<string, string>) {
+  const shifts: ShiftRow[] = Object.entries(rows).map(([date, code]) => ({ date, code, editedAt: 1 }));
   return db.shifts.bulkPut(shifts);
 }
 
@@ -81,14 +76,13 @@ describe("Edit sheet", () => {
   });
 
 
-  it("changes E to L, keeping the note, and the grid shows L", async () => {
-    await seed({ "2026-11-03": "E" }, { "2026-11-03": "swapped with Sam" });
-    const { cell, sheet } = await openSheet("Tuesday 3 November, Early, has note");
+  it("changes E to L, and the grid shows L", async () => {
+    await seed({ "2026-11-03": "E" });
+    const { cell, sheet } = await openSheet("Tuesday 3 November, Early");
 
     expect(sheet).toHaveAccessibleName("Tuesday 3 November");
     expect(within(sheet).getByText("Currently Early")).toBeInTheDocument();
     expect(radio(sheet, "E, Early")).toBeChecked();
-    expect(within(sheet).getByLabelText("Note")).toHaveValue("swapped with Sam");
     expect(within(sheet).getByText("To remove a shift, set it to Day off.")).toBeInTheDocument();
 
     fireEvent.click(radio(sheet, "L, Late"));
@@ -97,9 +91,9 @@ describe("Edit sheet", () => {
     fireEvent.click(saveButton(sheet));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    expect(setShift).toHaveBeenCalledExactlyOnceWith("2026-11-03", "L", "swapped with Sam");
-    expect(await screen.findByRole("button", { name: "Tuesday 3 November, Late, has note" })).toHaveTextContent("3L");
-    expect(await db.outbox.get("2026-11-03")).toMatchObject({ code: "L", note: "swapped with Sam" });
+    expect(setShift).toHaveBeenCalledExactlyOnceWith("2026-11-03", "L");
+    expect(await screen.findByRole("button", { name: "Tuesday 3 November, Late" })).toHaveTextContent("3L");
+    expect(await db.outbox.get("2026-11-03")).toEqual({ date: "2026-11-03", code: "L", editedAt: expect.any(Number) });
     // Focus is back on the tapped date.
     expect(cell).toHaveFocus();
   });
@@ -111,35 +105,28 @@ describe("Edit sheet", () => {
     fireEvent.click(saveButton(sheet));
 
     expect(await screen.findByRole("button", { name: "Wednesday 4 November, Day off" })).toHaveTextContent("4X");
-    expect(await db.shifts.get("2026-11-04")).toMatchObject({ code: "X", note: "" });
+    expect(await db.shifts.get("2026-11-04")).toMatchObject({ code: "X" });
   });
 
-  it("won't save a note alone on an unrostered date", async () => {
+  it("needs a code on an unrostered date", async () => {
     const { sheet } = await openSheet("Thursday 5 November, no shift");
     expect(within(sheet).getByText("Not rostered yet")).toBeInTheDocument();
     expect(within(sheet).queryByRole("radio", { checked: true })).not.toBeInTheDocument();
-
-    fireEvent.change(within(sheet).getByLabelText("Note"), { target: { value: "training" } });
     expect(saveButton(sheet)).toBeDisabled();
 
     fireEvent.click(radio(sheet, "D, Day"));
     expect(saveButton(sheet)).toBeEnabled();
     fireEvent.click(saveButton(sheet));
-    await waitFor(() => expect(setShift).toHaveBeenCalledExactlyOnceWith("2026-11-05", "D", "training"));
+    await waitFor(() => expect(setShift).toHaveBeenCalledExactlyOnceWith("2026-11-05", "D"));
   });
 
   it("keeps Save disabled until something changes", async () => {
-    await seed({ "2026-11-03": "E" }, { "2026-11-03": "swapped with Sam" });
-    const { sheet } = await openSheet("Tuesday 3 November, Early, has note");
-    const note = within(sheet).getByLabelText("Note");
+    await seed({ "2026-11-03": "E" });
+    const { sheet } = await openSheet("Tuesday 3 November, Early");
     expect(saveButton(sheet)).toBeDisabled();
 
     // Tapping the selected code again changes nothing.
     fireEvent.click(radio(sheet, "E, Early"));
-    expect(saveButton(sheet)).toBeDisabled();
-    fireEvent.change(note, { target: { value: "swapped with Jo" } });
-    expect(saveButton(sheet)).toBeEnabled();
-    fireEvent.change(note, { target: { value: "swapped with Sam" } });
     expect(saveButton(sheet)).toBeDisabled();
     fireEvent.click(radio(sheet, "N, Night"));
     expect(saveButton(sheet)).toBeEnabled();
@@ -199,7 +186,7 @@ describe("Edit sheet", () => {
     expect(radio(sheet, "Other, SE")).toBeChecked();
     fireEvent.click(saveButton(sheet));
 
-    await waitFor(() => expect(setShift).toHaveBeenCalledExactlyOnceWith("2026-11-05", "SE", ""));
+    await waitFor(() => expect(setShift).toHaveBeenCalledExactlyOnceWith("2026-11-05", "SE"));
     expect(await screen.findByRole("button", { name: "Thursday 5 November, SE" })).toHaveTextContent("5SE");
   });
 
@@ -228,18 +215,7 @@ describe("Edit sheet", () => {
 
     fireEvent.change(input, { target: { value: "D" } });
     fireEvent.click(saveButton(sheet));
-    await waitFor(() => expect(setShift).toHaveBeenCalledExactlyOnceWith("2026-11-20", "D", ""));
-  });
-
-  it("won't take a note longer than 500 characters", async () => {
-    await seed({ "2026-11-03": "E" });
-    const { sheet } = await openSheet("Tuesday 3 November, Early");
-    const note = within(sheet).getByLabelText("Note");
-    expect(note).toHaveAttribute("maxlength", "500");
-    fireEvent.change(note, { target: { value: "a".repeat(600) } });
-    expect(note).toHaveValue("a".repeat(500));
-    fireEvent.click(saveButton(sheet));
-    await waitFor(() => expect(setShift).toHaveBeenCalledExactlyOnceWith("2026-11-03", "E", "a".repeat(500)));
+    await waitFor(() => expect(setShift).toHaveBeenCalledExactlyOnceWith("2026-11-20", "D"));
   });
 
   it("adds the year to the heading outside the current year", async () => {

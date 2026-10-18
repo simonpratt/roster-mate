@@ -6,13 +6,8 @@ import { renderApp, setOnline, stubFetch } from "../test-utils";
 const SESSION = { status: 200, body: { username: "simon" } };
 const SYNCED = { status: 200, body: { rev: 0, dbId: "db", shifts: [] } };
 
-function seed(rows: Record<string, string | null>, notes: Record<string, string> = {}) {
-  const shifts: ShiftRow[] = Object.entries(rows).map(([date, code]) => ({
-    date,
-    code,
-    note: notes[date] ?? "",
-    editedAt: 1,
-  }));
+function seed(rows: Record<string, string | null>) {
+  const shifts: ShiftRow[] = Object.entries(rows).map(([date, code]) => ({ date, code, editedAt: 1 }));
   return db.shifts.bulkPut(shifts);
 }
 
@@ -57,10 +52,7 @@ afterEach(() => {
 describe("Calendar month grid", () => {
   it("shows November 2026 from Mon 26 Oct to Sun 6 Dec with the seeded codes", async () => {
     stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
-    await seed(
-      { "2026-10-26": "D", "2026-11-03": "L", "2026-11-04": "X", "2026-11-20": "SE", "2026-12-06": "N" },
-      { "2026-11-03": "swapped with Sam" },
-    );
+    await seed({ "2026-10-26": "D", "2026-11-03": "L", "2026-11-04": "X", "2026-11-20": "SE", "2026-12-06": "N" });
     renderApp("/");
 
     expect(await screen.findByRole("heading", { level: 2, name: "November 2026" })).toBeInTheDocument();
@@ -71,7 +63,7 @@ describe("Calendar month grid", () => {
     expect(cells[41]).toHaveAccessibleName("Sunday 6 December, Night");
     expect(cells[41]).toHaveTextContent("6N");
 
-    expect(screen.getByRole("button", { name: "Tuesday 3 November, Late, has note" })).toHaveTextContent("3L");
+    expect(screen.getByRole("button", { name: "Tuesday 3 November, Late" })).toHaveTextContent("3L");
     expect(screen.getByRole("button", { name: "Wednesday 4 November, Day off" })).toHaveTextContent("4X");
     expect(screen.getByRole("button", { name: "Friday 20 November, SE" })).toHaveTextContent("20SE");
     expect(screen.getByRole("button", { name: "Thursday 5 November, no shift" })).toHaveTextContent(/^5$/);
@@ -192,8 +184,8 @@ describe("Sync pill and sign-in banner", () => {
   it("shows the pending count while edits wait to sync", async () => {
     const { answerSync } = stubHeldSync(false);
     await db.outbox.bulkPut([
-      { date: "2026-11-20", code: "D", note: "", editedAt: 1 },
-      { date: "2026-11-21", code: "L", note: "", editedAt: 1 },
+      { date: "2026-11-20", code: "D", editedAt: 1 },
+      { date: "2026-11-21", code: "L", editedAt: 1 },
     ]);
     renderApp("/");
     expect(await screen.findByText("2 pending")).toBeInTheDocument();
@@ -216,7 +208,7 @@ describe("Sign out", () => {
   it("asks first when edits are pending, even offline", async () => {
     setOnline(false);
     const fetchMock = stubFetch({ "/api/logout": { status: 204 } });
-    await db.outbox.put({ date: "2026-11-20", code: "D", note: "", editedAt: 1 });
+    await db.outbox.put({ date: "2026-11-20", code: "D", editedAt: 1 });
     renderApp("/");
     await screen.findByText("Offline");
     fireEvent.click(screen.getByRole("button", { name: "More" }));

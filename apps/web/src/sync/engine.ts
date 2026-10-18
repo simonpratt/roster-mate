@@ -1,10 +1,18 @@
 // The sync engine (docs/design.md § Sync protocol, ADR 0001): the only code that talks to
-// /api/sync. It sends the outbox, pulls every shift changed since lastRev, and settles clashes by
-// last-write-wins on editedAt.
+// /api/sync. It sends the three outboxes (shifts, events, babysitters), pulls every row changed
+// since lastRev, and settles clashes by last-write-wins on editedAt, for each kind on its own.
 import { ApiError, request, UnauthorizedError } from "../api";
-import { db, type OutboxRow, type ShiftRow } from "../db";
+import {
+  allTables,
+  db,
+  type BabysitterOutboxRow,
+  type BabysitterRow,
+  type EventOutboxRow,
+  type OutboxRow,
+  type ShiftRow,
+} from "../db";
 
-/** At most this many changes per request (the server's limit). */
+/** At most this many items per request, across the three kinds (the server's limit). */
 export const BATCH_SIZE = 1000;
 
 /** A request that takes longer than this counts as the server being unreachable. */
@@ -20,6 +28,16 @@ interface SyncResponse {
   rev: number;
   dbId: string;
   shifts: (ShiftRow & { rev: number })[];
+  // Always sent by the server; read as [] when missing, as from a server older than ADR 0003.
+  events?: (EventOutboxRow & { rev: number })[];
+  babysitters?: (BabysitterRow & { rev: number })[];
+}
+
+/** One request's worth of pending edits. */
+interface Batch {
+  changes: OutboxRow[];
+  events: EventOutboxRow[];
+  babysitters: BabysitterOutboxRow[];
 }
 
 type Listener = () => void;
@@ -86,8 +104,8 @@ export class SyncEngine {
       for (;;) {
         const since = await getMeta<number>("lastRev", 0);
         const dbId = await getMeta<string | undefined>("dbId", undefined);
-        const sent = await db.outbox.orderBy("date").limit(BATCH_SIZE).toArray();
-        const res = await post({ since, changes: sent });
+        const sent = await takeBatch();
+        const res = await post(since, sent);
         if (dbId !== undefined && (res.dbId !== dbId || res.rev < since)) {
           // The server lost data (wiped or restored). Re-send the phone's copy and pull it all.
           // A second reset in one run means the server is misbehaving; stop rather than loop.
@@ -97,7 +115,8 @@ export class SyncEngine {
           continue;
         }
         await apply(sent, res);
-        if (sent.length < BATCH_SIZE) return "ok";
+        // A batch with room to spare took everything left in all three outboxes.
+        if (size(sent) < BATCH_SIZE) return "ok";
       }
     } catch (err) {
       if (err instanceof UnauthorizedError) return "unauthorized";
@@ -112,14 +131,41 @@ export class SyncEngine {
   }
 }
 
-async function post(body: { since: number; changes: OutboxRow[] }): Promise<SyncResponse> {
-  const changes = body.changes.map(({ date, code, note, editedAt }) => ({ date, code, note, editedAt }));
+/** Up to BATCH_SIZE pending edits: shifts first, then events, then babysitters. */
+async function takeBatch(): Promise<Batch> {
+  return db.transaction("r", db.outbox, db.eventOutbox, db.babysitterOutbox, async () => {
+    const changes = await db.outbox.orderBy("date").limit(BATCH_SIZE).toArray();
+    const events = await db.eventOutbox.orderBy("id").limit(BATCH_SIZE - changes.length).toArray();
+    const babysitters = await db.babysitterOutbox
+      .orderBy("date")
+      .limit(BATCH_SIZE - changes.length - events.length)
+      .toArray();
+    return { changes, events, babysitters };
+  });
+}
+
+const size = (b: Batch) => b.changes.length + b.events.length + b.babysitters.length;
+
+async function post(since: number, batch: Batch): Promise<SyncResponse> {
+  const body = {
+    since,
+    changes: batch.changes.map(({ date, code, editedAt }) => ({ date, code, editedAt })),
+    events: batch.events.map(({ id, date, text, deleted, createdAt, editedAt }) => ({
+      id,
+      date,
+      text,
+      deleted,
+      createdAt,
+      editedAt,
+    })),
+    babysitters: batch.babysitters.map(({ date, name, editedAt }) => ({ date, name, editedAt })),
+  };
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   try {
     const res = await request<SyncResponse>("/api/sync", {
       method: "POST",
-      body: { since: body.since, changes },
+      body,
       signal: ctl.signal,
     });
     if (!res) throw new ApiError(204);
@@ -135,20 +181,50 @@ async function getMeta<T>(key: "lastRev" | "dbId", fallback: T): Promise<T> {
 }
 
 /**
- * Removes each sent outbox entry that hasn't been replaced since, stores the returned shifts
- * except where a newer local edit is pending, and records the server's rev and dbId.
+ * Removes each sent outbox entry that hasn't been replaced since, stores the returned shifts,
+ * events and babysitters except where a newer local edit is pending, and records the server's rev
+ * and dbId. A returned event tombstone deletes the local event.
  */
-async function apply(sent: OutboxRow[], res: SyncResponse) {
-  await db.transaction("rw", db.shifts, db.outbox, db.meta, async () => {
-    for (const s of sent) {
+async function apply(sent: Batch, res: SyncResponse) {
+  await db.transaction("rw", allTables(), async () => {
+    for (const s of sent.changes) {
       const current = await db.outbox.get(s.date);
       if (current && current.editedAt === s.editedAt) await db.outbox.delete(s.date);
     }
+    for (const e of sent.events) {
+      const current = await db.eventOutbox.get(e.id);
+      if (current && current.editedAt === e.editedAt) await db.eventOutbox.delete(e.id);
+    }
+    for (const b of sent.babysitters) {
+      const current = await db.babysitterOutbox.get(b.date);
+      if (current && current.editedAt === b.editedAt) await db.babysitterOutbox.delete(b.date);
+    }
+
     for (const s of res.shifts) {
       const pending = await db.outbox.get(s.date);
       if (pending && pending.editedAt > s.editedAt) continue;
-      await db.shifts.put({ date: s.date, code: s.code, note: s.note, editedAt: s.editedAt, rev: s.rev });
+      await db.shifts.put({ date: s.date, code: s.code, editedAt: s.editedAt, rev: s.rev });
     }
+    for (const e of res.events ?? []) {
+      const pending = await db.eventOutbox.get(e.id);
+      if (pending && pending.editedAt > e.editedAt) continue;
+      if (e.deleted) await db.events.delete(e.id);
+      else
+        await db.events.put({
+          id: e.id,
+          date: e.date,
+          text: e.text,
+          createdAt: e.createdAt,
+          editedAt: e.editedAt,
+          rev: e.rev,
+        });
+    }
+    for (const b of res.babysitters ?? []) {
+      const pending = await db.babysitterOutbox.get(b.date);
+      if (pending && pending.editedAt > b.editedAt) continue;
+      await db.babysitters.put({ date: b.date, name: b.name, editedAt: b.editedAt, rev: b.rev });
+    }
+
     await db.meta.bulkPut([
       { key: "lastRev", value: res.rev },
       { key: "dbId", value: res.dbId },
@@ -157,17 +233,29 @@ async function apply(sent: OutboxRow[], res: SyncResponse) {
 }
 
 /**
- * After a server reset: queues every local shift with a code, keeping its editedAt (a newer
- * pending edit for the date stays), and starts again from rev 0 against the new dbId.
+ * After a server reset: queues every local shift with a code, every live event and every
+ * babysitter with a name, keeping their editedAt (a newer pending edit stays), and starts again
+ * from rev 0 against the new dbId.
  */
 async function requeueAll(dbId: string) {
-  await db.transaction("rw", db.shifts, db.outbox, db.meta, async () => {
-    const shifts = await db.shifts.toArray();
-    for (const s of shifts) {
+  await db.transaction("rw", allTables(), async () => {
+    for (const s of await db.shifts.toArray()) {
       if (s.code === null) continue;
       const pending = await db.outbox.get(s.date);
       if (pending && pending.editedAt >= s.editedAt) continue;
-      await db.outbox.put({ date: s.date, code: s.code, note: s.note, editedAt: s.editedAt });
+      await db.outbox.put({ date: s.date, code: s.code, editedAt: s.editedAt });
+    }
+    for (const e of await db.events.toArray()) {
+      const pending = await db.eventOutbox.get(e.id);
+      if (pending && pending.editedAt >= e.editedAt) continue;
+      const { id, date, text, createdAt, editedAt } = e;
+      await db.eventOutbox.put({ id, date, text, deleted: false, createdAt, editedAt });
+    }
+    for (const b of await db.babysitters.toArray()) {
+      if (b.name === "") continue;
+      const pending = await db.babysitterOutbox.get(b.date);
+      if (pending && pending.editedAt >= b.editedAt) continue;
+      await db.babysitterOutbox.put({ date: b.date, name: b.name, editedAt: b.editedAt });
     }
     await db.meta.bulkPut([
       { key: "lastRev", value: 0 },

@@ -110,11 +110,9 @@ export function pickCode(row: ReviewRow, choice: Choice, other = row.other): Row
   return { choice, other, checked: tickedByDefault(kindOf(code, row.existing)) };
 }
 
-/** The shifts a Save writes: every ticked row, keeping the saved shift's note. */
-export function shiftsToSave(rows: readonly ReviewRow[]): { date: string; code: ShiftCode; note: string }[] {
-  return rows
-    .filter((r) => r.checked && r.code !== null)
-    .map((r) => ({ date: r.date, code: r.code!, note: r.existing?.note ?? "" }));
+/** The shifts a Save writes: every ticked row. The dates' events and babysitters are untouched. */
+export function shiftsToSave(rows: readonly ReviewRow[]): { date: string; code: ShiftCode }[] {
+  return rows.filter((r) => r.checked && r.code !== null).map((r) => ({ date: r.date, code: r.code! }));
 }
 
 /** "10 new · 1 changed · 2 same · 1 needs a code"; Unsure rows count by what they would do. */

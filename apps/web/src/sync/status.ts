@@ -20,14 +20,15 @@ export function syncStatus(outcome: Outcome | null, online: boolean, pendingCoun
   return "synced";
 }
 
-/** Reads the number of pending edits once. */
-export function countPendingEdits(): Promise<number> {
-  return db.outbox.count();
+/** Reads the number of pending edits once: shifts, events and babysitters together. */
+export async function countPendingEdits(): Promise<number> {
+  const counts = await Promise.all([db.outbox.count(), db.eventOutbox.count(), db.babysitterOutbox.count()]);
+  return counts.reduce((a, b) => a + b, 0);
 }
 
 /** The number of pending edits, whatever the status (the sign-out dialog needs it offline). */
 export function usePendingCount(): number {
-  return useLiveQuery(() => db.outbox.count(), [], 0);
+  return useLiveQuery(countPendingEdits, [], 0);
 }
 
 /** The current sync status and pending-edit count, updated live. */

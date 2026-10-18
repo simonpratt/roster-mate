@@ -16,7 +16,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 
 // The month grid, docs/ux-spec.md §5.3 and docs/designs/Main.dc.html: month controls, a
 // Monday-first weekday row and six rows of date cells. Each cell is a button showing the date
-// number, the shift's code chip and a dot when the shift has a note.
+// number, the shift's code chip and a marker row.
 type MonthGridProps = {
   month: MonthString;
   today: DateString;
@@ -120,12 +120,10 @@ type DayCellProps = {
 
 function DayCell({ date, shift, inMonth, today, onSelect }: DayCellProps) {
   const isToday = date === today;
-  const hasNote = !!shift && shift.note !== "";
   const name =
     formatLongDate(date) +
     ", " +
     (shift ? codeInfo(shift.code).label : "no shift") +
-    (hasNote ? ", has note" : "") +
     (isToday ? ", today" : "");
 
   const cell = isToday
@@ -156,7 +154,8 @@ function DayCell({ date, shift, inMonth, today, onSelect }: DayCellProps) {
       ) : (
         <span className="h-8" />
       )}
-      <span className={`size-1.25 rounded-full ${hasNote ? (inMonth ? "bg-text" : "bg-text-dim") : ""}`} />
+      {/* The marker row, kept for the date's event and babysitter markers (SIM-38). */}
+      <span className="size-1.25" />
     </button>
   );
 }

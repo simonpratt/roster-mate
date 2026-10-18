@@ -26,5 +26,6 @@ dropped without carrying existing notes over.
 - The sync request and response carry three arrays, and the client keeps one outbox per kind.
 - Event tombstones accumulate. With one user they stay small; purging them would need every
   device to have synced past them, and is left for later.
-- Re-sending after a server reset includes event tombstones, so a deletion is not undone by a
-  restored backup.
+- The phone keeps only live events, so re-sending after a server reset sends live events and
+  pending tombstones only. A deletion that had already synced can come back if the server is
+  restored from a backup taken before it.

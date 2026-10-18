@@ -1,7 +1,7 @@
 import type { InputHTMLAttributes, Ref } from "react";
 
 // A labelled single-line input, as on the Login design: 52 px tall, 16 px text (no iOS zoom).
-// The "sunken" tone is the edit sheet's note: 48 px tall on the page background, as the sheet
+// The "sunken" tone is for a field inside a sheet: 48 px tall on the page background, as the sheet
 // itself is on `surface`.
 type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   id: string;
