@@ -34,7 +34,7 @@ published schedule, and the image uploaded is a **Roster photo**.
 
 ```
 /login ──(signed in)──► /  Calendar (home)
-                         ├── tap date ─► Edit sheet (overlay on /)
+                         ├── tap date ─► Date sheet (overlay on /)
                          ├── Import ───► /import ──(save)──► / (month of first saved date)
                          └── ⋯ menu ──► Sign out ──► /login
 ```
@@ -43,11 +43,11 @@ published schedule, and the image uploaded is a **Roster photo**.
 |---|---|---|---|
 | `/login` | Sign in | App start (online, `401`), "Sign in to sync", Sign out | Shows offline notice (§7.1) |
 | `/` | Calendar | Default route | Yes |
-| (overlay) | Edit sheet | Tapping a date on `/` | Yes |
+| (overlay) | Date sheet | Tapping a date on `/` | Yes |
 | `/import` | Import | Header Import button | No — shows "Import needs a connection" |
 
 There is no tab bar. The Calendar is the hub; Import and Login are leaf screens with a back
-control. Browser/OS back closes the edit sheet first, then leaves Import.
+control. Browser/OS back closes the date sheet first, then leaves Import.
 
 ## 4. Visual system
 
@@ -71,7 +71,8 @@ set to the page background. Define these as custom Tailwind theme tokens (values
 | `danger` | #FB7185 | Errors, sign-in-needed dot and banner |
 | `failed` | #EF4444 | Sync-failed dot |
 | `ok` | #34D399 | Synced dot |
-| `warn` | #F5A524 | Pending dot |
+| `warn` | #F5A524 | Pending dot, needs-a-babysitter border and label |
+| `warn-fill` | #2A1F0A | Fill of a cell that needs a babysitter |
 | `focus` | #7DD3FC | Focus rings (2 px, offset 2 px) |
 
 The primary button is near-white rather than a hue so it never competes with or mimics a shift
@@ -93,9 +94,9 @@ surface and lets six colours sit side by side without glare.
 | Other (`SE`, `XD`, …) | the code itself | #232E0C | #C8EC72 (lime) | One shared colour for every Other code; the chip shows both letters |
 
 - Chip: rounded, code in JetBrains Mono bold, centred. In the grid the chip shows the code only;
-  in the header, edit sheet and review list a standard code shows its label too ("Late").
+  in the header, date sheet and review list a standard code shows its label too ("Late").
   An Other code has no label, so it shows just its letters ("SE") everywhere.
-- Selected state (edit sheet): border in the chip's text colour plus a check icon, so selection
+- Selected state (date sheet): border in the chip's text colour plus a check icon, so selection
   does not rely on colour.
 - All chip text colours meet WCAG AA (≥ 4.5:1) against `surface` and `bg`; verify with a contrast
   checker when the palette is implemented.
@@ -192,23 +193,30 @@ dot) until that run finishes.
  │26 │27 │28 │29 │30 │31 │ 1 │  ← 26–31 Oct dimmed
  │ D │ D │ X │   │ L │ L │ X │
  ├───┼───┼───┼───┼───┼───┼───┤
- │ 2 │ 3•│ 4 │ ...                ← • note dot
- │ N │ L │   │
+ │ 2 │ 3 │┆4┆│ ...                ← ┆ dashed amber: needs a babysitter
+ │ N │ L │ E │
+ │ ••│   │   │                    ← • one dot per event
 ```
 
 - Monday-first, always 6 rows (SIM-13). Weekday header uses single letters (M T W T F S S).
   Month title is a live region so screen readers hear the new month after prev/next.
-- **Cell**: day number at the top (Caption, mono), shift chip centred, note dot at the bottom
-  (5 px, `text`).
-- **Today**: `text` outline around the cell, day number bold.
+- **Cell**: day number at the top (Caption, mono), shift chip centred, event dots at the bottom:
+  one 5 px `text` dot per event, at most 4, 3 px apart (`text-dim` outside the month).
+- **Needs a babysitter** (a working shift dated today or later with no babysitter): 1.5 px dashed
+  `warn` border and a `#2A1F0A` fill; outside the month the border is `#7A5512` with no fill.
+  Days off, unrostered dates and past dates are never marked. The dashed line, not only its
+  colour, sets it apart (`docs/designs/Main.dc.html`).
+- **Today**: `text` outline around the cell, day number bold. When today needs a babysitter, the
+  dashed `warn` border stays outside and the `text` ring sits inside it.
 - **Adjacent-month days**: day number and chip dimmed; still tappable (opens that date).
 - **Unrostered date**: day number only.
-- **Day off**: the outlined `X` chip (§4.2); a note dot if it has a note.
+- **Day off**: the outlined `X` chip (§4.2).
 - **Past days**: day number dimmed; chips unchanged (history is useful for swaps).
 - **Navigation**: ‹ › buttons, horizontal swipe (≥ 50 px, mostly horizontal), "Today" button
   (always shown).
-- **Accessible name** per cell: "Tuesday 3 November, Late, has note" / "Wednesday 4 November, no
-  shift". Cells are buttons.
+- **Accessible name** per cell: shift, then ", babysitter {name}" (or ", no babysitter" when it
+  needs one), then the event count, then ", today": "Saturday 24 October, Night, no babysitter,
+  1 event" / "Wednesday 4 November, no shift". Cells are buttons.
 
 ### 5.4 Code picker
 
@@ -217,7 +225,8 @@ Choosing Other reveals a short text input (`maxlength=2`, `autocapitalize="chara
 only, shown uppercase) with placeholder "SE"; the selection is valid once it holds one or two
 letters. Typing a standard code there (e.g. "D") selects that standard chip instead. Opening the
 picker on a shift with an Other code selects Other with its letters filled in. There is no
-"Clear": choosing Day off (`X`) is how a shift is removed. Used in the edit sheet; the review
+"Clear": choosing Day off (`X`) is how a shift is removed, and the sheet no longer prints a hint
+saying so. Used in the date sheet; the review
 list uses a native `<select>` with the same options instead (§6.4). One selected, or none only on an unrostered date that hasn't been picked yet;
 `role="radiogroup"` with each chip `role="radio"`.
 
@@ -245,6 +254,25 @@ optional action. Used for: the sign-in-needed banner on the Calendar ("Sign in t
 edits are kept on this phone until then." [Sign in]), warnings from extraction, errors on
 Login/Import. The sign-in banner is the only banner on the Calendar; the sync pill carries
 routine status.
+
+### 5.8 Babysitter picker
+
+A wrapping row of 44 px pill chips, `role="radiogroup"` labelled "Babysitter": "None", every name
+used on any date (one chip per name, ignoring case; sorted A–Z), then a dashed "+ Someone else".
+The selected chip gets a `text` border, `surface-raised` fill and a check icon. Choosing Someone
+else reveals a "Name" input (`maxlength=40`, `autocapitalize="words"`, focused); typing a known name
+(ignoring case) selects that name's chip instead, and the input stays open. There is no list to
+manage: a name leaves the chips once no date uses it. While the date needs a babysitter and None
+is selected, "Needs a babysitter" shows beside the label in `warn`
+(`docs/designs/DateSheetNewSitter.dc.html`).
+
+### 5.9 Event list
+
+Labelled "Events": one row per event, in the order they were added, each a text input
+(`maxlength=200`) with a 44 px remove button (`aria-label` "Remove event: {text}"), then an empty
+input with placeholder "Add an event". Typing in that input makes it a row and a new empty input
+appears below; Enter moves to the next input rather than submitting. On Save, text is trimmed and
+a blank row counts as removed.
 
 ## 6. Screens
 
@@ -281,7 +309,7 @@ routine status.
 ### 6.2 Calendar (`/`)
 
 Layout top to bottom: header and next-shift block (§5.1), month controls, weekday row, grid
-(§5.3). No legend: the edit sheet labels every code.
+(§5.3). No legend: the date sheet labels every code.
 
 States:
 
@@ -294,35 +322,39 @@ States:
 | Signed out but data cached | Pill "Sign in needed" and the sign-in banner; data visible and editable |
 | Returning from Import | Grid on the month of the first saved date; indicator shows pending until sync completes |
 
-Tapping a date opens the edit sheet (§6.3). Long-press does nothing (avoid conflicting gestures).
+Tapping a date opens the date sheet (§6.3). Long-press does nothing (avoid conflicting gestures).
 
-### 6.3 Edit sheet (overlay on `/`)
+### 6.3 Date sheet (overlay on `/`)
 
 ```
   ───                                     ← drag handle
-  Wednesday 4 November                    ← Title
-  [ D ] [ E ] [ L✓] [ N ] [ X ] [Other]   ← code picker
+  Thursday 22 October                     ← Title
+  Currently Day
+  [ D✓] [ E ] [ L ] [ N ] [ X ] [Other]   ← code picker (§5.4)
    Day  Early Late  Night Day off
-  To remove a shift, set it to Day off.
   [ SE ] Code                             ← only when Other is selected
-  Note
-  ┌──────────────────────────────────┐
-  │ swapped with Sam                 │
-  └──────────────────────────────────┘
+  Babysitter            Needs a babysitter ← only while one is needed
+  (None) (Dad) (Jo) (✓ Mum) (+ Someone else)
+  Events
+  [ Dentist 3pm              ] [×]
+  [ Pick up dry cleaning     ] [×]
+  [ Add an event             ]
   [ Cancel ]            [    Save    ]
 ```
 
-- Heading: full weekday and date; add the year only when it isn't the current year.
-- Opens with the current code selected and note filled. Tapping the selected code again does
+Drawn in `docs/designs/EditSheet.dc.html`, `DateSheetNewSitter.dc.html` and
+`DateSheetUnrostered.dc.html` (prototype behaviour in `Main.dc.html`).
+
+- Heading: full weekday and date; add the year only when it isn't the current year. Under it,
+  "Currently {Label}" or "Not rostered yet".
+- Opens with the stored code, babysitter and events. Tapping the selected code again does
   nothing; to remove a shift, choose Day off (`X`).
-- **Unrostered date**: opens with no code selected. A note can't be saved on its own, because a
-  note needs a shift: Save stays disabled until a code is picked. With Other selected, Save also
-  needs one or two letters in its input.
-- **Save** disabled until the code or note differs from the stored value (SIM-14). On Save: write
-  locally, close, and the cell updates immediately. No toast — the grid change and the
-  indicator going to "1 pending" are the feedback.
-- **Note**: single-line text input, `maxlength=500`, plain text, no counter. Notes are short
-  ("swapped with Sam").
+- **Unrostered date**: opens with no code selected. Events and a babysitter save without a code,
+  and the date stays unrostered. With Other selected, Save needs one or two letters in its input.
+- **Save** writes the shift, babysitter and events together, and is disabled until one of them
+  differs from the stored value and the input is valid (a picked Other code needs its letters;
+  Someone else needs a name). On Save: write locally, close, and the cell updates immediately. No
+  toast — the grid change and the indicator going to "1 pending" are the feedback.
 - **Cancel / backdrop / Escape / back**: close without writing. If there are unsaved changes,
   close anyway — edits are small and quick to redo; a confirm dialog would slow the common case.
 - When the keyboard is open, the sheet stays above it (use `visualViewport` height) so Save
@@ -426,7 +458,7 @@ Not found and Nothing found reuse the Step 2 layout (dimmed photo, message, [Try
 - Offline is shown in one place only: the sync pill (and the Import/Login screens that need
   a connection). No global offline banner on the Calendar.
 - A sync that pulls in changes updates the grid in place without animation or scroll jumps. If
-  the edit sheet is open for a date that sync changes, the sheet keeps the user's in-progress
+  the date sheet is open for a date that sync changes, the sheet keeps the user's in-progress
   values (the outbox rule means their Save will win).
 - After an app update installs (`registerType: 'autoUpdate'`), the new version loads on next
   open; no update prompt.
@@ -477,6 +509,8 @@ Not found and Nothing found reuse the Step 2 layout (dimmed photo, message, [Try
 | Not found | Couldn't find you on this roster. |
 | Save import | Save {n} shifts / Save 1 shift / Nothing selected |
 | Discard import | Discard this import? |
+| Babysitter | Babysitter · None · + Someone else · Name · Needs a babysitter |
+| Events | Events · Add an event · Remove event: {text} |
 | Sign out with pending | You have {n} pending edits. Signing out keeps them on this phone, but they won't sync until you sign in again. |
 
 Tone: short, plain, second person, no exclamation marks, no technical terms ("sync" is the one
@@ -491,6 +525,7 @@ exception, already used in the indicator).
 | SIM-13 Calendar view | §5.1–5.3, §6.2, §7.2 |
 | SIM-14 Edit sheet | §5.4, §5.5, §6.3 |
 | SIM-16 Import | §6.4, §5.4, §5.7 |
+| SIM-24 / SIM-35 Events and babysitters | §5.3, §5.8, §5.9, §6.3, §8 |
 
 ## 10. Additions beyond the tickets
 
