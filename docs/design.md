@@ -30,8 +30,8 @@ Domain terms live in `CONTEXT.md`. These are implementation terms only.
 
 | Term | Meaning |
 |---|---|
-| **Outbox** | Client-side store of pending edits, one per date, removed once the server has acknowledged them. |
-| **Revision (`rev`)** | Server-wide, monotonically increasing integer stamped on every shift write. Clients pull "everything since rev N". |
+| **Outbox** | Client-side store of pending edits, one per kind: `outbox` (shifts, one per date), `eventOutbox` (one per event id) and `babysitterOutbox` (one per date). An entry is removed once the server has acknowledged it. |
+| **Revision (`rev`)** | Server-wide, monotonically increasing integer stamped on every shift, event and babysitter write (one counter for all three). Clients pull "everything since rev N". |
 
 ## Architecture
 
@@ -41,7 +41,8 @@ Domain terms live in `CONTEXT.md`. These are implementation terms only.
  │ React + Tailwind UI       │                 │ Go binary                        │
  │   ↕                       │   HTTPS (via    │  ├─ /            embedded web    │
  │ Dexie (IndexedDB)         │   user's TLS    │  ├─ /api/login, /api/session ... │
- │   shifts + outbox + meta  │   reverse proxy)│  ├─ /api/sync     shifts         │
+ │   shifts, events, babys.  │   reverse proxy)│  ├─ /api/sync     shifts, events,│
+ │   + outboxes + meta       │                 │  │                babysitters    │
  │   ↕ sync engine  ─────────┼────────────────►│  └─ /api/extract  → Anthropic API│
  │ Service worker (shell)    │                 │ SQLite file in /data             │
  └───────────────────────────┘                 └─────────────────────────────────┘
@@ -117,21 +118,45 @@ The server refuses to start, with a message naming the variable, if a required o
 CREATE TABLE shifts (
   date       TEXT PRIMARY KEY,        -- 'YYYY-MM-DD', a local calendar date
   code       TEXT,                    -- 1-2 uppercase letters; NULL is reserved (see Sync protocol)
-  note       TEXT NOT NULL DEFAULT '',
   edited_at  INTEGER NOT NULL,        -- client edit time, unix ms (last-write-wins key)
   rev        INTEGER NOT NULL         -- server revision of the last applied write
 );
 CREATE INDEX shifts_rev ON shifts(rev);
+CREATE TABLE events (
+  id         TEXT PRIMARY KEY,        -- client-generated UUID
+  date       TEXT NOT NULL,           -- 'YYYY-MM-DD'
+  text       TEXT NOT NULL,
+  deleted    INTEGER NOT NULL DEFAULT 0, -- 1 = tombstone, kept so the deletion syncs
+  created_at INTEGER NOT NULL,        -- unix ms; orders events within a date
+  edited_at  INTEGER NOT NULL,        -- last-write-wins key
+  rev        INTEGER NOT NULL
+);
+CREATE INDEX events_rev ON events(rev);
+CREATE TABLE babysitters (
+  date       TEXT PRIMARY KEY,        -- 'YYYY-MM-DD'; at most one babysitter per date
+  name       TEXT NOT NULL,           -- '' = no babysitter
+  edited_at  INTEGER NOT NULL,
+  rev        INTEGER NOT NULL
+);
+CREATE INDEX babysitters_rev ON babysitters(rev);
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);  -- 'rev', 'db_id', 'session_secret', 'schema_version'
 ```
 
-Migrations are ordered SQL files embedded in the binary and applied at startup.
+Migrations are ordered SQL files embedded in the binary and applied at startup. Migration 0003
+added `events` and `babysitters` and dropped the shift `note` column; existing notes were not
+carried over. Events and babysitters are records of their own, not fields on a shift; see
+`docs/adr/0003-events-and-babysitters-sync-separately.md`.
 
 ### Client (Dexie / IndexedDB)
 
-- `shifts`: `{date, code | null, note, editedAt, rev}` keyed by `date`.
-- `outbox`: `{date, code | null, note, editedAt}` keyed by `date` (a newer edit to the same date
+- `shifts`: `{date, code | null, editedAt, rev}` keyed by `date`.
+- `outbox`: `{date, code | null, editedAt}` keyed by `date` (a newer edit to the same date
   replaces the queued one).
+- `events`: `{id, date, text, deleted, createdAt, editedAt, rev}` keyed by `id`, indexed by
+  `date`. Deleted events stay as tombstones and are hidden from the UI.
+- `eventOutbox`: `{id, date, text, deleted, createdAt, editedAt}` keyed by `id`.
+- `babysitters`: `{date, name, editedAt, rev}` keyed by `date`; `name: ''` is no babysitter.
+- `babysitterOutbox`: `{date, name, editedAt}` keyed by `date`.
 - `meta`: `{key: 'lastRev', value}` and `{key: 'dbId', value}`.
 
 ### Shift codes
@@ -159,53 +184,75 @@ Single endpoint, one round trip:
 
 ```json
 { "since": 41,
-  "changes": [ { "date": "2026-11-03", "code": "L", "note": "swapped with Sam", "editedAt": 1760500000000 },
-               { "date": "2026-11-04", "code": null, "note": "", "editedAt": 1760500001000 } ] }
+  "changes": [ { "date": "2026-11-03", "code": "L", "editedAt": 1760500000000 },
+               { "date": "2026-11-04", "code": null, "editedAt": 1760500001000 } ],
+  "events": [ { "id": "0b6f3e1c-2f4a-4c1d-9e8b-1a2b3c4d5e6f", "date": "2026-11-03",
+                "text": "Dentist 3pm", "deleted": false,
+                "createdAt": 1760400000000, "editedAt": 1760500002000 } ],
+  "babysitters": [ { "date": "2026-11-03", "name": "Mum", "editedAt": 1760500003000 } ] }
 ```
+
+`events` and `babysitters` are optional (absent means none). A `note` in a change, sent by an
+older cached client, is ignored.
 
 Response:
 
 ```json
 { "rev": 44, "dbId": "9f2c4e…",
-  "shifts": [ { "date": "2026-11-03", "code": "L", "note": "swapped with Sam", "editedAt": 1760500000000, "rev": 43 }, ... ] }
+  "shifts": [ { "date": "2026-11-03", "code": "L", "editedAt": 1760500000000, "rev": 42 }, ... ],
+  "events": [ { "id": "0b6f3e1c-…", "date": "2026-11-03", "text": "Dentist 3pm", "deleted": false,
+                "createdAt": 1760400000000, "editedAt": 1760500002000, "rev": 43 }, ... ],
+  "babysitters": [ { "date": "2026-11-03", "name": "Mum", "editedAt": 1760500003000, "rev": 44 }, ... ] }
 ```
+
+`shifts`, `events` and `babysitters` are always present, `[]` when empty.
 
 Server rules, all in one transaction:
 
-1. For each change, if no row exists or `change.editedAt >= row.edited_at`, write it with
-   `rev = ++meta.rev`. Otherwise ignore it (an older edit lost to a newer one).
-2. Return every row with `rev > since`, the current `meta.rev`, and `meta.db_id` (a random ID
-   generated when the database is created). If `since > meta.rev`, the database has been wiped
-   or restored from a backup, so return every row.
+1. For each item, keyed by date (shifts, babysitters) or id (events): if no row exists or
+   `item.editedAt >= row.edited_at`, write it with `rev = ++meta.rev`. Otherwise ignore it (an
+   older edit lost to a newer one). The three kinds share the one `meta.rev` counter and are
+   applied independently, so an event or babysitter edit never overwrites a shift edit.
+2. Return every row of each kind with `rev > since`, the current `meta.rev`, and `meta.db_id` (a
+   random ID generated when the database is created). If `since > meta.rev`, the database has
+   been wiped or restored from a backup, so return every row.
 
-Validation happens before anything is written, and a request with any invalid change applies none
-of them (`400 {"error": …}`): `since` ≥ 0; at most 1000 changes; `date` is `YYYY-MM-DD`; `code` is
-`null` or matches `^[A-Z]{1,2}$`; `note` is at most 500 characters (Unicode code points);
+An event is deleted by sending it with `deleted: true` (its `text` may be `""`). The server keeps
+the row as a tombstone so the deletion reaches other devices; tombstones are never purged.
+
+Validation happens before anything is written, and a request with any invalid item applies none
+of them (`400 {"error": …}`): `since` ≥ 0; at most 1000 items across `changes`, `events` and
+`babysitters`; every `date` is `YYYY-MM-DD`; `code` is `null` or matches `^[A-Z]{1,2}$`; an event
+`id` is a canonical lowercase UUID; `text` is at most 200 characters and `name` at most 40
+(Unicode code points; the client trims them, the server only checks length); `createdAt` and
 `editedAt` > 0. Without a valid session the call returns `401`.
 
 Client rules:
 
-- After any local edit: write `shifts` and `outbox` in one Dexie transaction, then trigger sync.
+- After any local edit: write the table and its outbox (`shifts`/`outbox`, `events`/`eventOutbox`
+  or `babysitters`/`babysitterOutbox`) in one Dexie transaction, then trigger sync.
 - Sync triggers: app start, `online` event, page becoming visible, after each local edit, and
   every 60s while visible and online. Only one sync runs at a time; a trigger during a run
   schedules one follow-up run.
 - On success: delete the outbox entries that were sent (only if not replaced since), upsert
-  returned shifts **unless** the outbox holds a newer local edit for that date, set `lastRev`.
-- The outbox is sent in batches of at most 1000 changes (the server's limit); a run keeps
-  sending until the outbox is empty or a request fails.
+  returned shifts, events and babysitters **unless** the matching outbox holds a newer local edit
+  for that date or id, set `lastRev`.
+- The outboxes are sent together in batches of at most 1000 items in total (the server's limit);
+  a run keeps sending until every outbox is empty or a request fails.
 - Network failure (the server can't be reached, including on mobile data away from the home
   network): keep everything, show `offline`, retry on the next trigger. `401`: show the sign-in
   banner. Any other non-2xx response: show `error`.
 - **Server reset**: if the response's `dbId` differs from the stored one, or its `rev` is lower
-  than the `since` sent, the server has lost data. The client copies every local shift into the
-  outbox with its existing `editedAt` (leaving newer outbox entries alone), sets `lastRev` to 0
+  than the `since` sent, the server has lost data. The client copies every local shift, event (tombstones
+  included) and babysitter into its outbox with its existing `editedAt` (leaving newer outbox
+  entries alone), sets `lastRev` to 0
   and runs again, so the phone's copy restores the server. With two devices, each re-sends its
   copy and last-write-wins settles each date. On the first sync (no stored `dbId`) the client
   just stores it.
 - The UI never writes `code: null`: a shift is removed by setting it to Day off (`X`), so a date
   never returns to unrostered. The protocol still accepts and returns `null` (a reserved
   tombstone for a future "remove shift" or data fix); clients render such a row as an
-  unrostered date and drop its note.
+  unrostered date. The date's events and babysitter are separate records and stay.
 
 Conflict policy is last-write-wins on `editedAt` (the phone's clock). With one user this is enough
 for one device or a few: each device pulls the others' edits by `rev`, and a clash on a date goes
@@ -276,10 +323,11 @@ desktop.
   - Header: next upcoming shift ("Tomorrow · Late"), sync status dot (synced / pending N /
     offline / sign-in needed), Import button.
   - Month grid, Monday-first, with previous/next month controls and a "Today" jump. Each date
-    shows its shift code in a coloured chip; today is outlined; shifts with notes show a dot.
-  - Tapping a date opens the **edit sheet**: five standard code buttons plus "Other"
-    (a two-letter input), a note field, Save/Cancel. There
-    is no "Clear"; choosing Day off (`X`) is how a shift is removed.
+    shows its shift code in a coloured chip and one dot per event (at most 4); today is outlined;
+    a date that needs a babysitter has a dashed `warn` border (`docs/ux-spec.md` §6.2).
+  - Tapping a date opens the **date sheet**: five standard code buttons plus "Other"
+    (a two-letter input), the babysitter picker and the date's events, Save/Cancel. There is no
+    note field and no "Clear"; choosing Day off (`X`) is how a shift is removed.
 - **Import**: as described above.
 
 ## PWA

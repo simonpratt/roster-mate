@@ -1,5 +1,5 @@
-// Package store owns the SQLite database: opening it, migrating it and the shift
-// queries.
+// Package store owns the SQLite database: opening it, migrating it and the sync queries
+// for shifts, events and babysitters.
 package store
 
 import (

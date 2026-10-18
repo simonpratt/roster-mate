@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,8 +24,60 @@ func TestOpenCreatesDBInWALModeWithMeta(t *testing.T) {
 		t.Errorf("journal_mode = %q, %v; want wal", mode, err)
 	}
 	v, err := s.SchemaVersion()
-	if err != nil || v != 2 {
-		t.Errorf("SchemaVersion = %d, %v; want 2", v, err)
+	if err != nil || v != 3 {
+		t.Errorf("SchemaVersion = %d, %v; want 3", v, err)
+	}
+}
+
+// Migration 0003 drops the shift note and keeps every other column of every row.
+func TestMigration3DropsNoteAndKeepsShifts(t *testing.T) {
+	dir := t.TempDir()
+	upTo2 := fstest.MapFS{}
+	for _, name := range []string{"0001_meta.sql", "0002_shifts.sql"} {
+		body, err := migrationFiles.ReadFile("migrations/" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		upTo2[name] = &fstest.MapFile{Data: body}
+	}
+	s, err := open(dir, upTo2)
+	if err != nil {
+		t.Fatalf("open at version 2: %v", err)
+	}
+	if _, err := s.DB.Exec(`INSERT INTO shifts (date, code, note, edited_at, rev) VALUES
+		('2026-11-03', 'L', 'swapped with Sam', 1000, 1),
+		('2026-11-04', NULL, 'gone', 2000, 2),
+		('2026-11-05', 'SE', '', 3000, 3)`); err != nil {
+		t.Fatal(err)
+	}
+	s.Close()
+
+	s, err = Open(dir)
+	if err != nil {
+		t.Fatalf("Open with 0003: %v", err)
+	}
+	defer s.Close()
+	var hasNote int
+	if err := s.DB.QueryRow(`SELECT count(*) FROM pragma_table_info('shifts') WHERE name = 'note'`).Scan(&hasNote); err != nil || hasNote != 0 {
+		t.Errorf("shifts note columns = %d, %v; want 0", hasNote, err)
+	}
+	rows, err := s.DB.Query(`SELECT date, coalesce(code, '<nil>'), edited_at, rev FROM shifts ORDER BY date`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var got []string
+	for rows.Next() {
+		var date, code string
+		var editedAt, rev int64
+		if err := rows.Scan(&date, &code, &editedAt, &rev); err != nil {
+			t.Fatal(err)
+		}
+		got = append(got, fmt.Sprintf("%s %s %d %d", date, code, editedAt, rev))
+	}
+	want := []string{"2026-11-03 L 1000 1", "2026-11-04 <nil> 2000 2", "2026-11-05 SE 3000 3"}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("shifts = %q; want %q", got, want)
 	}
 }
 

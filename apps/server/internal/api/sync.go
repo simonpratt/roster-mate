@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"time"
 	"unicode/utf8"
 
@@ -12,39 +13,66 @@ import (
 )
 
 const (
-	maxChanges  = 1000
-	maxNoteLen  = 500
-	maxSyncBody = 4 << 20 // 1000 changes with 500-character notes, JSON-escaped, fit comfortably
+	maxItems      = 1000 // across changes, events and babysitters
+	maxEventText  = 200
+	maxBabysitter = 40
+	maxSyncBody   = 4 << 20 // 1000 items of the longest text, JSON-escaped, fit comfortably
 )
 
+// uuidPattern is a canonical lowercase UUID, as crypto.randomUUID() makes.
+var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+
 type syncRequest struct {
-	Since   int64        `json:"since"`
-	Changes []syncChange `json:"changes"`
+	Since       int64            `json:"since"`
+	Changes     []syncChange     `json:"changes"`
+	Events      []syncEvent      `json:"events"`
+	Babysitters []syncBabysitter `json:"babysitters"`
 }
 
+// syncChange is one shift edit. An older cached client may still send a note; the decoder
+// ignores it.
 type syncChange struct {
 	Date     string  `json:"date"`
 	Code     *string `json:"code"`
-	Note     string  `json:"note"`
 	EditedAt int64   `json:"editedAt"`
 }
 
 type syncShift struct {
 	Date     string  `json:"date"`
 	Code     *string `json:"code"`
-	Note     string  `json:"note"`
 	EditedAt int64   `json:"editedAt"`
 	Rev      int64   `json:"rev"`
 }
 
-type syncResponse struct {
-	Rev    int64       `json:"rev"`
-	DBID   string      `json:"dbId"`
-	Shifts []syncShift `json:"shifts"`
+// syncEvent is an event both in a request (rev ignored) and in a response.
+type syncEvent struct {
+	ID        string `json:"id"`
+	Date      string `json:"date"`
+	Text      string `json:"text"`
+	Deleted   bool   `json:"deleted"`
+	CreatedAt int64  `json:"createdAt"`
+	EditedAt  int64  `json:"editedAt"`
+	Rev       int64  `json:"rev"`
 }
 
-// sync applies the phone's pending edits and returns every shift changed since its last sync.
-// A request with any invalid change applies none of them.
+// syncBabysitter is a babysitter both in a request (rev ignored) and in a response.
+type syncBabysitter struct {
+	Date     string `json:"date"`
+	Name     string `json:"name"`
+	EditedAt int64  `json:"editedAt"`
+	Rev      int64  `json:"rev"`
+}
+
+type syncResponse struct {
+	Rev         int64            `json:"rev"`
+	DBID        string           `json:"dbId"`
+	Shifts      []syncShift      `json:"shifts"`
+	Events      []syncEvent      `json:"events"`
+	Babysitters []syncBabysitter `json:"babysitters"`
+}
+
+// sync applies the phone's pending edits and returns every shift, event and babysitter
+// changed since its last sync. A request with any invalid item applies none of them.
 func sync(st *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req syncRequest
@@ -52,20 +80,16 @@ func sync(st *store.Store) http.HandlerFunc {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "bad request"})
 			return
 		}
-		changes, err := validateSync(req)
+		push, err := validateSync(req)
 		if err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
 		}
-		rev, shifts, err := st.ApplyAndPull(r.Context(), req.Since, changes)
+		pull, err := st.ApplyAndPull(r.Context(), req.Since, push)
 		if err == nil {
 			var dbID string
 			if dbID, err = st.DBID(r.Context()); err == nil {
-				res := syncResponse{Rev: rev, DBID: dbID, Shifts: make([]syncShift, len(shifts))}
-				for i, s := range shifts {
-					res.Shifts[i] = syncShift(s)
-				}
-				writeJSON(w, http.StatusOK, res)
+				writeJSON(w, http.StatusOK, toResponse(pull, dbID))
 				return
 			}
 		}
@@ -74,28 +98,83 @@ func sync(st *store.Store) http.HandlerFunc {
 	}
 }
 
-func validateSync(req syncRequest) ([]store.Change, error) {
+func toResponse(pull store.Pull, dbID string) syncResponse {
+	res := syncResponse{
+		Rev:         pull.Rev,
+		DBID:        dbID,
+		Shifts:      make([]syncShift, len(pull.Shifts)),
+		Events:      make([]syncEvent, len(pull.Events)),
+		Babysitters: make([]syncBabysitter, len(pull.Babysitters)),
+	}
+	for i, s := range pull.Shifts {
+		res.Shifts[i] = syncShift(s)
+	}
+	for i, e := range pull.Events {
+		res.Events[i] = syncEvent(e)
+	}
+	for i, b := range pull.Babysitters {
+		res.Babysitters[i] = syncBabysitter(b)
+	}
+	return res
+}
+
+func validDate(s string) bool {
+	d, err := time.Parse(time.DateOnly, s)
+	return err == nil && d.Format(time.DateOnly) == s
+}
+
+func validateSync(req syncRequest) (store.Push, error) {
 	if req.Since < 0 {
-		return nil, fmt.Errorf("since must be 0 or more")
+		return store.Push{}, fmt.Errorf("since must be 0 or more")
 	}
-	if len(req.Changes) > maxChanges {
-		return nil, fmt.Errorf("at most %d changes per request", maxChanges)
+	if len(req.Changes)+len(req.Events)+len(req.Babysitters) > maxItems {
+		return store.Push{}, fmt.Errorf("at most %d changes, events and babysitters per request", maxItems)
 	}
-	changes := make([]store.Change, len(req.Changes))
+	push := store.Push{
+		Shifts:      make([]store.Change, len(req.Changes)),
+		Events:      make([]store.Event, len(req.Events)),
+		Babysitters: make([]store.Babysitter, len(req.Babysitters)),
+	}
 	for i, c := range req.Changes {
-		if d, err := time.Parse(time.DateOnly, c.Date); err != nil || d.Format(time.DateOnly) != c.Date {
-			return nil, fmt.Errorf("changes[%d]: date must be YYYY-MM-DD", i)
+		if !validDate(c.Date) {
+			return store.Push{}, fmt.Errorf("changes[%d]: date must be YYYY-MM-DD", i)
 		}
 		if c.Code != nil && !store.ValidCode(*c.Code) {
-			return nil, fmt.Errorf("changes[%d]: code must be 1-2 uppercase letters or null", i)
-		}
-		if utf8.RuneCountInString(c.Note) > maxNoteLen {
-			return nil, fmt.Errorf("changes[%d]: note must be at most %d characters", i, maxNoteLen)
+			return store.Push{}, fmt.Errorf("changes[%d]: code must be 1-2 uppercase letters or null", i)
 		}
 		if c.EditedAt <= 0 {
-			return nil, fmt.Errorf("changes[%d]: editedAt must be positive", i)
+			return store.Push{}, fmt.Errorf("changes[%d]: editedAt must be positive", i)
 		}
-		changes[i] = store.Change(c)
+		push.Shifts[i] = store.Change{Date: c.Date, Code: c.Code, EditedAt: c.EditedAt}
 	}
-	return changes, nil
+	for i, e := range req.Events {
+		if !uuidPattern.MatchString(e.ID) {
+			return store.Push{}, fmt.Errorf("events[%d]: id must be a lowercase UUID", i)
+		}
+		if !validDate(e.Date) {
+			return store.Push{}, fmt.Errorf("events[%d]: date must be YYYY-MM-DD", i)
+		}
+		if utf8.RuneCountInString(e.Text) > maxEventText {
+			return store.Push{}, fmt.Errorf("events[%d]: text must be at most %d characters", i, maxEventText)
+		}
+		if e.CreatedAt <= 0 || e.EditedAt <= 0 {
+			return store.Push{}, fmt.Errorf("events[%d]: createdAt and editedAt must be positive", i)
+		}
+		e.Rev = 0
+		push.Events[i] = store.Event(e)
+	}
+	for i, b := range req.Babysitters {
+		if !validDate(b.Date) {
+			return store.Push{}, fmt.Errorf("babysitters[%d]: date must be YYYY-MM-DD", i)
+		}
+		if utf8.RuneCountInString(b.Name) > maxBabysitter {
+			return store.Push{}, fmt.Errorf("babysitters[%d]: name must be at most %d characters", i, maxBabysitter)
+		}
+		if b.EditedAt <= 0 {
+			return store.Push{}, fmt.Errorf("babysitters[%d]: editedAt must be positive", i)
+		}
+		b.Rev = 0
+		push.Babysitters[i] = store.Babysitter(b)
+	}
+	return push, nil
 }

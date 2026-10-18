@@ -19,11 +19,17 @@ func code(c string) *string { return &c }
 
 func sync(t *testing.T, s *Store, since int64, changes ...Change) (int64, []Shift) {
 	t.Helper()
-	rev, shifts, err := s.ApplyAndPull(context.Background(), since, changes)
+	pull := syncPush(t, s, since, Push{Shifts: changes})
+	return pull.Rev, pull.Shifts
+}
+
+func syncPush(t *testing.T, s *Store, since int64, push Push) Pull {
+	t.Helper()
+	pull, err := s.ApplyAndPull(context.Background(), since, push)
 	if err != nil {
 		t.Fatalf("ApplyAndPull(%d): %v", since, err)
 	}
-	return rev, shifts
+	return pull
 }
 
 func codeOf(sh Shift) string {
@@ -35,12 +41,12 @@ func codeOf(sh Shift) string {
 
 func TestApplyToEmptyDBThenPullNothingNew(t *testing.T) {
 	s := openTemp(t)
-	rev, shifts := sync(t, s, 0, Change{Date: "2026-11-03", Code: code("L"), Note: "swapped with Sam", EditedAt: 1000})
+	rev, shifts := sync(t, s, 0, Change{Date: "2026-11-03", Code: code("L"), EditedAt: 1000})
 	if rev != 1 || len(shifts) != 1 {
 		t.Fatalf("first sync = rev %d, %d shifts; want rev 1, 1 shift", rev, len(shifts))
 	}
 	got := shifts[0]
-	if got.Date != "2026-11-03" || codeOf(got) != "L" || got.Note != "swapped with Sam" || got.EditedAt != 1000 || got.Rev != 1 {
+	if got.Date != "2026-11-03" || codeOf(got) != "L" || got.EditedAt != 1000 || got.Rev != 1 {
 		t.Errorf("shift = %+v (code %s)", got, codeOf(got))
 	}
 
@@ -61,8 +67,8 @@ func TestLastWriteWinsOnEditedAt(t *testing.T) {
 	}
 
 	// Newer edit: replaces it.
-	rev, shifts = sync(t, s, 1, Change{Date: "2026-11-03", Code: code("E"), Note: "early", EditedAt: 3000})
-	if rev != 2 || len(shifts) != 1 || codeOf(shifts[0]) != "E" || shifts[0].Note != "early" || shifts[0].EditedAt != 3000 || shifts[0].Rev != 2 {
+	rev, shifts = sync(t, s, 1, Change{Date: "2026-11-03", Code: code("E"), EditedAt: 3000})
+	if rev != 2 || len(shifts) != 1 || codeOf(shifts[0]) != "E" || shifts[0].EditedAt != 3000 || shifts[0].Rev != 2 {
 		t.Errorf("newer edit: rev %d, %+v; want rev 2 with E", rev, shifts)
 	}
 
@@ -75,7 +81,7 @@ func TestLastWriteWinsOnEditedAt(t *testing.T) {
 
 func TestNullCodeIsStoredAndReturned(t *testing.T) {
 	s := openTemp(t)
-	sync(t, s, 0, Change{Date: "2026-11-04", Code: code("D"), Note: "x", EditedAt: 1000})
+	sync(t, s, 0, Change{Date: "2026-11-04", Code: code("D"), EditedAt: 1000})
 	sync(t, s, 1, Change{Date: "2026-11-04", Code: nil, EditedAt: 2000})
 
 	rev, shifts := sync(t, s, 0)
