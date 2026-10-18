@@ -14,6 +14,7 @@
     "EditSheet.dc.html": { "x": 470, "y": 1244, "w": 390, "h": 844, "title": "Date sheet (no changes)", "is_interactive": true, "radius": 28 },
     "DateSheetNewSitter.dc.html": { "x": 2350, "y": 1244, "w": 390, "h": 844, "title": "Date sheet — new babysitter", "is_interactive": true, "radius": 28 },
     "DateSheetUnrostered.dc.html": { "x": 2820, "y": 1244, "w": 390, "h": 844, "title": "Date sheet — unrostered date", "is_interactive": true, "radius": 28 },
+    "DateSheetConfirmed.dc.html": { "x": 3290, "y": 1244, "w": 390, "h": 844, "title": "Date sheet — confirmed babysitter", "is_interactive": true, "radius": 28 },
     "CalendarMenu.dc.html": { "x": 940, "y": 1244, "w": 390, "h": 844, "title": "Menu", "is_interactive": true, "radius": 28 },
     "CalendarSignOut.dc.html": { "x": 1410, "y": 1244, "w": 390, "h": 844, "title": "Sign out — pending edits", "radius": 28 },
     "CalendarEmpty.dc.html": { "x": 1880, "y": 1244, "w": 390, "h": 844, "title": "First run", "radius": 28 },
@@ -30,7 +31,9 @@
     "ImportTooLarge.dc.html": { "x": 940, "y": 4976, "w": 390, "h": 844, "title": "Error — too large / format", "radius": 28 },
     "ImportReadFailed.dc.html": { "x": 1410, "y": 4976, "w": 390, "h": 844, "title": "Error — couldn’t read", "radius": 28 },
     "ImportConnLost.dc.html": { "x": 1880, "y": 4976, "w": 390, "h": 844, "title": "Error — connection lost", "radius": 28 },
-    "Tokens.dc.html": { "x": 0, "y": 6220, "w": 1200, "h": 760, "title": "Tokens" }
+    "Tokens.dc.html": { "x": 0, "y": 6220, "w": 1200, "h": 760, "title": "Tokens" },
+    "Babysitters.dc.html": { "x": 0, "y": 7340, "w": 390, "h": 1240, "title": "Babysitters", "is_interactive": true, "radius": 28 },
+    "BabysittersEmpty.dc.html": { "x": 470, "y": 7340, "w": 390, "h": 1000, "title": "Babysitters — none yet", "radius": 28 }
   },
   "order": [
     "Main.dc.html",
@@ -42,6 +45,7 @@
     "EditSheet.dc.html",
     "DateSheetNewSitter.dc.html",
     "DateSheetUnrostered.dc.html",
+    "DateSheetConfirmed.dc.html",
     "CalendarMenu.dc.html",
     "CalendarSignOut.dc.html",
     "CalendarEmpty.dc.html",
@@ -58,15 +62,18 @@
     "ImportTooLarge.dc.html",
     "ImportReadFailed.dc.html",
     "ImportConnLost.dc.html",
-    "Tokens.dc.html"
+    "Tokens.dc.html",
+    "Babysitters.dc.html",
+    "BabysittersEmpty.dc.html"
   ],
   "notes": {
     "rowA": { "x": 0, "y": -260, "text": "Sign in", "kind": "title1", "maxW": 2270 },
-    "rowB": { "x": 0, "y": 984, "text": "Calendar", "kind": "title1", "maxW": 3210 },
+    "rowB": { "x": 0, "y": 984, "text": "Calendar", "kind": "title1", "maxW": 3680 },
     "rowC": { "x": 0, "y": 2228, "text": "Sync states", "kind": "title1", "maxW": 2270 },
     "rowD": { "x": 0, "y": 3472, "text": "Import a roster", "kind": "title1", "maxW": 2270 },
     "rowE": { "x": 0, "y": 4716, "text": "Import outcomes & errors", "kind": "title1", "maxW": 2270 },
-    "rowF": { "x": 0, "y": 5960, "text": "Tokens", "kind": "title1", "maxW": 2270 }
+    "rowF": { "x": 0, "y": 5960, "text": "Tokens", "kind": "title1", "maxW": 2270 },
+    "rowG": { "x": 0, "y": 7100, "text": "Babysitters", "kind": "title1", "maxW": 860 }
   },
   "designSystems": []
 }

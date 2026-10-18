@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roster Mate — Babysitters</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 844px; box-sizing: border-box; padding-bottom: 32px; background: #0E1014; color: #ECEEF2; color-scheme: dark; font-family: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="display: flex; align-items: center; gap: 4px; padding: 8px 16px 8px 4px; height: 60px; box-sizing: border-box; flex: none">
+    <a href="Main.dc.html" aria-label="Back to calendar" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #C9CDD4">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <h1 style="margin: 0; font-size: 17px; font-weight: 600">Babysitters</h1>
+  </header>
+
+  <section aria-labelledby="share-title" style="margin: 8px 16px 0; padding: 16px; border-radius: 16px; background: #161920; border: 1px solid #23272F; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+      <h2 id="share-title" style="margin: 0; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #9AA1AD">Share</h2>
+      <p style="margin: 0; font-size: 13px; font-weight: 500; color: #9AA1AD; font-variant-numeric: tabular-nums">{{windowText}}</p>
+    </div>
+    <sc-if value="{{hasShare}}" hint-placeholder-val="{{ true }}">
+      <div aria-hidden="true" style="display: flex; gap: 2px; height: 12px">
+        <sc-for list="{{share}}" as="e" hint-placeholder-count="3">
+          <span style="flex: {{e.count}} 1 0; min-width: 4px; border-radius: 3px; background: {{e.color}}"></span>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <sc-for list="{{share}}" as="e" hint-placeholder-count="3">
+          <p style="margin: 0; min-height: 32px; display: flex; align-items: center; gap: 10px; font-size: 15px">
+            <span aria-hidden="true" style="flex: none; width: 10px; height: 10px; border-radius: 3px; background: {{e.color}}"></span>
+            <span style="flex: 1; min-width: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{e.name}}</span>
+            <span style="color: #C9CDD4; font-variant-numeric: tabular-nums">{{e.text}}</span>
+          </p>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{noShare}}" hint-placeholder-val="{{ false }}">
+      <p style="margin: 0; font-size: 15px; line-height: 1.45; color: #9AA1AD">No babysitters in these eight weeks.</p>
+    </sc-if>
+  </section>
+
+  <sc-if value="{{hasNeeds}}" hint-placeholder-val="{{ true }}">
+    <section aria-labelledby="needs-title" style="margin: 28px 16px 0; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; align-items: center; gap: 12px; min-height: 44px">
+        <span aria-hidden="true" style="flex: none; width: 28px; height: 28px; box-sizing: border-box; border-radius: 14px; border: 1px dashed #5A616D; display: flex; align-items: center; justify-content: center">
+          <span style="width: 10px; height: 10px; border-radius: 5px; background: #C98A2A"></span>
+        </span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px">
+          <h2 id="needs-title" style="margin: 0; font-size: 17px; font-weight: 600">Needs a babysitter</h2>
+          <p style="margin: 0; font-size: 13px; color: #9AA1AD">{{needsSummary}}</p>
+        </div>
+      </div>
+      <sc-for list="{{needs}}" as="r" hint-placeholder-count="3">
+        <button type="button" data-date="{{r.key}}" aria-label="{{r.aria}}" style="height: 52px; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border: 1px solid #1C2027; background: #121418; color: #ECEEF2; font: inherit; font-size: 15px; font-weight: 500; display: grid; grid-template-columns: minmax(0, 1fr) 34px 112px; align-items: center; gap: 12px; text-align: left; cursor: pointer">
+          <span style="font-variant-numeric: tabular-nums">{{r.date}}</span>
+          <span aria-hidden="true" style="position: relative; display: flex">
+            <span style="width: 34px; height: 28px; box-sizing: border-box; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: {{r.chipBg}}; color: {{r.chipFg}}; box-shadow: inset 0 0 0 1px {{r.chipLine}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 13px">{{r.code}}</span>
+            <span style="position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border-radius: 4px; background: #C98A2A; box-shadow: 0 0 0 2px #121418"></span>
+          </span>
+          <span style="justify-self: end; font-size: 14px; color: #C98A2A">No babysitter</span>
+        </button>
+      </sc-for>
+    </section>
+  </sc-if>
+
+  <sc-for list="{{sections}}" as="g" hint-placeholder-count="3">
+    <section aria-label="{{g.name}}" style="margin: 28px 16px 0; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; align-items: center; gap: 12px; min-height: 44px">
+        <span aria-hidden="true" style="flex: none; width: 28px; height: 28px; box-sizing: border-box; border-radius: 14px; background: #3A404B; color: #ECEEF2; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; font-weight: 700">{{g.initials}}</span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{g.name}}</h2>
+          <p style="margin: 0; font-size: 13px; color: #9AA1AD">{{g.summary}}</p>
+        </div>
+        <sc-if value="{{g.canConfirm}}" hint-placeholder-val="{{ true }}">
+          <button type="button" onClick="{{g.confirmAll}}" aria-label="{{g.confirmLabel}}" style="flex: none; height: 44px; padding: 0; border: 0; background: transparent; font: inherit; cursor: pointer; display: flex; align-items: center">
+            <span style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #2A2F38; background: #1E222A; color: #ECEEF2; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; box-sizing: border-box">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+              Confirm all
+            </span>
+          </button>
+        </sc-if>
+      </div>
+      <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="2">
+        <button type="button" data-date="{{r.key}}" aria-label="{{r.aria}}" style="height: 52px; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border: 1px solid #1C2027; background: #121418; color: #ECEEF2; font: inherit; font-size: 15px; font-weight: 500; display: grid; grid-template-columns: minmax(0, 1fr) 34px 112px; align-items: center; gap: 12px; text-align: left; cursor: pointer">
+          <span style="font-variant-numeric: tabular-nums">{{r.date}}</span>
+          <span aria-hidden="true" style="position: relative; display: flex">
+            <span style="width: 34px; height: 28px; box-sizing: border-box; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: {{r.chipBg}}; color: {{r.chipFg}}; box-shadow: inset 0 0 0 1px {{r.chipLine}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 13px">{{r.code}}</span>
+            <span style="position: absolute; top: {{r.avatarTop}}; right: {{r.avatarRight}}; width: 16px; height: 16px; box-sizing: border-box; border-radius: 8px; border: 1px {{r.avatarLineStyle}} {{r.avatarLine}}; background: {{r.avatarBg}}; color: {{r.avatarFg}}; box-shadow: 0 0 0 2px #121418; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 8px; font-weight: 700">{{r.initials}}</span>
+          </span>
+          <span style="justify-self: end; display: flex; align-items: center; gap: 6px; font-size: 14px; color: {{r.statusColor}}">
+            <sc-if value="{{r.confirmed}}" hint-placeholder-val="{{ false }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+            </sc-if>
+            {{r.status}}
+          </span>
+        </button>
+      </sc-for>
+    </section>
+  </sc-for>
+
+  <sc-if value="{{noUpcoming}}" hint-placeholder-val="{{ false }}">
+    <p style="margin: 28px 16px 0; font-size: 15px; line-height: 1.45; color: #9AA1AD">No upcoming babysitters. Choose one for a date in the calendar.</p>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"empty":{"editor":"boolean","default":false},"$preview":{"width":390,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const WDL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const MS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const ML = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const CODES = {
+      D: { label: 'Day', bg: '#3B2A0A', fg: '#FCC35A', line: '#3B2A0A' },
+      E: { label: 'Early', bg: '#0A2C3D', fg: '#7DD3FC', line: '#0A2C3D' },
+      L: { label: 'Late', bg: '#2A1C47', fg: '#C9B6FD', line: '#2A1C47' },
+      N: { label: 'Night', bg: '#1B2050', fg: '#A5B1FF', line: '#1B2050' },
+      X: { label: 'Day off', bg: 'transparent', fg: '#8C93A0', line: '#3A404B' }
+    };
+    const OTHER = { bg: '#232E0C', fg: '#C8EC72', line: '#232E0C' };
+    const info = (k) => CODES[k] || OTHER;
+    const labelOf = (k) => (CODES[k] ? CODES[k].label : 'Other · ' + k);
+
+    // The same sample as the Calendar (Main.dc.html): today is Thursday 15 October 2026.
+    const OCT = ['D', 'D', 'X', 'X', 'E', 'E', 'L', 'L', 'X', 'N', 'N', 'N', 'X', 'X', 'X', 'L', 'L', 'X', 'E', 'E', 'D', 'D', 'SE', 'N', 'N', 'N', 'X', 'X'];
+    const SHIFTS = { '9-28': 'E', '9-29': 'E', '9-30': 'L' };
+    OCT.forEach((k, i) => { SHIFTS['10-' + (i + 1)] = k; });
+    const SITTERS = {
+      '9-29': 'Mum', '9-30': 'Dad', '10-1': 'Mum', '10-2': 'Dad', '10-5': 'Mum', '10-6': 'Jo',
+      '10-7': 'Dad', '10-8': 'Mum', '10-10': 'Dad', '10-11': 'Dad', '10-12': 'Mum',
+      '10-15': 'Mum', '10-16': 'Mum', '10-17': 'Dad', '10-19': 'Jo', '10-20': 'Jo',
+      '10-21': 'Mum', '10-22': 'Mum', '10-23': 'Dad'
+    };
+    const CONFIRMED = {
+      '9-29': true, '9-30': true, '10-1': true, '10-2': true, '10-5': true, '10-6': true, '10-7': true,
+      '10-8': true, '10-10': true, '10-11': true, '10-12': true,
+      '10-15': true, '10-16': true, '10-17': true, '10-21': true
+    };
+    const TODAY = '10-15';
+    const ord = (key) => { const a = key.split('-'); return Number(a[0]) * 100 + Number(a[1]); };
+    const dateOf = (key) => { const a = key.split('-'); return new Date(2026, Number(a[0]) - 1, Number(a[1])); };
+    const keyOf = (d) => (d.getMonth() + 1) + '-' + d.getDate();
+    const shortDate = (key) => { const d = dateOf(key); return WD[d.getDay()] + ' ' + d.getDate() + ' ' + MS[d.getMonth()]; };
+    const longDate = (key) => { const d = dateOf(key); return WDL[d.getDay()] + ' ' + d.getDate() + ' ' + ML[d.getMonth()]; };
+    const byDate = (a, b) => ord(a) - ord(b);
+
+    const s = this.state || {};
+    const p = this.props || {};
+    const isEmpty = p.empty === true || p.empty === 'true';
+    const sitters = isEmpty ? {} : SITTERS;
+    const confirmed = s.confirmed || (isEmpty ? {} : CONFIRMED);
+
+    // Share window: eight weeks ending on the last working shift, or today if later.
+    let endKey = TODAY;
+    Object.keys(SHIFTS).forEach((k) => { if (SHIFTS[k] !== 'X' && ord(k) > ord(endKey)) endKey = k; });
+    const end = dateOf(endKey);
+    const start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 55);
+    const startKey = keyOf(start);
+    const inWindow = (k) => ord(k) >= ord(startKey) && ord(k) <= ord(endKey);
+    const counts = {};
+    Object.keys(sitters).forEach((k) => { if (inWindow(k)) counts[sitters[k]] = (counts[sitters[k]] || 0) + 1; });
+    const total = Object.keys(counts).reduce((n, name) => n + counts[name], 0);
+    const GREYS = ['#ECEEF2', '#9AA1AD', '#5A616D'];
+    const share = Object.keys(counts)
+      .sort((a, b) => counts[b] - counts[a] || a.localeCompare(b))
+      .map((name, i) => ({
+        name, count: counts[name], color: GREYS[i % GREYS.length],
+        text: counts[name] + (counts[name] === 1 ? ' date' : ' dates') + ' · ' + Math.round((100 * counts[name]) / total) + '%'
+      }));
+    const fmt = (d) => d.getDate() + ' ' + MS[d.getMonth()];
+
+    // Needs a babysitter: working shifts from today on with none.
+    const needs = Object.keys(SHIFTS)
+      .filter((k) => ord(k) >= ord(TODAY) && SHIFTS[k] !== 'X' && !sitters[k])
+      .sort(byDate)
+      .map((k) => {
+        const c = info(SHIFTS[k]);
+        return {
+          key: k, date: shortDate(k), code: SHIFTS[k], chipBg: c.bg, chipFg: c.fg, chipLine: c.line,
+          aria: longDate(k) + ', ' + labelOf(SHIFTS[k]) + ', no babysitter'
+        };
+      });
+
+    // One section per babysitter with a date from today on, A–Z.
+    const knownNames = Object.keys(sitters).map((k) => sitters[k]).filter((n, i, a) => a.indexOf(n) === i);
+    const initialsOf = (n) => {
+      const clash = knownNames.some((x) => x !== n && x.charAt(0).toLowerCase() === n.charAt(0).toLowerCase());
+      return clash ? n.charAt(0).toUpperCase() + n.charAt(1).toLowerCase() : n.charAt(0).toUpperCase();
+    };
+    const upcoming = Object.keys(sitters).filter((k) => ord(k) >= ord(TODAY)).sort(byDate);
+    const names = upcoming.map((k) => sitters[k]).filter((n, i, a) => a.indexOf(n) === i).sort((a, b) => a.localeCompare(b));
+    const sections = names.map((name) => {
+      const keys = upcoming.filter((k) => sitters[k] === name);
+      const tentative = keys.filter((k) => !confirmed[k]);
+      return {
+        name,
+        initials: initialsOf(name),
+        summary: tentative.length ? tentative.length + ' to confirm' : 'All confirmed',
+        canConfirm: tentative.length > 0,
+        confirmLabel: 'Confirm all dates with ' + name,
+        confirmAll: () => {
+          const next = Object.assign({}, confirmed);
+          tentative.forEach((k) => { next[k] = true; });
+          this.setState({ confirmed: next });
+        },
+        rows: keys.map((k) => {
+          const code = SHIFTS[k];
+          const c = code ? info(code) : null;
+          const on = !!confirmed[k];
+          return {
+            key: k, date: shortDate(k), code: code || '',
+            chipBg: c ? c.bg : 'transparent', chipFg: c ? c.fg : 'transparent', chipLine: c ? c.line : 'transparent',
+            confirmed: on,
+            status: on ? 'Confirmed' : 'Tentative',
+            statusColor: on ? '#ECEEF2' : '#9AA1AD',
+            initials: initialsOf(name),
+            avatarBg: on ? '#3A404B' : '#121418', avatarFg: on ? '#ECEEF2' : '#9AA1AD',
+            avatarLine: on ? '#3A404B' : '#737B88', avatarLineStyle: on ? 'solid' : 'dashed',
+            avatarTop: code ? '-7px' : '6px', avatarRight: code ? '-7px' : '9px',
+            aria: longDate(k) + ', ' + (code ? labelOf(code) : 'no shift') + ', babysitter ' + name + (on ? ', confirmed' : ', tentative')
+          };
+        })
+      };
+    });
+
+    return {
+      windowText: fmt(start) + ' – ' + fmt(end),
+      hasShare: share.length > 0,
+      noShare: share.length === 0,
+      share,
+      hasNeeds: needs.length > 0,
+      needsSummary: needs.length + (needs.length === 1 ? ' date' : ' dates'),
+      needs,
+      sections,
+      noUpcoming: sections.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -73,9 +73,8 @@ set to the page background. Define these as custom Tailwind theme tokens (values
 | `danger` | #FB7185 | Errors, sign-in-needed dot and banner |
 | `failed` | #EF4444 | Sync-failed dot |
 | `ok` | #34D399 | Synced dot |
-| `warn` | #F5A524 | Pending dot, needs-a-babysitter border and label |
-| `warn-fill` | #2A1F0A | Fill of a cell that needs a babysitter |
-| `warn-dim` | #7A5512 | Border of an adjacent-month cell that needs a babysitter |
+| `warn` | #F5A524 | Pending dot, "Needs a babysitter" label in the date sheet |
+| `sitter-need` | #C98A2A | The needs-a-babysitter dot on a shift chip, "No babysitter" on the Babysitters screen |
 | `focus` | #7DD3FC | Focus rings (2 px, offset 2 px) |
 
 The primary button is near-white rather than a hue so it never competes with or mimics a shift
@@ -197,24 +196,20 @@ dot) until that run finishes.
  │26 │27 │28 │29 │30 │31 │ 1 │  ← 26–31 Oct dimmed
  │ D │ D │ X │   │ L │ L │ X │
  ├───┼───┼───┼───┼───┼───┼───┤
- │ 2 │ 3 │┆4┆│ ...                ← ┆ dashed amber: needs a babysitter
- │ N │ L │ E │
+ │ 2 │ 3 │ 4 │ ...                ← ° avatar on the chip's corner: initials, or an
+ │ N°│ L°│ E•│                      amber dot (•) when the date needs a babysitter
  │ ••│   │   │                    ← • one dot per event
 ```
 
 - Monday-first, always 6 rows (SIM-13). Weekday header uses single letters (M T W T F S S).
   Month title is a live region so screen readers hear the new month after prev/next.
-- **Cell**: a top row with the day number (Caption, mono) and, when the date has a babysitter, the
-  babysitter badge (§5.10); shift chip centred; event dots at the bottom: one 5 px `text` dot per
-  event, at most 4, 3 px apart (`text-dim` outside the month). With no badge the day number stays
-  centred as before; with one, the number sits left and the badge right, 4 px from the cell's
-  edges. The badge shows on past dates too, and at 45 % opacity outside the month, like the chip.
-- **Needs a babysitter** (a working shift dated today or later with no babysitter): 1.5 px dashed
-  `warn` border and a `warn-fill` fill; outside the month the border is `warn-dim` with no fill.
-  Days off, unrostered dates and past dates are never marked. The dashed line, not only its
-  colour, sets it apart (`docs/designs/Main.dc.html`).
-- **Today**: `text` outline around the cell, day number bold. When today needs a babysitter, the
-  dashed `warn` border stays outside and the `text` ring sits inside it.
+- **Cell**: day number at the top (Caption, mono), shift chip centred with the babysitter avatar
+  (§5.10) on its top-right corner, event dots at the bottom: one 5 px `text` dot per event, at most
+  4, 3 px apart (`text-dim` outside the month). The cell's border and fill never change with the
+  babysitter (`docs/designs/Main.dc.html`).
+- **Needs a babysitter** (a working shift dated today or later with no babysitter): the avatar's
+  amber dot. Days off, unrostered dates and past dates never get it.
+- **Today**: `text` outline around the cell, day number bold.
 - **Adjacent-month days**: day number and chip dimmed; still tappable (opens that date).
 - **Unrostered date**: day number only.
 - **Day off**: the outlined `X` chip (§4.2).
@@ -278,35 +273,34 @@ is selected, "Needs a babysitter" shows beside the label in `warn`
 
 **Confirmed switch**: below the chips, while a name is picked (a name chip, or Someone else with a
 name typed), a 44 px row with the label "Confirmed" and a switch (`role="switch"`,
-`aria-checked`): on is an `ok` track with the knob right, off a `border-strong` track with the knob
-left. It opens with the date's stored status. Picking a different name (another chip, or a typed
+`aria-checked`): on is a `text-muted` track with a `bg` knob on the right holding a `text` check,
+off a `border-strong` track with a `text-soft` knob on the left (`docs/designs/DateSheetConfirmed.dc.html`). It opens with the date's stored status. Picking a different name (another chip, or a typed
 name that differs from the stored one ignoring case) turns it off: a new babysitter starts
 tentative. Picking None hides it, and None saves as tentative. Toggling it alone enables Save.
 
-### 5.10 Babysitter badge
+### 5.10 Babysitter avatar
 
-A circle showing a babysitter's initials, used in calendar cells (18 px, 9 px JetBrains Mono bold)
-and on the Babysitters screen (28 px, 12 px). Status is shown by shape as well as colour:
+A small circle on the top-right corner of a shift chip, offset 7 px past the corner and ringed
+2 px in the background colour behind it so it reads as sitting on the chip. It shows a date's
+babysitter state with neutral colours, so the shift's colour stays the loudest thing in the
+cell. Status is shown by shape as well as colour:
 
-| Status | Look |
+| State | Look |
 |---|---|
-| Tentative | Transparent fill, 1 px dashed `text-muted` border, `text-soft` letters |
-| Confirmed | `ok` fill, no border, `bg` letters |
+| Needs a babysitter | An 8 px `sitter-need` dot, offset 3 px past the corner, no letters |
+| Tentative | 16 px, `cell` fill, 1 px dashed `text-disabled` border, `text-muted` initials |
+| Confirmed | 16 px, `border-strong` fill, no border, `text` initials |
+
+Initials are 8 px JetBrains Mono bold. A date with a babysitter and no shift shows the avatar
+where the chip would be, centred. Outside the month it is at 45 % opacity, like the chip; on past
+dates it shows as normal. The Babysitters screen (§6.5) uses the same avatar on its row chips,
+and a 28 px circle (`border-strong` fill, `text` initials, 12 px) by each babysitter's name.
 
 **Initials**: the first letter of the name, uppercased (`Mum` → `M`, `aunty bec` → `A`). When
 another known name (§5.8) starts with the same letter ignoring case, both use their first two
 letters, the first uppercased and the second lowercased (`Mum` → `Mu`, `Mel` → `Me`); if those
-still clash, the name, the date sheet and the accessible name tell them apart. The badge is
+still clash, the name, the date sheet and the accessible name tell them apart. The avatar is
 `aria-hidden`: the cell's accessible name carries the babysitter and status.
-
-### 5.9 Event list
-
-Labelled "Events": one row per event, in the order they were added, each a text input
-(`maxlength=200`) with a 44 px remove button (`aria-label` "Remove event: {text}"), then an empty
-input with placeholder "Add an event". Typing in that input makes it a row (focus stays in it) and a
-new empty input appears below; Enter moves to the next input rather than submitting. Removing a row
-moves focus to the input below it. On Save, text is trimmed: a blank saved row is removed and a
-blank new one dropped.
 
 ## 6. Screens
 
@@ -496,42 +490,47 @@ lands.
 ```
   ←  Babysitters
   ┌ Share ──────────────────────────────┐
-  │ 24 Aug – 18 Oct                      │  ← the share window
-  │ [■■■■■■■■■■■■■■■■■■■■|□□□□□□□□□□□□□] │  ← split bar, one segment per name
-  │ (M) Mum             9 dates · 56%    │
-  │ (D) Dad             7 dates · 44%    │
+  │ Share                1 Sep – 26 Oct  │  ← the share window
+  │ [■■■■■■■■■■■■■■■■■■■■|▒▒▒▒▒▒▒▒▒▒▒▒▒] │  ← split bar, one grey per name
+  │ ■ Mum               9 dates · 56%    │
+  │ ▒ Dad               7 dates · 44%    │
   └──────────────────────────────────────┘
-  Needs a babysitter                    2  ← only while some upcoming date does
-  Fri 23 Oct                       [L]
-  Sat 24 Oct                       [N]
-  (M) Mum       2 to confirm  [Confirm all]
-  Thu 22 Oct                  [D] Confirmed
-  Fri 30 Oct                  [L] Tentative
-  Tue 3 Nov                   [N] Tentative
-  (D) Dad       All confirmed
-  Mon 26 Oct                  [E] Confirmed
+  (•) Needs a babysitter                  ← only while some upcoming date does
+      2 dates
+  Fri 23 Oct            [L•]  No babysitter
+  Sat 24 Oct            [N•]  No babysitter
+  (M) Mum                     [✓ Confirm all]
+      2 to confirm
+  Thu 22 Oct            [Dᴹ]  ✓ Confirmed
+  Fri 30 Oct            [Lᴹ]    Tentative
+  (D) Dad
+      All confirmed
+  Mon 26 Oct            [Eᴰ]  ✓ Confirmed
 ```
 
 **Share card** (`surface`, rounded, §4.4 gutters): the caption "Share" and the share window's dates
 ("24 Aug – 18 Oct", with the year on either end that isn't the current year); a 12 px split bar
-with one segment per babysitter, widths proportional to their counts, alternating `text` and
-`text-muted` fills with a 2 px `bg` gap between segments; then one row per babysitter with any date
-in the window, most dates first then A–Z: badge (confirmed look), name, "{n} dates · {p}%" (`1
-date`; percentages rounded to whole numbers). A date counts once for its babysitter whatever its
+with one segment per babysitter, widths proportional to their counts, filled `text`, `text-muted`
+and `text-dim` in turn (then repeating), with a 2 px gap between segments; then one row per
+babysitter with any date in the window, most dates first then A–Z: a 10 px square swatch in its
+segment's grey, name, "{n} dates · {p}%" (`1 date`; percentages rounded to whole numbers). A date counts once for its babysitter whatever its
 status and whether or not it has a shift; names group ignoring case, as in the picker. With no
 babysitter in the window the card shows "No babysitters in these eight weeks." in place of the bar
 and rows.
 
-**Needs a babysitter**: shown only while at least one date needs a babysitter. A heading with the
-count, then one row per such date, earliest first: date ("Fri 23 Oct") and shift chip, with a
-dashed `warn` left border as in the grid.
+**Needs a babysitter**: shown only while at least one date needs a babysitter. The same header as a
+babysitter's section, with a 28 px dashed `text-dim` circle holding a 10 px `sitter-need` dot,
+the title "Needs a babysitter" and "{n} dates" ("1 date") in `text-muted`. Then one row per such
+date, earliest first: date ("Fri 23 Oct"), the shift chip with the amber dot (§5.10), and "No
+babysitter" in `sitter-need`. Rows look like every other row: no dashed or amber border.
 
-**One section per babysitter** with a date today or later, A–Z: badge, name, and a summary in
-`text-muted` ("{n} to confirm" or "All confirmed"); a compact secondary "Confirm all" button while
-any of its upcoming dates is tentative. Rows: every date from today on with that babysitter,
-earliest first: date, shift chip (none on an unrostered date), and a status label "Tentative" (in
-`text-muted`) or "Confirmed" (in `ok`), with a check icon before "Confirmed" so the status doesn't
-rest on colour. Past dates are not listed here; they count only towards the share.
+**One section per babysitter** with a date today or later, A–Z: the 28 px avatar, name, and a
+summary in `text-muted` ("{n} to confirm" or "All confirmed"); a compact secondary "Confirm all"
+button (with a check icon) while any of its upcoming dates is tentative. Rows: every date from
+today on with that babysitter, earliest first: date, shift chip with the avatar (§5.10; on an
+unrostered date the avatar alone), and a status label "Tentative" (in `text-muted`) or
+"Confirmed" (in `text`), with a check icon before "Confirmed" so the status doesn't rest on
+colour. Past dates are not listed here; they count only towards the share.
 
 **Confirm all** marks every upcoming tentative date of that babysitter confirmed in one save (one
 edit time, one transaction, one sync), with no dialog: a slip is undone in the date sheet.
@@ -541,7 +540,8 @@ Afterwards the summary reads "All confirmed" and the button goes.
 upcoming babysitters. Choose one for a date in the calendar." in `text-muted`; the Needs a
 babysitter list still shows when it has dates.
 
-Each row is a 52 px button whose accessible name reads like a calendar cell's: "Friday 30
+Rows are 52 px buttons on `cell` with a `cell-line` border (`docs/designs/Babysitters.dc.html`,
+`BabysittersEmpty.dc.html`). Each row is a button whose accessible name reads like a calendar cell's: "Friday 30
 October, Late, babysitter Mum, tentative". Section headings are `h2`.
 
 ## 7. Cross-cutting behaviour
@@ -622,7 +622,7 @@ exception, already used in the indicator).
 | SIM-16 Import | §6.4, §5.4, §5.7 |
 | SIM-24 / SIM-35 Events and babysitters | §5.3, §5.8, §5.9, §6.3, §8 |
 | SIM-41 Confirmed babysitters | §5.8 Confirmed switch, §6.3, §8 |
-| SIM-42 Babysitter visibility | §3, §5.1 menu, §5.3, §5.10, §6.5 (without the share card), §8 |
+| SIM-42 Babysitter visibility | §3, §4.1, §5.1 menu, §5.3, §5.10, §6.5 (without the share card), §8 |
 | SIM-43 Babysitter share | §6.5 share card, §8 |
 
 ## 10. Additions beyond the tickets

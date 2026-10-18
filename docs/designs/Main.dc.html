@@ -79,7 +79,12 @@ body{margin:0}
     <sc-for list="{{days}}" as="d" hint-placeholder-count="42">
       <button type="button" onClick="{{d.pick}}" aria-label="{{d.aria}}" style="height: 70px; box-sizing: border-box; border-radius: 12px; border: {{d.borderW}} {{d.borderStyle}} {{d.border}}; box-shadow: inset 0 0 0 1px {{d.ring}}; background: {{d.cellBg}}; padding: 6px 0 7px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; color: {{d.numColor}}; font: inherit; cursor: pointer">
         <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; font-weight: {{d.numWeight}}">{{d.num}}</span>
-        <span style="width: 34px; height: 32px; box-sizing: border-box; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: {{d.chipBg}}; color: {{d.chipFg}}; box-shadow: inset 0 0 0 1px {{d.chipLine}}; opacity: {{d.chipOpacity}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 14px">{{d.code}}</span>
+        <span style="position: relative; display: flex">
+          <span style="width: 34px; height: 32px; box-sizing: border-box; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: {{d.chipBg}}; color: {{d.chipFg}}; box-shadow: inset 0 0 0 1px {{d.chipLine}}; opacity: {{d.chipOpacity}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 14px">{{d.code}}</span>
+          <sc-if value="{{d.showAvatar}}" hint-placeholder-val="{{ false }}">
+            <span aria-hidden="true" style="position: absolute; top: {{d.avatarTop}}; right: {{d.avatarRight}}; width: {{d.avatarSize}}; height: {{d.avatarSize}}; box-sizing: border-box; border-radius: 50%; border: 1px {{d.badgeLineStyle}} {{d.badgeLine}}; background: {{d.badgeBg}}; color: {{d.badgeFg}}; box-shadow: 0 0 0 2px {{d.cellBgSolid}}; opacity: {{d.chipOpacity}}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 8px; font-weight: 700">{{d.avatarText}}</span>
+          </sc-if>
+        </span>
         <span style="display: flex; gap: 3px; height: 5px">
           <sc-for list="{{d.dots}}" as="dot" hint-placeholder-count="0">
             <span style="width: 5px; height: 5px; border-radius: 3px; background: {{dot.color}}"></span>
@@ -103,6 +108,10 @@ body{margin:0}
     <div style="position: absolute; inset: 0">
       <button type="button" aria-label="Close menu" onClick="{{closeOverlay}}" style="position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; cursor: default"></button>
       <div role="menu" aria-label="More" style="position: absolute; top: 62px; right: 12px; width: 208px; padding: 6px; box-sizing: border-box; border-radius: 16px; background: #1E222A; border: 1px solid #2E333C; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55)">
+        <a href="Babysitters.dc.html" role="menuitem" style="height: 48px; padding: 0 12px; border-radius: 10px; color: #ECEEF2; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 12px; text-decoration: none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9AA1AD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"></path><path d="M18.5 14.2a6.5 6.5 0 0 1 3 5.8"></path></svg>
+          Babysitters
+        </a>
         <sc-if value="{{signOutConfirms}}" hint-placeholder-val="{{ false }}">
           <button type="button" role="menuitem" onClick="{{askSignOut}}" style="width: 100%; height: 48px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: #ECEEF2; font: inherit; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9AA1AD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 16l-4-4 4-4"></path><path d="M6 12h10"></path></svg>
@@ -188,6 +197,18 @@ body{margin:0}
               <input id="sitter-name" type="text" maxlength="40" autocapitalize="words" autocomplete="off" value="{{otherSitter}}" onChange="{{onOtherSitter}}" placeholder="e.g. Aunty Bec" style="height: 48px; box-sizing: border-box; border-radius: 12px; border: 1.5px solid #7DD3FC; background: #0E1014; color: #ECEEF2; padding: 0 14px; font: inherit; font-size: 16px">
             </div>
           </sc-if>
+          <sc-if value="{{showConfirmed}}" hint-placeholder-val="{{ false }}">
+            <button type="button" role="switch" aria-checked="{{confirmedOn}}" onClick="{{toggleConfirmed}}" style="height: 44px; width: 100%; padding: 0; border: 0; background: transparent; color: #C9CDD4; font: inherit; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; cursor: pointer">
+              <span>Confirmed</span>
+              <span aria-hidden="true" style="width: 44px; height: 26px; box-sizing: border-box; border-radius: 13px; background: {{switchTrack}}; padding: 3px; display: flex; justify-content: {{switchJustify}}">
+                <span style="width: 20px; height: 20px; border-radius: 10px; background: {{switchKnob}}; display: flex; align-items: center; justify-content: center; color: #ECEEF2">
+                  <sc-if value="{{confirmedOn}}" hint-placeholder-val="{{ false }}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                  </sc-if>
+                </span>
+              </span>
+            </button>
+          </sc-if>
         </div>
         <div style="display: flex; flex-direction: column; gap: 8px">
           <span style="font-size: 14px; font-weight: 500; color: #C9CDD4">Events</span>
@@ -241,10 +262,18 @@ class Component extends DCLogic {
       '10-24': ['Footy final'], '10-31': ['Halloween'], '11-3': ['Melbourne Cup', 'Parent–teacher night']
     };
     const SITTERS = {
+      '9-29': 'Mum', '9-30': 'Dad', '10-1': 'Mum', '10-2': 'Dad', '10-5': 'Mum', '10-6': 'Jo',
+      '10-7': 'Dad', '10-8': 'Mum', '10-10': 'Dad', '10-11': 'Dad', '10-12': 'Mum',
       '10-15': 'Mum', '10-16': 'Mum', '10-17': 'Dad', '10-19': 'Jo', '10-20': 'Jo',
       '10-21': 'Mum', '10-22': 'Mum', '10-23': 'Dad'
     };
-    const RESET = { draftCode: undefined, otherDraft: undefined, sitterPick: undefined, otherSitter: undefined, otherOpen: undefined, eventDrafts: undefined, newEvent: undefined };
+    // Confirmed babysitters; every other one is tentative.
+    const CONFIRMED = {
+      '9-29': true, '9-30': true, '10-1': true, '10-2': true, '10-5': true, '10-6': true, '10-7': true,
+      '10-8': true, '10-10': true, '10-11': true, '10-12': true,
+      '10-15': true, '10-16': true, '10-17': true, '10-21': true
+    };
+    const RESET = { draftCode: undefined, otherDraft: undefined, sitterPick: undefined, otherSitter: undefined, otherOpen: undefined, eventDrafts: undefined, newEvent: undefined, confirmedDraft: undefined, confirmedFor: undefined };
     const SYNC = {
       synced: { label: 'Synced', dot: '#34D399', ring: '#34D399' },
       pending: { label: '2 pending', dot: '#F5A524', ring: '#F5A524' },
@@ -261,6 +290,18 @@ class Component extends DCLogic {
     const shifts = s.shifts || (isEmpty ? {} : INITIAL);
     const events = s.events || (isEmpty ? {} : EVENTS);
     const sitters = s.sitters || (isEmpty ? {} : SITTERS);
+    const confirmed = s.confirmed || (isEmpty ? {} : CONFIRMED);
+    // Initials: the first letter, or the first two when another name shares it (ux-spec §5.10).
+    const knownNames = [];
+    Object.keys(sitters).forEach((d) => {
+      const n = sitters[d];
+      if (n && !knownNames.some((x) => x.toLowerCase() === n.toLowerCase())) knownNames.push(n);
+    });
+    const initialsOf = (n) => {
+      const first = n.charAt(0).toLowerCase();
+      const clash = knownNames.some((x) => x.toLowerCase() !== n.toLowerCase() && x.charAt(0).toLowerCase() === first);
+      return clash ? n.charAt(0).toUpperCase() + n.charAt(1).toLowerCase() : n.charAt(0).toUpperCase();
+    };
     const openKey = p.openDate ? (String(p.openDate).indexOf('-') > 0 ? String(p.openDate) : '10-' + p.openDate) : null;
     const editing = s.editing !== undefined ? s.editing : openKey;
     const pendingCount = s.pendingCount || 0;
@@ -269,6 +310,30 @@ class Component extends DCLogic {
     if (baseSync === 'synced' && pendingCount > 0) sync = { label: pendingCount + ' pending', dot: '#F5A524', ring: '#F5A524' };
     const pendingTotal = (baseSync === 'pending' ? 2 : 0) + pendingCount;
     const overlay = s.overlay !== undefined ? s.overlay : (['menu', 'signout'].indexOf(p.overlay) >= 0 ? p.overlay : 'none');
+
+    // The babysitter avatar on the shift chip's top-right corner (ux-spec §5.10): an amber dot
+    // when the date needs a babysitter, else the initials, dashed while tentative and filled once
+    // confirmed. With no shift the avatar sits where the chip would be.
+    const AVATAR = {
+      need: ['#C98A2A', '#0E1014', '#C98A2A', 'solid'],
+      tent: ['#121418', '#9AA1AD', '#737B88', 'dashed'],
+      conf: ['#3A404B', '#ECEEF2', '#3A404B', 'solid']
+    };
+    const cellLook = (st, sitter, isToday, inMonth, isEditing, hasCode) => {
+      const a = st ? AVATAR[st] : null;
+      return {
+        showAvatar: !!st,
+        badgeBg: a ? a[0] : 'transparent', badgeFg: a ? a[1] : 'transparent', badgeLine: a ? a[2] : 'transparent', badgeLineStyle: a ? a[3] : 'solid',
+        avatarSize: st === 'need' ? '8px' : '16px',
+        avatarTop: st === 'need' ? '-3px' : (hasCode ? '-7px' : '8px'),
+        avatarRight: st === 'need' ? '-3px' : (hasCode ? '-7px' : '9px'),
+        avatarText: st === 'need' || !sitter ? '' : initialsOf(sitter),
+        cellBgSolid: isToday ? '#161920' : (inMonth ? '#121418' : '#0E1014'),
+        border: isEditing || isToday ? '#ECEEF2' : (inMonth ? '#1C2027' : '#15181D'),
+        borderStyle: 'solid',
+        borderW: '1px'
+      };
+    };
 
     const cells = [{ m: 9, d: 28 }, { m: 9, d: 29 }, { m: 9, d: 30 }];
     for (let d = 1; d <= 31; d++) cells.push({ m: 10, d });
@@ -285,14 +350,13 @@ class Component extends DCLogic {
       const evs = events[key] || [];
       const sitter = sitters[key] || '';
       const needs = !!k && k !== 'X' && ord(key) >= ord(TODAY) && !sitter;
+      const isConfirmed = !!sitter && !!confirmed[key];
       return {
         num: cell.d,
-        aria: WD[i % 7] + ' ' + cell.d + ' ' + MON[cell.m] + ', ' + (c ? labelOf(k) : 'no shift') + (sitter ? ', babysitter ' + sitter : (needs ? ', no babysitter' : '')) + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' event' : ' events') : '') + (isToday ? ', today' : ''),
+        aria: WD[i % 7] + ' ' + cell.d + ' ' + MON[cell.m] + ', ' + (c ? labelOf(k) : 'no shift') + (sitter ? ', babysitter ' + sitter + (isConfirmed ? ', confirmed' : ', tentative') : (needs ? ', no babysitter' : '')) + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' event' : ' events') : '') + (isToday ? ', today' : ''),
+        ...cellLook(needs ? 'need' : (sitter ? (isConfirmed ? 'conf' : 'tent') : null), sitter, isToday, inMonth, isEditing, !!k),
         pick: () => this.setState(Object.assign({ editing: key }, RESET)),
-        cellBg: !inMonth ? 'transparent' : (needs ? '#2A1F0A' : (isToday ? '#161920' : '#121418')),
-        border: isEditing ? '#ECEEF2' : (needs ? (inMonth ? '#F5A524' : '#7A5512') : (isToday ? '#ECEEF2' : (inMonth ? '#1C2027' : '#15181D'))),
-        borderStyle: needs && !isEditing ? 'dashed' : 'solid',
-        borderW: needs ? '1.5px' : '1px',
+        cellBg: !inMonth ? 'transparent' : (isToday ? '#161920' : '#121418'),
         ring: isToday ? '#ECEEF2' : 'transparent',
         numColor: !inMonth ? '#5A616D' : (isToday ? '#ECEEF2' : (ord(key) < ord(TODAY) ? '#737B88' : '#C9CDD4')),
         numWeight: isToday ? 700 : 500,
@@ -348,6 +412,10 @@ class Component extends DCLogic {
           pick: () => this.setState({ sitterPick: o.value, otherOpen: add })
         };
       });
+    // Confirmed: opens with the stored status; a different name starts tentative.
+    const sitterKey = finalSitter.toLowerCase();
+    const curConfirmed = !!curSitter && !!confirmed[editing];
+    const confirmedOn = !!finalSitter && (s.confirmedFor === sitterKey ? !!s.confirmedDraft : (sitterKey === curSitter.toLowerCase() ? curConfirmed : false));
     const pickedCode = finalCode || cur;
     const needsSitter = sheetOpen && !!pickedCode && pickedCode !== 'X' && ord(editing) >= ord(TODAY) && sitterPick === '';
 
@@ -365,7 +433,7 @@ class Component extends DCLogic {
     const eventsChanged = finalEvents.join('\n') !== curEvents.join('\n');
 
     const codeOk = !draftCode || !!finalCode;
-    const changed = codeOk && sitterOk && ((!!finalCode && finalCode !== cur) || finalSitter !== curSitter || eventsChanged);
+    const changed = codeOk && sitterOk && ((!!finalCode && finalCode !== cur) || finalSitter !== curSitter || confirmedOn !== curConfirmed || eventsChanged);
     const codeButtons = ['D', 'E', 'L', 'N', 'X', 'O'].map((k) => {
       const c = k === 'O' ? OTHER : CODES[k];
       const on = draftCode === k;
@@ -410,6 +478,12 @@ class Component extends DCLogic {
       codeButtons,
       sitterChips,
       needsSitter,
+      showConfirmed: !!finalSitter,
+      confirmedOn,
+      toggleConfirmed: () => this.setState({ confirmedFor: sitterKey, confirmedDraft: !confirmedOn }),
+      switchTrack: confirmedOn ? '#9AA1AD' : '#3A404B',
+      switchJustify: confirmedOn ? 'flex-end' : 'flex-start',
+      switchKnob: confirmedOn ? '#0E1014' : '#C9CDD4',
       showSitterInput,
       otherSitter,
       onOtherSitter: (e) => {
@@ -439,9 +513,11 @@ class Component extends DCLogic {
         if (finalCode) ns[editing] = finalCode;
         const nb = Object.assign({}, sitters);
         if (finalSitter) nb[editing] = finalSitter; else delete nb[editing];
+        const nconf = Object.assign({}, confirmed);
+        if (finalSitter && confirmedOn) nconf[editing] = true; else delete nconf[editing];
         const ne = Object.assign({}, events);
         if (finalEvents.length) ne[editing] = finalEvents; else delete ne[editing];
-        this.setState(Object.assign({ shifts: ns, sitters: nb, events: ne, editing: null, pendingCount: pendingCount + 1 }, RESET));
+        this.setState(Object.assign({ shifts: ns, sitters: nb, confirmed: nconf, events: ne, editing: null, pendingCount: pendingCount + 1 }, RESET));
         if (baseSync === 'synced') {
           clearTimeout(this._t);
           this._t = setTimeout(() => this.setState({ pendingCount: 0 }), 1600);
