@@ -6,10 +6,13 @@
 # 1. Build the web app. Its output is the same on every platform.
 FROM --platform=$BUILDPLATFORM node:22-alpine AS web
 WORKDIR /web
-COPY web/package.json web/package-lock.json ./
-RUN npm ci
+# corepack runs the pnpm version pinned by packageManager in web/package.json.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable
+COPY web/package.json web/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY web/ ./
-RUN npm run build
+RUN pnpm build
 
 # 2. Build a static Go binary for the target platform with the web app embedded.
 FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS server

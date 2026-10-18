@@ -4,8 +4,9 @@ DEV_DATA_DIR ?= $(or $(TMPDIR),/tmp)/roster-mate-dev
 
 .PHONY: dev test build
 
-web/node_modules: web/package.json web/package-lock.json
-	cd web && npm ci
+# pnpm comes from corepack (`corepack enable`), at the version pinned in web/package.json.
+web/node_modules: web/package.json web/pnpm-lock.yaml
+	cd web && pnpm install --frozen-lockfile
 	@touch $@
 
 # Go server on $PORT (8080) and Vite on 5173, both on 0.0.0.0; Vite proxies /api to Go.
@@ -17,13 +18,13 @@ dev: web/node_modules
 	export DATA_DIR="$(DEV_DATA_DIR)"; \
 	trap 'kill 0' INT TERM EXIT; \
 	(cd server && go run ./cmd/roster-mate) & \
-	(cd web && API_PORT="$${PORT:-8080}" npm run dev) & \
+	(cd web && API_PORT="$${PORT:-8080}" pnpm dev) & \
 	wait
 
 # Go vet and tests, then the web type-check and Vitest.
 test: web/node_modules
 	cd server && go vet ./... && go test ./...
-	cd web && npm run typecheck && npm test
+	cd web && pnpm typecheck && pnpm test
 
 build:
 	docker build -t $(IMAGE) .

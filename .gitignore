@@ -1,4 +1,5 @@
 node_modules/
+.pnpm-store/
 web/dist/
 # The web build is copied here only while building the image.
 server/internal/web/dist/*

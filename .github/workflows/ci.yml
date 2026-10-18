@@ -44,17 +44,22 @@ jobs:
           go-version-file: server/go.mod
           cache-dependency-path: server/go.sum
 
+      # No version: it installs the one pinned by packageManager in web/package.json.
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
 
       - name: gofmt
         working-directory: server
         run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
 
-      # Installs web/node_modules with npm ci, then go vet, go test, typecheck, Vitest.
+      # Installs web/node_modules with pnpm install --frozen-lockfile, then go vet, go test, typecheck, Vitest.
       - run: make test
 
   smoke:
