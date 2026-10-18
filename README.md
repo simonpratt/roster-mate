@@ -76,9 +76,14 @@ build through `apps/web/embed.go`; a pnpm workspace at the root holds the client
 
 ```sh
 make dev     # Go server on :8080 and Vite on :5173 (proxying /api); open http://localhost:5173
-make test    # go vet + go test, then tsc + Vitest
+make test    # go vet + go test, then tsc + Vitest, and the e2e specs' type-check
 make build   # the Docker image (IMAGE=roster-mate by default)
+make e2e     # Playwright suite on a phone viewport; builds the web app and binary first
+make e2e-smoke  # the @smoke tests against a running app at APP_TEST_URL (default :8080)
 ```
+
+Before the first `make e2e`, install Chromium once:
+`pnpm --filter ./test/e2e exec playwright install chromium`.
 
 `make dev` reads `.env`, or `.env.example` if there is no `.env`, and keeps the database in
 `DEV_DATA_DIR` (default `$TMPDIR/roster-mate-dev`) rather than `DATA_DIR`.

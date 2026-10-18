@@ -1,10 +1,13 @@
-# CI for Roster Mate: a Go server with an embedded React web app.
+# CI for Roster Mate: a Go server with an embedded React web app, and a Playwright
+# suite in test/e2e.
 #
-# checks and smoke run in parallel. checks runs gofmt and `make test` (go vet,
-# go test, the web type-check and Vitest). smoke builds the linux/amd64 image,
-# runs it and curls the key routes: health, the embedded web app, and a login
-# that opens a session. There is no e2e job: the repo has no e2e suite yet.
-# publish waits for both, then builds linux/amd64 and linux/arm64 in one step
+# checks, e2e and smoke run in parallel. checks runs gofmt and `make test` (go vet,
+# go test, the web and e2e type-checks and Vitest). e2e runs `make e2e`: the full
+# Playwright suite on a phone viewport against the web app and binary it builds
+# from source, in test mode with the fake Claude. smoke builds the linux/amd64
+# image, runs it with a named /data volume and runs the @smoke tests against the
+# container (`make e2e-smoke`), then checks that no secret reached `docker logs`.
+# publish waits for all three, then builds linux/amd64 and linux/arm64 in one step
 # (Go cross-compiles in the Dockerfile, so no QEMU) with the amd64 layers from
 # smoke's cache. It pushes to GHCR on master and v* tags; pull requests only
 # build.
@@ -58,6 +61,59 @@ jobs:
       # Installs node_modules with pnpm install --frozen-lockfile, then go vet, go test, typecheck, Vitest.
       - run: make test
 
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      # No version: it installs the one pinned by packageManager in the root package.json.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - id: playwright
+        name: Playwright version
+        run: echo "version=$(pnpm --filter ./test/e2e exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - id: browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install Chromium
+        if: steps.browsers.outputs.cache-hit != 'true'
+        run: pnpm --filter ./test/e2e exec playwright install --with-deps chromium
+
+      - name: Install Chromium system dependencies
+        if: steps.browsers.outputs.cache-hit == 'true'
+        run: pnpm --filter ./test/e2e exec playwright install-deps chromium
+
+      # Builds the web app and bin/roster-mate, then Playwright's webServer starts them in test
+      # mode on :18080 with the fake Claude on :18081.
+      - name: Full e2e suite
+        run: make e2e
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: e2e-results
+          path: |
+            test/e2e/test-results/
+            test/e2e/playwright-report/
+          retention-days: 7
+
   smoke:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -82,24 +138,65 @@ jobs:
       - name: Start image
         run: |
           docker run -d --name app -p 8080:8080 -v roster-mate-data:/data \
-            -e APP_USERNAME=smoke -e APP_PASSWORD=smoke \
+            -e APP_USERNAME=e2e -e APP_PASSWORD=e2e-password \
             -e ANTHROPIC_API_KEY=sk-ant-smoke -e ROSTER_NAME=Smoke \
             roster-mate:smoke
           curl --silent --fail --retry 30 --retry-delay 1 --retry-all-errors http://localhost:8080/api/health > /dev/null
 
+      # No version: it installs the one pinned by packageManager in the root package.json.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - id: playwright
+        name: Playwright version
+        run: echo "version=$(pnpm --filter ./test/e2e exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - id: browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install Chromium
+        if: steps.browsers.outputs.cache-hit != 'true'
+        run: pnpm --filter ./test/e2e exec playwright install --with-deps chromium
+
+      - name: Install Chromium system dependencies
+        if: steps.browsers.outputs.cache-hit == 'true'
+        run: pnpm --filter ./test/e2e exec playwright install-deps chromium
+
+      # Signs in as e2e/e2e-password (the test/e2e defaults) at http://localhost:8080.
       - name: Smoke tests against the image
+        run: make e2e-smoke
+
+      - name: No secrets in the logs
         run: |
-          curl --silent --fail http://localhost:8080/ | grep -q '<div id="root">'
-          curl --silent --fail --cookie-jar cookies -H 'Content-Type: application/json' \
-            -d '{"username":"smoke","password":"smoke"}' http://localhost:8080/api/login
-          curl --silent --fail --cookie cookies http://localhost:8080/api/session | grep -q '"smoke"'
+          if docker logs app 2>&1 | grep -q -F -e e2e-password -e sk-ant-smoke; then
+            echo "docker logs contain a secret" >&2
+            exit 1
+          fi
 
       - name: Image logs
         if: failure()
         run: docker logs app
 
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: smoke-results
+          path: |
+            test/e2e/test-results/
+            test/e2e/playwright-report/
+          retention-days: 7
+
   publish:
-    needs: [checks, smoke]
+    needs: [checks, e2e, smoke]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:

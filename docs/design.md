@@ -74,6 +74,10 @@ package.json, pnpm-workspace.yaml, pnpm-lock.yaml   the pnpm workspace
   src/sync              sync engine
   src/shifts            shift codes, labels, colours (mirrors server)
   src/routes            Login, Calendar, Import
+/test/e2e               Playwright suite (own workspace package, roster-mate-e2e)
+  playwright.config.ts  phone project, webServer for the binary and the fake Claude
+  fixtures/             test (reset + clock), env, files/roster.jpg
+  ui/                   one spec per user path
 /docs                   design docs
 Dockerfile, Makefile, .env.example, README.md
 ```
@@ -369,8 +373,35 @@ desktop.
   `FAKE_ANTHROPIC_KEY` (default `sk-ant-e2e`), plus `GET /health`.
 - Web: Vitest + Testing Library; `fake-indexeddb` for Dexie and sync-engine tests with a mocked
   `fetch`.
-- `make test` runs both; `make build` builds the image; `docker run` with `.env.example` values
-  serves the app.
+- Browser (e2e): Playwright in `test/e2e`, one `ui` project on a Pixel 7 viewport in Chromium,
+  run one test at a time (`workers: 1`) because they share one server. `make e2e` builds the web
+  app and `bin/roster-mate`, then the config's `webServer` starts the fake Claude on
+  `127.0.0.1:18081` and the binary on `127.0.0.1:18080` with `APP_TEST_MODE=1`, credentials
+  `e2e`/`e2e-password`, `ROSTER_NAME=E2E`, `ANTHROPIC_BASE_URL` at the fake, `TZ` and the
+  browsers' time zone `Australia/Sydney`, and a fresh `DATA_DIR` under the OS temp dir. An auto
+  fixture calls `POST /api/test/reset` before each test and starts the browser clock at
+  2026-12-07 09:00 (not frozen), and each test has a fresh context, so empty IndexedDB. The specs
+  cover the main user paths no lower layer sees: signing in (wrong password, then right) and
+  signing out through the pending-edits confirmation; saving a date's shift, babysitter and
+  event and seeing them on a second phone (a second context, so whatever it shows came through
+  the server); an offline edit kept while offline after a reload from the service worker's
+  precache and sent once back online; and importing the fake's roster, unticking one row and
+  saving the rest. Left to lower layers on purpose: last-write-wins conflicts, the server-reset
+  re-send, extraction errors and the import error screens, session expiry, a desktop viewport,
+  other browsers, and Lighthouse and PWA install checks.
+- Smoke: the sign-in, date and offline tests are tagged `@smoke`. With `APP_TEST_URL` set, the
+  suite starts nothing, skips the reset and tests that URL; `make e2e-smoke` aims them at
+  `http://localhost:8080` (credentials from `APP_TEST_USERNAME`/`APP_TEST_PASSWORD`). They use
+  dates no other test touches (14, 15 and 16 Dec 2026), never call extraction, and pass on a
+  server that already holds their own data from an earlier run: since every run's clock starts
+  at the same instant, a re-run's shift edit loses last-write-wins, so each also adds an event
+  and checks the second phone against the first phone's cell rather than a fixed count.
+- `make test` runs the Go and web tests and type-checks the e2e specs; `make build` builds the
+  image; `docker run` with `.env.example` values serves the app.
+- CI (`.github/workflows/ci.yml`): `checks` (gofmt, `make test`), `e2e` (`make e2e`, Chromium
+  cached on the Playwright version) and `smoke` run in parallel. `smoke` builds the amd64 image,
+  runs it on a named volume with the e2e credentials, runs `make e2e-smoke` against it and fails
+  if `docker logs` contains the password or API key. `publish` needs all three.
 
 ## Delivery order
 

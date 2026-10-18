@@ -1,2 +1,3 @@
 packages:
   - apps/web
+  - test/e2e

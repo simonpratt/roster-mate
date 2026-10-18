@@ -7,3 +7,5 @@ docs
 .pnpm-store
 apps/web/dist
 roster-mate
+bin
+test
