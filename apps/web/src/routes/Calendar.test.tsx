@@ -50,19 +50,40 @@ afterEach(() => {
 });
 
 describe("Calendar month grid", () => {
-  it("shows November 2026 from Mon 26 Oct to Sun 6 Dec with the seeded codes", async () => {
+  it("stacks each month's own dates, opening on November 2026", async () => {
     stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
     await seed({ "2026-10-26": "D", "2026-11-03": "L", "2026-11-04": "X", "2026-11-20": "SE", "2026-12-06": "N" });
     renderApp("/");
 
-    expect(await screen.findByRole("heading", { level: 2, name: "November 2026" })).toBeInTheDocument();
-    const cells = within(screen.getByTestId("month-grid")).getAllByRole("button");
-    expect(cells).toHaveLength(42);
-    await waitFor(() => expect(cells[0]).toHaveAccessibleName("Monday 26 October, Day"));
-    expect(cells[0]).toHaveTextContent("26D");
+    // The bar names the month at the top of the scroll; no Next shift and no month buttons.
+    expect(await screen.findByRole("heading", { level: 1, name: "November 2026" })).toBeInTheDocument();
+    expect(screen.queryByText("Next shift")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Next month" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Previous month" })).not.toBeInTheDocument();
+
+    // Six months either side, earliest first, each titled.
+    const months = screen.getAllByRole("region");
+    expect(months.map((m) => m.getAttribute("aria-label"))).toEqual([
+      "May 2026", "June 2026", "July 2026", "August 2026", "September 2026", "October 2026", "November 2026",
+      "December 2026", "January 2027", "February 2027", "March 2027", "April 2027", "May 2027",
+    ]);
+    const november = screen.getByRole("region", { name: "November 2026" });
+    expect(within(november).getByRole("heading", { level: 2 })).toHaveTextContent("November 2026");
+    // Only November's dates: 1 November is a Sunday, after six blanks.
+    const cells = within(november).getAllByRole("button");
+    expect(cells).toHaveLength(30);
+    expect(cells[0]).toHaveAccessibleName("Sunday 1 November, no shift");
+    expect(cells[0]!.parentElement!.children).toHaveLength(36);
+    expect(cells[29]).toHaveAccessibleName("Monday 30 November, no shift");
+    expect(cells.every((c) => c.classList.contains("h-21"))).toBe(true);
+
+    // Each date appears once, in its own month.
+    const october = screen.getByRole("region", { name: "October 2026" });
+    expect(await within(october).findByRole("button", { name: "Monday 26 October, Day" })).toHaveTextContent("26D");
     // A working shift from today on with no babysitter says so.
-    await waitFor(() => expect(cells[41]).toHaveAccessibleName("Sunday 6 December, Night, no babysitter"));
-    expect(cells[41]).toHaveTextContent("6N");
+    const december = screen.getByRole("region", { name: "December 2026" });
+    expect(await within(december).findByRole("button", { name: "Sunday 6 December, Night, no babysitter" })).toHaveTextContent("6N");
+    expect(screen.getAllByRole("button", { name: /^\w+ 6 December/ })).toHaveLength(1);
 
     expect(screen.getByRole("button", { name: "Tuesday 3 November, Late" })).toHaveTextContent("3L");
     expect(screen.getByRole("button", { name: "Wednesday 4 November, Day off" })).toHaveTextContent("4X");
@@ -145,15 +166,14 @@ describe("Calendar month grid", () => {
     expect(dots(busy)).toHaveLength(4);
     expect(avatar(busy)).toBeNull();
 
-    // Outside the month: no fill, and the chip and avatar dimmed together, ringed in bg.
+    // The next month's cells look like any other.
     const next = await cell("Tuesday 1 December, Night, no babysitter");
-    expect(next).not.toHaveClass("bg-cell");
-    expect(avatar(next)).toHaveClass("ring-bg");
-    expect(avatar(next)!.parentElement).toHaveClass("opacity-45");
+    expect(next).toHaveClass("bg-cell");
+    expect(avatar(next)).toHaveClass("ring-cell");
     expect(avatar(await cell("Wednesday 2 December, Day, babysitter Dad, confirmed"))).toHaveTextContent(/^D$/);
 
     // No cell has a dashed or warn border any more; the needs dot is on exactly the cells that need one.
-    for (const c of within(screen.getByTestId("month-grid")).getAllByRole("button")) {
+    for (const c of within(screen.getByTestId("month-scroll")).getAllByRole("button")) {
       expect(c.className).not.toMatch(/dashed|warn/);
       const needsDot = within(c).queryByTestId("babysitter-avatar")?.getAttribute("data-status") === "needs";
       expect(needsDot).toBe(c.getAttribute("aria-label")!.includes("no babysitter"));
@@ -161,61 +181,53 @@ describe("Calendar month grid", () => {
     expect(screen.getAllByRole("button", { name: /no babysitter/ })).toHaveLength(4);
   });
 
-  it("changes month with the buttons, a swipe and Today", async () => {
+  it("adds months near either end, keeping the view still when they go above", async () => {
     stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
     renderApp("/");
-    const title = () => screen.getByRole("heading", { level: 2 });
-    expect(await screen.findByRole("heading", { level: 2, name: "November 2026" })).toBeInTheDocument();
+    await screen.findByRole("region", { name: "May 2027" });
+    const scroll = screen.getByTestId("month-scroll");
+    const region = (name: string) => screen.queryByRole("region", { name });
 
-    fireEvent.click(screen.getByRole("button", { name: "Next month" }));
-    expect(title()).toHaveTextContent("December 2026");
-    fireEvent.click(screen.getByRole("button", { name: "Previous month" }));
-    fireEvent.click(screen.getByRole("button", { name: "Previous month" }));
-    expect(title()).toHaveTextContent("October 2026");
+    // jsdom has no layout: an 800 px view over 1000 px per month, scrolled near the top.
+    Object.defineProperty(scroll, "clientHeight", { configurable: true, value: 800 });
+    Object.defineProperty(scroll, "scrollHeight", {
+      configurable: true,
+      get: () => scroll.querySelectorAll("section").length * 1000,
+    });
+    scroll.scrollTop = 500;
+    fireEvent.scroll(scroll);
+    expect(await screen.findByRole("region", { name: "November 2025" })).toBeInTheDocument();
+    expect(region("October 2025")).toBeNull();
+    // Moved down by the six months added above, so the same dates stay in view.
+    expect(scroll.scrollTop).toBe(6_500);
 
-    const grid = screen.getByTestId("month-grid");
-    // Swipe left: the next month.
-    fireEvent.touchStart(grid, { touches: [{ clientX: 300, clientY: 200 }] });
-    fireEvent.touchEnd(grid, { changedTouches: [{ clientX: 200, clientY: 210 }] });
-    expect(title()).toHaveTextContent("November 2026");
-    // Swipe right: the previous month. A mostly vertical drag does nothing.
-    fireEvent.touchStart(grid, { touches: [{ clientX: 100, clientY: 200 }] });
-    fireEvent.touchEnd(grid, { changedTouches: [{ clientX: 200, clientY: 220 }] });
-    expect(title()).toHaveTextContent("October 2026");
-    fireEvent.touchStart(grid, { touches: [{ clientX: 100, clientY: 100 }] });
-    fireEvent.touchEnd(grid, { changedTouches: [{ clientX: 160, clientY: 300 }] });
-    expect(title()).toHaveTextContent("October 2026");
+    // Near the bottom: six more after May 2027.
+    scroll.scrollTop = 17_500;
+    fireEvent.scroll(scroll);
+    expect(await screen.findByRole("region", { name: "November 2027" })).toBeInTheDocument();
+    expect(region("December 2027")).toBeNull();
+    // In the middle: nothing more.
+    scroll.scrollTop = 10_000;
+    fireEvent.scroll(scroll);
+    expect(region("October 2025")).toBeNull();
+    expect(region("December 2027")).toBeNull();
+  });
+
+  it("opens on the month Import returns to, and Today scrolls back to today's month", async () => {
+    stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
+    const scrollTo = vi.spyOn(Element.prototype, "scrollTo");
+    renderApp({ pathname: "/", state: { month: "2027-03" } });
+    expect(await screen.findByRole("heading", { level: 1, name: "March 2027" })).toBeInTheDocument();
+    // Today's month is in reach as well as six months past March.
+    expect(screen.getByRole("region", { name: "May 2026" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "September 2027" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Today" }));
-    expect(title()).toHaveTextContent("November 2026");
+    expect(scrollTo).toHaveBeenCalledExactlyOnceWith({ top: expect.any(Number), behavior: "smooth" });
   });
 });
 
-describe("Next shift", () => {
-  const cases: [string, Record<string, string | null>, string][] = [
-    ["today", { "2026-11-14": "L", "2026-11-15": "D" }, "Today · Day"],
-    ["tomorrow", { "2026-11-15": "X", "2026-11-16": "L" }, "Tomorrow · Late"],
-    ["later", { "2026-11-10": "D", "2026-11-15": "X", "2026-11-16": null, "2026-11-20": "N" }, "Fri 20 Nov · Night"],
-    ["an Other code", { "2026-11-15": "X", "2026-11-16": "SE" }, "Tomorrow · SE"],
-    ["only days off ahead", { "2026-11-01": "D", "2026-11-15": "X", "2026-11-16": "X" }, "No upcoming shifts"],
-    ["no shifts", {}, "No upcoming shifts"],
-  ];
-
-  it.each(cases)("reads right for %s", async (_name, rows, text) => {
-    stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
-    await seed(rows);
-    renderApp("/");
-    expect(await screen.findByRole("heading", { level: 1, name: text })).toBeInTheDocument();
-  });
-
-  it("shows the next shift's month when tapped", async () => {
-    stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
-    await seed({ "2027-01-04": "E" });
-    renderApp("/");
-    fireEvent.click(await screen.findByRole("button", { name: "Mon 4 Jan · Early" }));
-    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("January 2027");
-  });
-
+describe("First run", () => {
   it("offers an import on first run only", async () => {
     stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
     const { unmount } = renderApp("/");
@@ -225,7 +237,7 @@ describe("Next shift", () => {
 
     await seed({ "2026-11-20": "D" });
     renderApp("/");
-    await screen.findByRole("heading", { level: 1, name: "Fri 20 Nov · Day" });
+    await screen.findByRole("button", { name: "Friday 20 November, Day, no babysitter" });
     expect(screen.queryByText("Import a photo of your roster to get started.")).not.toBeInTheDocument();
   });
 });

@@ -50,52 +50,8 @@ body{margin:0}
     </div>
   </sc-if>
 
-  <section aria-labelledby="next-shift" style="padding: 16px 16px 20px">
-    <p style="margin: 0; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #9AA1AD">Next shift</p>
-    <div style="display: flex; align-items: center; gap: 14px; margin-top: 10px">
-      <span aria-hidden="true" style="width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: {{nextBg}}; color: {{nextFg}}; box-shadow: inset 0 0 0 1px {{nextLine}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 20px">{{nextCode}}</span>
-      <h1 id="next-shift" style="margin: 0; font-size: 28px; line-height: 1.15; font-weight: 600; letter-spacing: -0.01em">{{nextTitle}}</h1>
-    </div>
-  </section>
-
-  <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 16px; height: 52px">
-    <h2 style="margin: 0; font-size: 18px; font-weight: 600">October 2026</h2>
-    <div style="display: flex; align-items: center; gap: 2px">
-      <button type="button" aria-label="Previous month" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; color: #C9CDD4; display: flex; align-items: center; justify-content: center; cursor: pointer">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
-      </button>
-      <button type="button" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #2A2F38; background: #161920; color: #ECEEF2; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer">Today</button>
-      <button type="button" aria-label="Next month" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; color: #C9CDD4; display: flex; align-items: center; justify-content: center; cursor: pointer">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
-      </button>
-    </div>
-  </div>
-
-  <div aria-hidden="true" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding: 0 12px 6px; font-size: 12px; font-weight: 500; color: #8C93A0; text-align: center">
-    <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
-  </div>
-
-  <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding: 0 12px">
-    <sc-for list="{{days}}" as="d" hint-placeholder-count="42">
-      <button type="button" onClick="{{d.pick}}" aria-label="{{d.aria}}" style="height: 70px; box-sizing: border-box; border-radius: 12px; border: {{d.borderW}} {{d.borderStyle}} {{d.border}}; box-shadow: inset 0 0 0 1px {{d.ring}}; background: {{d.cellBg}}; padding: 6px 0 7px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; color: {{d.numColor}}; font: inherit; cursor: pointer">
-        <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; font-weight: {{d.numWeight}}">{{d.num}}</span>
-        <span style="position: relative; display: flex">
-          <span style="width: 34px; height: 32px; box-sizing: border-box; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: {{d.chipBg}}; color: {{d.chipFg}}; box-shadow: inset 0 0 0 1px {{d.chipLine}}; opacity: {{d.chipOpacity}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 14px">{{d.code}}</span>
-          <sc-if value="{{d.showAvatar}}" hint-placeholder-val="{{ false }}">
-            <span aria-hidden="true" style="position: absolute; top: {{d.avatarTop}}; right: {{d.avatarRight}}; width: {{d.avatarSize}}; height: {{d.avatarSize}}; box-sizing: border-box; border-radius: 50%; border: 1px {{d.badgeLineStyle}} {{d.badgeLine}}; background: {{d.badgeBg}}; color: {{d.badgeFg}}; box-shadow: 0 0 0 2px {{d.cellBgSolid}}; opacity: {{d.chipOpacity}}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 8px; font-weight: 700">{{d.avatarText}}</span>
-          </sc-if>
-        </span>
-        <span style="display: flex; gap: 3px; height: 5px">
-          <sc-for list="{{d.dots}}" as="dot" hint-placeholder-count="0">
-            <span style="width: 5px; height: 5px; border-radius: 3px; background: {{dot.color}}"></span>
-          </sc-for>
-        </span>
-      </button>
-    </sc-for>
-  </div>
-
   <sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
-    <div style="margin: 16px 16px 0; padding: 18px; border-radius: 16px; background: #161920; border: 1px solid #23272F; display: flex; flex-direction: column; gap: 14px">
+    <div style="margin: 12px 16px 4px; padding: 18px; border-radius: 16px; background: #161920; border: 1px solid #23272F; display: flex; flex-direction: column; gap: 14px; flex: none">
       <p style="margin: 0; font-size: 16px; line-height: 1.45; color: #ECEEF2">Import a photo of your roster to get started.</p>
       <a href="Import.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px 0 16px; border-radius: 12px; background: #ECEEF2; color: #0E1014; font-weight: 600; font-size: 15px; text-decoration: none; box-sizing: border-box">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
@@ -103,6 +59,46 @@ body{margin:0}
       </a>
     </div>
   </sc-if>
+
+  <div style="flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 16px; height: 52px">
+    <h1 aria-live="polite" style="margin: 0; font-size: 18px; font-weight: 600">{{topTitle}}</h1>
+    <button type="button" onClick="{{goToday}}" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #2A2F38; background: #161920; color: #ECEEF2; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer">Today</button>
+  </div>
+
+  <div aria-hidden="true" style="flex: none; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding: 0 12px 6px; border-bottom: 1px solid #1C2027; font-size: 12px; font-weight: 500; color: #8C93A0; text-align: center">
+    <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+  </div>
+
+  <div ref="{{setScroller}}" onScroll="{{onScroll}}" style="flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; padding: 0 12px 24px">
+    <sc-for list="{{months}}" as="mo" hint-placeholder-count="3">
+      <section aria-label="{{mo.title}}" style="padding-bottom: 12px">
+        <h2 style="margin: 0; height: 44px; box-sizing: border-box; padding: 16px 4px 0; font-size: 15px; font-weight: 600; color: #C9CDD4">{{mo.title}}</h2>
+        <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px">
+          <sc-for list="{{mo.days}}" as="d" hint-placeholder-count="35">
+            <sc-if value="{{d.blank}}" hint-placeholder-val="{{ false }}">
+              <span aria-hidden="true" style="height: {{d.h}}"></span>
+            </sc-if>
+            <sc-if value="{{d.real}}" hint-placeholder-val="{{ true }}">
+              <button type="button" onClick="{{d.pick}}" aria-label="{{d.aria}}" style="height: {{d.h}}; box-sizing: border-box; border-radius: 12px; border: {{d.borderW}} {{d.borderStyle}} {{d.border}}; box-shadow: inset 0 0 0 1px {{d.ring}}; background: {{d.cellBg}}; padding: 7px 0 8px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; color: {{d.numColor}}; font: inherit; cursor: pointer">
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; font-weight: {{d.numWeight}}">{{d.num}}</span>
+                <span style="position: relative; display: flex">
+                  <span style="width: 34px; height: 32px; box-sizing: border-box; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: {{d.chipBg}}; color: {{d.chipFg}}; box-shadow: inset 0 0 0 1px {{d.chipLine}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 14px">{{d.code}}</span>
+                  <sc-if value="{{d.showAvatar}}" hint-placeholder-val="{{ false }}">
+                    <span aria-hidden="true" style="position: absolute; top: {{d.avatarTop}}; right: {{d.avatarRight}}; width: {{d.avatarSize}}; height: {{d.avatarSize}}; box-sizing: border-box; border-radius: 50%; border: 1px {{d.badgeLineStyle}} {{d.badgeLine}}; background: {{d.badgeBg}}; color: {{d.badgeFg}}; box-shadow: 0 0 0 2px {{d.cellBgSolid}}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 8px; font-weight: 700">{{d.avatarText}}</span>
+                  </sc-if>
+                </span>
+                <span style="display: flex; gap: 3px; height: 5px">
+                  <sc-for list="{{d.dots}}" as="dot" hint-placeholder-count="0">
+                    <span style="width: 5px; height: 5px; border-radius: 3px; background: #ECEEF2"></span>
+                  </sc-for>
+                </span>
+              </button>
+            </sc-if>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+  </div>
 
   <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
     <div style="position: absolute; inset: 0">
@@ -235,14 +231,19 @@ body{margin:0}
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"sync":{"editor":"enum","options":["synced","pending","offline","signin","failed"],"default":"synced"},"overlay":{"editor":"enum","options":["none","menu","signout"],"default":"none"},"empty":{"editor":"boolean","default":false},"openDate":{"editor":null},"newSitter":{"editor":null},"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"sync":{"editor":"enum","options":["synced","pending","offline","signin","failed"],"default":"synced"},"overlay":{"editor":"enum","options":["none","menu","signout"],"default":"none"},"empty":{"editor":"boolean","default":false},"cellHeight":{"editor":"enum","options":["70","78","84","92"],"default":"84"},"openDate":{"editor":null},"newSitter":{"editor":null},"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
   componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._r); }
   renderVals() {
     const WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const WDL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const MON = { 9: 'September', 10: 'October', 11: 'November' };
-    const MS = { 9: 'Sep', 10: 'Oct', 11: 'Nov' };
+    const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthName = (m) => MONTH_NAMES[(m - 1) % 12];
+    const monthTitle = (m) => monthName(m) + ' ' + (2026 + Math.floor((m - 1) / 12));
+    // Monday = 0.
+    const weekday = (m, d) => (new Date(2026, m - 1, d).getDay() + 6) % 7;
+    const daysIn = (m) => new Date(2026, m, 0).getDate();
+    const FIRST_MONTH = 6, LAST_MONTH = 15;
     const CODES = {
       D: { label: 'Day', bg: '#3B2A0A', fg: '#FCC35A', line: '#3B2A0A' },
       E: { label: 'Early', bg: '#0A2C3D', fg: '#7DD3FC', line: '#0A2C3D' },
@@ -256,6 +257,19 @@ class Component extends DCLogic {
     const OCT = ['D', 'D', 'X', 'X', 'E', 'E', 'L', 'L', 'X', 'N', 'N', 'N', 'X', 'X', 'X', 'L', 'L', 'X', 'E', 'E', 'D', 'D', 'SE', 'N', 'N', 'N', 'X', 'X'];
     const INITIAL = { '9-28': 'E', '9-29': 'E', '9-30': 'L' };
     OCT.forEach((k, i) => { INITIAL['10-' + (i + 1)] = k; });
+    // The rest of the published roster: the same 14-day pattern from June to 22 November.
+    const PATTERN = ['D', 'D', 'X', 'X', 'E', 'E', 'L', 'L', 'X', 'N', 'N', 'N', 'X', 'X'];
+    const PAST_SITTERS = ['Mum', 'Dad', 'Mum', 'Jo'];
+    let n = 0;
+    for (let m = FIRST_MONTH; m <= 11; m++) {
+      for (let d = 1; d <= daysIn(m); d++) {
+        const key = m + '-' + d;
+        n++;
+        if (m === 11 && d > 22) break;
+        if (m === 10 || INITIAL[key]) continue;
+        INITIAL[key] = PATTERN[n % PATTERN.length];
+      }
+    }
     const EVENTS = {
       '10-3': ['School photos'], '10-9': ['Gym', 'Call the bank'], '10-15': ['Bin night'],
       '10-18': ['Lunch with Sam', 'Footy', 'Haircut'], '10-22': ['Dentist 3pm', 'Pick up dry cleaning'],
@@ -273,6 +287,12 @@ class Component extends DCLogic {
       '10-8': true, '10-10': true, '10-11': true, '10-12': true,
       '10-15': true, '10-16': true, '10-17': true, '10-21': true
     };
+    // Past months: every working shift had a confirmed babysitter.
+    Object.keys(INITIAL).forEach((key, i) => {
+      if (Number(key.split('-')[0]) >= 9 || INITIAL[key] === 'X') return;
+      SITTERS[key] = PAST_SITTERS[i % PAST_SITTERS.length];
+      CONFIRMED[key] = true;
+    });
     const RESET = { draftCode: undefined, otherDraft: undefined, sitterPick: undefined, otherSitter: undefined, otherOpen: undefined, eventDrafts: undefined, newEvent: undefined, confirmedDraft: undefined, confirmedFor: undefined };
     const SYNC = {
       synced: { label: 'Synced', dot: '#34D399', ring: '#34D399' },
@@ -335,14 +355,9 @@ class Component extends DCLogic {
       };
     };
 
-    const cells = [{ m: 9, d: 28 }, { m: 9, d: 29 }, { m: 9, d: 30 }];
-    for (let d = 1; d <= 31; d++) cells.push({ m: 10, d });
-    for (let d = 1; d <= 8; d++) cells.push({ m: 11, d });
-    const wdOf = {};
-    const days = cells.map((cell, i) => {
+    const cellOf = (cell) => {
       const key = cell.m + '-' + cell.d;
-      wdOf[key] = i % 7;
-      const inMonth = cell.m === 10;
+      const inMonth = true;
       const k = shifts[key];
       const c = k ? info(k) : null;
       const isToday = key === TODAY;
@@ -352,8 +367,9 @@ class Component extends DCLogic {
       const needs = !!k && k !== 'X' && ord(key) >= ord(TODAY) && !sitter;
       const isConfirmed = !!sitter && !!confirmed[key];
       return {
+        real: true, h: cellH + 'px',
         num: cell.d,
-        aria: WD[i % 7] + ' ' + cell.d + ' ' + MON[cell.m] + ', ' + (c ? labelOf(k) : 'no shift') + (sitter ? ', babysitter ' + sitter + (isConfirmed ? ', confirmed' : ', tentative') : (needs ? ', no babysitter' : '')) + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' event' : ' events') : '') + (isToday ? ', today' : ''),
+        aria: WD[weekday(cell.m, cell.d)] + ' ' + cell.d + ' ' + monthName(cell.m) + ', ' + (c ? labelOf(k) : 'no shift') + (sitter ? ', babysitter ' + sitter + (isConfirmed ? ', confirmed' : ', tentative') : (needs ? ', no babysitter' : '')) + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' event' : ' events') : '') + (isToday ? ', today' : ''),
         ...cellLook(needs ? 'need' : (sitter ? (isConfirmed ? 'conf' : 'tent') : null), sitter, isToday, inMonth, isEditing, !!k),
         pick: () => this.setState(Object.assign({ editing: key }, RESET)),
         cellBg: !inMonth ? 'transparent' : (isToday ? '#161920' : '#121418'),
@@ -365,19 +381,28 @@ class Component extends DCLogic {
         chipLine: c ? c.line : 'transparent',
         chipOpacity: inMonth ? 1 : 0.45,
         code: k || '',
-        dots: evs.slice(0, 4).map(() => ({ color: inMonth ? '#ECEEF2' : '#5A616D' }))
+        dots: evs.slice(0, 4).map(() => ({}))
       };
-    });
+    };
 
-    let next = null;
-    for (const cell of cells) {
-      const key = cell.m + '-' + cell.d;
-      if (ord(key) < ord(TODAY)) continue;
-      const k = shifts[key];
-      if (k && k !== 'X') { next = { key, cell, k }; break; }
+    // Stacked months: each month's own dates only, blanks before the 1st (ux-spec §5.3).
+    const cellH = Number(p.cellHeight) || 84;
+    const TITLE_H = 44, GAP = 4, MONTH_PAD = 12;
+    const monthList = [];
+    let top = 0;
+    for (let m = FIRST_MONTH; m <= LAST_MONTH; m++) {
+      const lead = weekday(m, 1);
+      const rows = Math.ceil((lead + daysIn(m)) / 7);
+      const days = [];
+      for (let b = 0; b < lead; b++) days.push({ blank: true, real: false, h: cellH + 'px' });
+      for (let d = 1; d <= daysIn(m); d++) days.push(cellOf({ m, d }));
+      // The grid's top: past the month's own title, which the bar above repeats.
+      monthList.push({ m, title: monthTitle(m), days, top, gridTop: top + TITLE_H });
+      top += TITLE_H + rows * cellH + (rows - 1) * GAP + MONTH_PAD;
     }
-    const nc = next ? info(next.k) : null;
-    const when = !next ? '' : (next.key === TODAY ? 'Today' : ord(next.key) === ord(TODAY) + 1 ? 'Tomorrow' : WD[wdOf[next.key]] + ' ' + next.cell.d + ' ' + MS[next.cell.m]);
+    const todayMonth = Number(TODAY.split('-')[0]);
+    const gridTopOf = (m) => monthList.find((x) => x.m === m).gridTop;
+    const topMonth = s.topMonth || todayMonth;
 
     const sheetOpen = !!editing;
     const cur = sheetOpen ? shifts[editing] : undefined;
@@ -468,12 +493,26 @@ class Component extends DCLogic {
       confirmOpen: overlay === 'signout',
       confirmText: 'You have ' + Math.max(pendingTotal, 1) + ' pending edit' + (Math.max(pendingTotal, 1) === 1 ? '' : 's') + '. Signing out keeps them on this phone, but they won’t sync until you sign in again.',
       isEmpty: Object.keys(shifts).length === 0,
-      nextCode: nc ? next.k : '–',
-      nextBg: nc ? nc.bg : '#161920', nextFg: nc ? nc.fg : '#8C93A0', nextLine: nc ? nc.line : '#2A2F38',
-      nextTitle: nc ? when + ' · ' + labelOf(next.k) : (Object.keys(shifts).length ? 'No upcoming shifts' : 'No shifts yet'),
-      days,
+      months: monthList,
+      topTitle: monthTitle(topMonth),
+      // Opens on today's month; a new cell height scrolls back to it.
+      setScroller: (el) => {
+        if (!el || (el === this._el && this._h === cellH)) return;
+        this._el = el;
+        this._h = cellH;
+        el.scrollTop = gridTopOf(todayMonth);
+        if (topMonth !== todayMonth) this.setState({ topMonth: todayMonth });
+      },
+      // The bar names the month whose dates are at the top of the scroll.
+      onScroll: (e) => {
+        const y = e.currentTarget.scrollTop + 1;
+        let m = monthList[0].m;
+        monthList.forEach((x) => { if (x.gridTop - TITLE_H / 2 <= y) m = x.m; });
+        if (m !== (this.state || {}).topMonth) this.setState({ topMonth: m });
+      },
+      goToday: () => { if (this._el) this._el.scrollTo({ top: gridTopOf(todayMonth), behavior: 'smooth' }); },
       sheetOpen,
-      sheetTitle: sheetOpen ? WDL[wdOf[editing]] + ' ' + editCell[1] + ' ' + MON[editCell[0]] : '',
+      sheetTitle: sheetOpen ? WDL[weekday(Number(editCell[0]), Number(editCell[1]))] + ' ' + editCell[1] + ' ' + monthName(Number(editCell[0])) : '',
       sheetSub: sheetOpen ? (cur ? 'Currently ' + labelOf(cur) : 'Not rostered yet') : '',
       codeButtons,
       sitterChips,

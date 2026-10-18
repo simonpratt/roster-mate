@@ -42,10 +42,6 @@ A date with no shift yet. Once a date has a shift it never goes back to unroster
 to Day off instead.
 _Avoid_: blank, cleared, empty day
 
-**Next shift**:
-The first working shift dated today or later.
-_Avoid_: upcoming shift
-
 **Calendar**:
 The user's shifts laid out by month; the app's home screen.
 _Avoid_: roster (for this), schedule

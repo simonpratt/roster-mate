@@ -43,8 +43,7 @@
   /* Calendar values from docs/designs/Main.dc.html */
   --color-border-subtle: #23272f; /* sync pill and empty-state card */
   --color-cell-line: #1c2027; /* calendar cell border */
-  --color-cell-line-dim: #15181d; /* adjacent-month cell border */
-  --color-text-dim: #5a616d; /* adjacent-month day numbers and event dots */
+  --color-text-dim: #5a616d; /* dimmed numbers and marks */
   --color-on-danger: #1a0a0d; /* text on the danger-filled Sign in button */
   --color-failed-surface: #2a1416; /* Sync failed pill */
   --color-failed-line: #5a2228;
@@ -89,7 +88,7 @@
   --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* The uppercase labels above a section ("Next shift", "Share") */
+  /* The uppercase labels above a section ("Share") */
   --tracking-caps: 0.04em;
 
   /* Type scale, §4.3, plus the sizes the Login design uses (brand, callout, footnote) */
@@ -134,7 +133,7 @@
   --text-code-sm--font-weight: 700;
   --text-code: 14px; /* shift code in a grid chip */
   --text-code--font-weight: 700;
-  --text-code-lg: 20px; /* shift code in the next-shift chip */
+  --text-code-lg: 20px; /* a standard code in the code picker */
   --text-code-lg--font-weight: 700;
   --text-code-xl: 22px; /* the Other code input */
   --text-code-xl--font-weight: 700;

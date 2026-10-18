@@ -13,7 +13,7 @@ import {
   formatLongDate,
   formatMonth,
   formatShortDate,
-  monthGridDates,
+  monthDates,
   todayDate,
   weekdayIndex,
 } from "./dates";
@@ -41,18 +41,18 @@ describe("dates under TZ=Australia/Sydney", () => {
   });
 });
 
-describe("month grid", () => {
-  it("runs Monday 26 Oct to Sunday 6 Dec for November 2026", () => {
-    const dates = monthGridDates("2026-11");
-    expect(dates).toHaveLength(42);
-    expect(dates[0]).toBe("2026-10-26");
-    expect(weekdayIndex(dates[0]!)).toBe(0);
-    expect(dates[41]).toBe("2026-12-06");
-    expect(weekdayIndex(dates[41]!)).toBe(6);
+describe("month dates", () => {
+  it("runs the 1st to the last of the month", () => {
+    const dates = monthDates("2026-11");
+    expect(dates).toHaveLength(30);
+    expect(dates[0]).toBe("2026-11-01");
+    expect(weekdayIndex(dates[0]!)).toBe(6);
+    expect(dates[29]).toBe("2026-11-30");
   });
 
-  it("starts on the 1st when the month starts on a Monday", () => {
-    expect(monthGridDates("2026-06")[0]).toBe("2026-06-01");
+  it("knows February's length", () => {
+    expect(monthDates("2027-02")).toHaveLength(28);
+    expect(monthDates("2028-02").at(-1)).toBe("2028-02-29");
   });
 });
 

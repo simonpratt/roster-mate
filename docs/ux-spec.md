@@ -132,14 +132,14 @@ Use tabular numerals (`tabular-nums`) for dates and counts.
 
 ### 4.5 Iconography
 
-Simple 20–24 px stroke icons (e.g. Lucide or inline SVG): chevron-left/right (month), camera
+Simple 20–24 px stroke icons (e.g. Lucide or inline SVG): chevron-left (back), camera
 (Import), more-vertical (menu), x (close), check (selected), alert-triangle (warnings),
 cloud-off (offline). Icon-only buttons always carry an `aria-label`.
 
 ### 4.6 Motion
 
 - Bottom sheet slides up 200 ms ease-out, backdrop fades to `black/60`. Closes in 150 ms.
-- Month change: content slides 150 ms in the swipe direction; no animation on "Today" jump.
+- "Today" scrolls smoothly back to today's month; opening the Calendar jumps there with no animation.
 - Honour `prefers-reduced-motion`: replace slides with an instant change or a fade.
 
 ## 5. Components
@@ -149,16 +149,10 @@ cloud-off (offline). Icon-only buttons always carry an `aria-label`.
 ```
 ┌──────────────────────────────────────────┐
 │ [logo]          (● Synced) [📷 Import] [⋮] │  ← header: sync pill, Import, menu
-│ NEXT SHIFT                               │
-│ [L] Tomorrow · Late                      │  ← next-shift block (Display)
 └──────────────────────────────────────────┘
 ```
 
-- **Next shift block** (rules from SIM-13), below the header: a "Next shift" caption, the code
-  chip and the text. First working shift (any code except `X`, including Other codes) dated
-  today or later. An Other code shows its letters: "Tomorrow · SE". Formats: "Today · Day",
-  "Tomorrow · Late", "Fri 6 Nov · Night", or "No upcoming shifts". Tapping it jumps the grid to
-  that date's month and opens nothing else.
+The month grid (§5.3) follows directly; there is no next-shift block (removed in SIM-44).
 - **Import** button: camera icon with visible label "Import". When offline it stays visible;
   the Import screen explains why it cannot proceed.
 - **Menu (⋮)**: a small popover with "Babysitters" (users icon, goes to `/babysitters`, §6.5)
@@ -190,32 +184,45 @@ dot) until that run finishes.
 ### 5.3 Month grid
 
 ```
-   ‹   November 2026   ›          [Today]
-  Mon Tue Wed Thu Fri Sat Sun
- ┌───┬───┬───┬───┬───┬───┬───┐
- │26 │27 │28 │29 │30 │31 │ 1 │  ← 26–31 Oct dimmed
- │ D │ D │ X │   │ L │ L │ X │
+ November 2026                    [Today]  ← bar: the month at the top of the scroll
+  M   T   W   T   F   S   S                ← weekday row; the bar and this row stay put
+ ─────────────────────────────────
+ ┌───┬───┬───┬───┬───┬───┬───┐            ← scrolls: November's dates start at the top
+ │   │   │   │   │   │   │ 1 │              (its own title just above the view)
+ │   │   │   │   │   │   │ X │
  ├───┼───┼───┼───┼───┼───┼───┤
  │ 2 │ 3 │ 4 │ ...                ← ° avatar on the chip's corner: initials, or an
  │ N°│ L°│ E•│                      amber dot (•) when the date needs a babysitter
  │ ••│   │   │                    ← • one dot per event
+   ...
+ │30 │
+ December 2026                             ← the next month's own title
+ ┌───┬───┬───┬───┬───┬───┬───┐
+ │   │ 1 │ 2 │ ...
 ```
 
-- Monday-first, always 6 rows (SIM-13). Weekday header uses single letters (M T W T F S S).
-  Month title is a live region so screen readers hear the new month after prev/next.
-- **Cell**: day number at the top (Caption, mono), shift chip centred with the babysitter avatar
-  (§5.10) on its top-right corner, event dots at the bottom: one 5 px `text` dot per event, at most
-  4, 3 px apart (`text-dim` outside the month). The cell's border and fill never change with the
+- **Stacked months in one vertical scroll** (SIM-44): each month has its own title ("December
+  2026") and only its own dates, Monday-first, with blank spaces before the 1st and none after
+  the last. Scrolling shows the end of one month and the start of the next together. Each date
+  appears exactly once.
+- **Bar** above the scroll: the title of the month whose dates are at the top of the scroll
+  (its own title has scrolled at least half out of view), and the "Today" button. The bar's
+  title is a live region. The bar and the single-letter weekday row (M T W T F S S) stay put.
+- **No end**: the Calendar opens with six months either side of the month it opens on (and
+  today's month); scrolling within a screen of either end adds six more there, keeping the
+  dates in view still when they are added above.
+- **Cell**: 84 px tall. Day number at the top (Caption, mono), shift chip centred with the
+  babysitter avatar (§5.10) on its top-right corner, event dots at the bottom: one 5 px `text`
+  dot per event, at most 4, 3 px apart. The cell's border and fill never change with the
   babysitter (`docs/designs/Main.dc.html`).
 - **Needs a babysitter** (a working shift dated today or later with no babysitter): the avatar's
   amber dot. Days off, unrostered dates and past dates never get it.
 - **Today**: `text` outline around the cell, day number bold.
-- **Adjacent-month days**: day number and chip dimmed; still tappable (opens that date).
 - **Unrostered date**: day number only.
 - **Day off**: the outlined `X` chip (§4.2).
 - **Past days**: day number dimmed; chips unchanged (history is useful for swaps).
-- **Navigation**: ‹ › buttons, horizontal swipe (≥ 50 px, mostly horizontal), "Today" button
-  (always shown).
+- **Navigation**: vertical scrolling only, plus the "Today" button (always shown), which
+  scrolls back to today's month. There are no ‹ › buttons and no sideways swipe.
 - **Accessible name** per cell: shift, then ", babysitter {name}, tentative" or ", babysitter
   {name}, confirmed" (or ", no babysitter" when it needs one), then the event count, then
   ", today": "Saturday 24 October, Night, no babysitter, 1 event" / "Friday 6 November, Late,
@@ -336,19 +343,20 @@ still clash, the name, the date sheet and the accessible name tell them apart. T
 
 ### 6.2 Calendar (`/`)
 
-Layout top to bottom: header and next-shift block (§5.1), month controls, weekday row, grid
-(§5.3). No legend: the date sheet labels every code.
+Layout top to bottom: header (§5.1), any banner or empty-state card, then the month grid (§5.3):
+the bar, the weekday row and the scrolling months, which fill the rest of the screen. Opens on
+today's month. No legend: the date sheet labels every code.
 
 States:
 
 | State | What the user sees |
 |---|---|
-| First run, no shifts | Grid of unrostered dates; next-shift line "No upcoming shifts"; below the grid an empty-state card: "Import a photo of your roster to get started." [Import roster] (`docs/designs/CalendarEmpty.dc.html`) |
+| First run, no shifts | Above the month grid an empty-state card: "Import a photo of your roster to get started." [Import roster]; the months show unrostered dates (`docs/designs/CalendarEmpty.dc.html`) |
 | Normal | As above |
 | Offline | Indicator "Offline"; everything else unchanged and editable |
 | Pending edits | Indicator "N pending" |
 | Signed out but data cached | Pill "Sign in needed" and the sign-in banner; data visible and editable |
-| Returning from Import | Grid on the month of the first saved date; indicator shows pending until sync completes |
+| Returning from Import | Opens on the month of the first saved date; indicator shows pending until sync completes |
 
 Tapping a date opens the date sheet (§6.3). Long-press does nothing (avoid conflicting gestures).
 
@@ -572,7 +580,7 @@ October, Late, babysitter Mum, tentative". Section headings are `h2`.
 - Shift meaning never conveyed by colour alone (letters, labels, badges).
 - Respect `prefers-reduced-motion`; text scales with the OS setting up to 200 % without loss of
   function (grid cells may grow taller; the 7-column grid stays).
-- Live regions: sync indicator (polite), month title (polite), import step changes (polite),
+- Live regions: sync indicator (polite), the month grid's bar title (polite), import step changes (polite),
   errors (assertive).
 
 ### 7.4 PWA presentation
@@ -582,16 +590,14 @@ October, Late, babysitter Mum, tentative". Section headings are `h2`.
   glyph sits inside the 80 % safe zone.
 - iOS: `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style="black-translucent"`,
   `apple-touch-icon` 180 px. Content clears the status bar via safe-area insets.
-- Disable pull-to-refresh bounce on the grid (`overscroll-behavior-y: contain`) so swipes and
-  scrolls don't reload the app.
+- Disable pull-to-refresh bounce on the month scroll (`overscroll-behavior-y: contain`) so
+  scrolling to the top doesn't reload the app.
 
 ## 8. Copy deck
 
 | Key | Text |
 |---|---|
 | App name | Roster Mate |
-| Next shift | "Today · {Label}", "Tomorrow · {Label}", "{Ddd d Mmm} · {Label}"; {Label} is the code itself for an Other code |
-| No next shift | No upcoming shifts |
 | Sync | Synced · {n} pending · Offline · Sign in needed · Sync failed + Retry · Syncing… |
 | Sign-in banner | Sign in to sync. Your edits are kept on this phone until then. |
 | Empty roster | Import a photo of your roster to get started. |
@@ -624,6 +630,7 @@ exception, already used in the indicator).
 | SIM-41 Confirmed babysitters | §5.8 Confirmed switch, §6.3, §8 |
 | SIM-42 Babysitter visibility | §3, §4.1, §5.1 menu, §5.3, §5.10, §6.5 (without the share card), §8 |
 | SIM-43 Babysitter share | §6.5 share card, §8 |
+| SIM-44 Scrollable calendar | §4.6, §5.1, §5.3, §6.2 |
 
 ## 10. Additions beyond the tickets
 
@@ -631,7 +638,7 @@ These come from this spec, not from the ticket specs. Each is small; drop any th
 doesn't want, and the ticket specs still stand on their own.
 
 - First-run empty-state card (§6.2).
-- Tapping the next-shift line jumps to its month; tapping the sync indicator triggers a sync.
+- Tapping the sync indicator triggers a sync.
 - Sign-out confirmation when edits are pending (§5.1).
 - "Nothing found" import state and "Discard this import?" confirmation (§6.4).
 - Sheet stays above the keyboard (§6.3).
@@ -640,6 +647,6 @@ doesn't want, and the ticket specs still stand on their own.
 
 ## 11. Open questions
 
-1. Should past months be reachable without limit? Default: yes, prev/next has no bound.
+1. Should past months be reachable without limit? Default: yes, the month scroll has no end (SIM-44).
 2. Should the review list hide "Same" rows behind a "Show unchanged" toggle when there are many?
    Default: show them, unchecked, as SIM-16 specifies.

@@ -1,10 +1,10 @@
 import { render } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
+import { MemoryRouter, type InitialEntry } from "react-router";
 import { vi } from "vitest";
 import { App } from "./App";
 
-/** Renders the whole app at path in a memory router. */
-export function renderApp(path = "/") {
+/** Renders the whole app at path (with any location state) in a memory router. */
+export function renderApp(path: InitialEntry = "/") {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <App />

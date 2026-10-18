@@ -3,7 +3,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type ShiftRow } from "../db";
 import { sync } from "../sync/engine";
-import { isValidCode, isWorkingCode, type ShiftCode } from "./codes";
+import { isValidCode, type ShiftCode } from "./codes";
 
 /** A shift on a date. Rows with the reserved `code: null` marker are unrostered, not shifts. */
 export interface Shift {
@@ -91,14 +91,3 @@ export function useHasLocalShifts(): boolean | undefined {
   return useLiveQuery(async () => (await db.shifts.count()) > 0, []);
 }
 
-/** The next shift: the first working shift dated today or later; undefined while loading. */
-export function useNextShift(today: string): Shift | null | undefined {
-  return useLiveQuery(async () => {
-    const row = await db.shifts
-      .where("date")
-      .aboveOrEqual(today)
-      .filter((r) => isWorkingCode(r.code))
-      .first();
-    return toShift(row) ?? null;
-  }, [today]);
-}

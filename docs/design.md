@@ -345,9 +345,9 @@ desktop.
 
 - **Login**: username, password, submit, error message.
 - **Calendar** (home, `/`):
-  - Header: next upcoming shift ("Tomorrow · Late"), sync status dot (synced / pending N /
-    offline / sign-in needed), Import button.
-  - Month grid, Monday-first, with previous/next month controls and a "Today" jump. Each date
+  - Header: sync status dot (synced / pending N / offline / sign-in needed), Import button.
+  - Month grid: the months stacked in one endless vertical scroll, each Monday-first with its own
+    title and only its own dates, under a bar naming the month at the top and a "Today" jump. Each date
     shows its shift code in a coloured chip and one dot per event (at most 4); today is outlined;
     a babysitter avatar on the chip's corner shows a needs-a-babysitter dot, or the babysitter's
     initials, dashed while tentative and filled once confirmed (`docs/ux-spec.md` §5.3, §5.10).

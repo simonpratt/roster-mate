@@ -19,7 +19,7 @@ test("imports shifts from a roster photo after review", async ({ page }) => {
   await rows.filter({ hasText: "Sat 12 Dec" }).getByRole("checkbox").uncheck();
   await page.getByRole("button", { name: "Save 4 shifts" }).click();
 
-  await expect(page.getByRole("heading", { name: "December 2026" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "December 2026" })).toBeVisible();
   for (const [day, code, label] of [
     [8, "D", "Day"],
     [9, "E", "Early"],

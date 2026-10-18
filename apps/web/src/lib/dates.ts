@@ -79,14 +79,11 @@ export function addMonths(month: MonthString, n: number): MonthString {
   return `${pad(Math.floor(index / 12), 4)}-${pad((index % 12) + 1)}`;
 }
 
-/**
- * The 42 dates of a six-row, Monday-first month grid: the Monday on or before the 1st, then
- * 41 more, including the adjacent months' leading and trailing dates.
- */
-export function monthGridDates(month: MonthString): DateString[] {
+/** Every date of a month, the 1st first. */
+export function monthDates(month: MonthString): DateString[] {
   const first = `${month}-01`;
-  const start = addDays(first, -weekdayIndex(first));
-  return Array.from({ length: 42 }, (_, i) => addDays(start, i));
+  const length = daysBetween(first, `${addMonths(month, 1)}-01`);
+  return Array.from({ length }, (_, i) => addDays(first, i));
 }
 
 function weekdayName(date: DateString): string {

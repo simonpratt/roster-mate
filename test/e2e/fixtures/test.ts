@@ -36,7 +36,7 @@ export async function signIn(page: Page): Promise<void> {
   await page.getByLabel("Username").fill(credentials.username);
   await page.getByLabel("Password").fill(credentials.password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "December 2026" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "December 2026" })).toBeVisible();
   await expect(syncPill(page)).toHaveText("Synced");
 }
 

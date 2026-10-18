@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { request } from "../api";
 import { AppHeader } from "../components/AppHeader";
@@ -7,13 +7,12 @@ import { buttonClassName } from "../components/Button";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DateSheet } from "../components/DateSheet";
 import { CameraIcon } from "../components/icons";
-import { MonthGrid } from "../components/MonthGrid";
-import { NextShift } from "../components/NextShift";
+import { MonthGrid, monthsRange } from "../components/MonthGrid";
 import { SyncIndicator } from "../components/SyncIndicator";
 import { useBabysittersInRange, useEventCounts, useKnownBabysitters } from "../dates/repo";
-import { monthGridDates, monthOf, type DateString } from "../lib/dates";
+import { addMonths, monthOf, type DateString, type MonthString } from "../lib/dates";
 import { useToday } from "../lib/useToday";
-import { useHasLocalShifts, useNextShift, useShiftsInRange } from "../shifts/repo";
+import { useHasLocalShifts, useShiftsInRange } from "../shifts/repo";
 import { sync } from "../sync/engine";
 import { countPendingEdits, usePendingCount, useSyncStatus } from "../sync/status";
 
@@ -24,14 +23,13 @@ export function Calendar() {
   const today = useToday();
   // Returning from Import opens on the month of the first saved date (§6.2).
   const returnMonth = (useLocation().state as { month?: string } | null)?.month;
-  const [month, setMonth] = useState(() => returnMonth ?? monthOf(today));
-  const dates = monthGridDates(month);
-  const [first, last] = [dates[0]!, dates[dates.length - 1]!];
+  const [initialMonth] = useState(() => returnMonth ?? monthOf(today));
+  const [months, setMonths] = useState(() => monthsAround(initialMonth, monthOf(today)));
+  const [first, last] = monthsRange(months);
   const shifts = useShiftsInRange(first, last);
   const eventCounts = useEventCounts(first, last);
   const babysitters = useBabysittersInRange(first, last);
   const knownBabysitters = useKnownBabysitters();
-  const next = useNextShift(today);
   const hasShifts = useHasLocalShifts();
   const { status } = useSyncStatus();
   const pendingCount = usePendingCount();
@@ -69,11 +67,26 @@ export function Calendar() {
     else await signOut();
   }
 
+  // Scrolling near either end adds more months, so the calendar has no end (§5.3).
+  const onNearEnd = useCallback((end: "start" | "end") => {
+    setMonths((ms) =>
+      end === "start"
+        ? [...monthsFrom(addMonths(ms[0]!, -GROW_BY), GROW_BY), ...ms]
+        : [...ms, ...monthsFrom(addMonths(ms[ms.length - 1]!, 1), GROW_BY)],
+    );
+  }, []);
+
+  // Past midnight on the last day shown, today's month may be new: add it for the Today button.
+  useEffect(() => {
+    const month = monthOf(today);
+    setMonths((ms) => (month > ms[ms.length - 1]! ? [...ms, ...monthsFrom(addMonths(ms[ms.length - 1]!, 1), 1)] : ms));
+  }, [today]);
+
   const onCancelSignOut = useCallback(() => setConfirmSignOut(false), []);
   const onCloseSheet = useCallback(() => setEditing(null), []);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-app flex-col pb-[max(24px,env(safe-area-inset-bottom))]">
+    <main className="mx-auto flex h-dvh max-w-app flex-col">
       <AppHeader
         sync={
           <SyncIndicator
@@ -102,21 +115,8 @@ export function Calendar() {
         </div>
       )}
 
-      <NextShift shift={next} today={today} onShow={(date) => setMonth(monthOf(date))} />
-
-      <MonthGrid
-        month={month}
-        today={today}
-        shifts={shifts}
-        eventCounts={eventCounts}
-        babysitters={babysitters}
-        knownBabysitters={knownBabysitters ?? NONE}
-        onMonthChange={setMonth}
-        onSelectDay={setEditing}
-      />
-
       {hasShifts === false && (
-        <div className="mx-4 mt-4 flex flex-col gap-3.5 rounded-panel border border-border-subtle bg-surface p-4.5">
+        <div className="mx-4 mt-3 mb-1 flex flex-none flex-col gap-3.5 rounded-panel border border-border-subtle bg-surface p-4.5">
           <p className="m-0 text-body text-text">Import a photo of your roster to get started.</p>
           <Link to="/import" className={`${buttonClassName("compact")} self-start`}>
             <CameraIcon className="size-4.5" />
@@ -124,6 +124,18 @@ export function Calendar() {
           </Link>
         </div>
       )}
+
+      <MonthGrid
+        months={months}
+        initialMonth={initialMonth}
+        today={today}
+        shifts={shifts}
+        eventCounts={eventCounts}
+        babysitters={babysitters}
+        knownBabysitters={knownBabysitters ?? NONE}
+        onNearEnd={onNearEnd}
+        onSelectDay={setEditing}
+      />
 
       {editing && <DateSheet date={editing} today={today} onClose={onCloseSheet} />}
 
@@ -144,6 +156,23 @@ export function Calendar() {
 }
 
 const NONE: string[] = [];
+
+/** How many months the calendar adds at an end, and shows on each side of where it opens. */
+const GROW_BY = 6;
+
+/** n months from month on. */
+function monthsFrom(month: MonthString, n: number): MonthString[] {
+  return Array.from({ length: n }, (_, i) => addMonths(month, i));
+}
+
+/** GROW_BY months either side of the month opened on, reaching today's month too. */
+function monthsAround(month: MonthString, todayMonth: MonthString): MonthString[] {
+  const from = addMonths(month < todayMonth ? month : todayMonth, -GROW_BY);
+  const to = addMonths(month > todayMonth ? month : todayMonth, GROW_BY);
+  const months = [from];
+  while (months[months.length - 1]! < to) months.push(addMonths(months[months.length - 1]!, 1));
+  return months;
+}
 
 // The count can reach 0 while the dialog is open, if a sync finishes; it still reads as one.
 function pendingEditsText(count: number): string {

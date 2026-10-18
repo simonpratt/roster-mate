@@ -13,7 +13,7 @@ test("keeps an offline edit in the outbox, then sends it once online @smoke", as
   // Offline, the reload comes from the service worker's precache.
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "December 2026" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "December 2026" })).toBeVisible();
   expect(await page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true);
 
   await decemberCell(page, 15).click();

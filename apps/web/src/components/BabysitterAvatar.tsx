@@ -10,7 +10,7 @@ import { CodeChip } from "./CodeChip";
 export type AvatarStatus = "needs" | "tentative" | "confirmed";
 
 /** The colour behind the avatar, which its 2 px ring matches. */
-export type AvatarRing = "cell" | "surface" | "bg";
+export type AvatarRing = "cell" | "surface";
 
 type BabysitterAvatarProps = {
   status: AvatarStatus;
@@ -24,7 +24,6 @@ type BabysitterAvatarProps = {
 const rings: Record<AvatarRing, string> = {
   cell: "ring-2 ring-cell",
   surface: "ring-2 ring-surface",
-  bg: "ring-2 ring-bg",
 };
 
 const looks: Record<"small" | "large", Record<AvatarStatus, string>> = {

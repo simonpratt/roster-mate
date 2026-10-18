@@ -12,7 +12,7 @@ describe("App", () => {
     const fetchMock = stubFetch({ "/api/session": { status: 200, body: { username: "simon" } } });
     renderApp("/");
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/session", expect.anything()));
-    expect(screen.getByText("Next shift")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Today" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
   });
 

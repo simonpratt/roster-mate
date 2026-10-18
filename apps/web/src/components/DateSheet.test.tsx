@@ -244,8 +244,6 @@ describe("Date sheet", () => {
   it("adds the year to the heading outside the current year", async () => {
     renderApp("/");
     await screen.findByText("Offline");
-    fireEvent.click(screen.getByRole("button", { name: "Next month" }));
-    fireEvent.click(screen.getByRole("button", { name: "Next month" }));
     fireEvent.click(screen.getByRole("button", { name: "Monday 4 January, no shift" }));
     expect(await screen.findByRole("dialog")).toHaveAccessibleName("Monday 4 January 2027");
   });
