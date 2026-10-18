@@ -66,6 +66,26 @@ _Avoid_: sitter, carer, childcare
 Said of a date with a working shift, dated today or later, that has no babysitter.
 _Avoid_: unarranged, uncovered
 
+**Tentative**:
+Said of a babysitter the user has put on a date but not yet checked with. Every babysitter starts
+tentative, including one whose name the user changes. A date with a tentative babysitter does not
+need a babysitter.
+_Avoid_: pending (that is a pending edit), provisional, unconfirmed
+
+**Confirmed**:
+Said of a babysitter the user has checked with and marked as agreed for a date.
+_Avoid_: booked, locked in, approved
+
+**Share**:
+How many dates each babysitter has in the share window, as a count and a percentage of all the
+dates with a babysitter in it, tentative and confirmed alike. It guides keeping the load even.
+_Avoid_: ratio, split, balance
+
+**Share window**:
+The eight weeks the share counts: ending on the last date with a working shift, or today if that is
+later, and starting 55 days before it.
+_Avoid_: rolling window, period, roster (for this)
+
 ### Rosters and import
 
 **Roster**:
