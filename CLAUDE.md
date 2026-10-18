@@ -58,7 +58,7 @@ Follow the `homelab-frontend` skill. In this repo: components are in `apps/web/s
 
 `docs/designs/` is a snapshot of the design canvas at https://claude.ai/artifact/f7df7c66-c03e-4e71-bb0b-018b8b594d58, the source of truth for UX. Each ticket's **Designs** section names its artboards.
 
-- **Reading:** the `.dc.html` files are design-tool templates, so read them as source. The markup and inline styles give layout and styling, and the `<script type="text/x-dc">` at the bottom holds the sample data and prototype behaviour (the calendar and edit sheet live in `Main.dc.html`; the other artboards show its states). `Tokens.dc.html` holds colours, type and markers; `canvas.json` indexes the boards by row. The prototype behaviour is a sketch: where it differs from a ticket, the ticket wins.
+- **Reading:** the `.dc.html` files are design-tool templates, so read them as source. The markup and inline styles give layout and styling, and the `<script type="text/x-dc">` at the bottom holds the sample data and prototype behaviour (the calendar and date sheet live in `Main.dc.html`; the other artboards show its states). `Tokens.dc.html` holds colours, type and markers; `canvas.json` indexes the boards by row. The prototype behaviour is a sketch: where it differs from a ticket, the ticket wins.
 - **Changes:** make every new screen, state or UX change on the canvas first, then pull the canvas's `project/` files down into `docs/designs/` and commit them before implementing. Ask before refreshing the snapshot from the live canvas.
 
 ## Done means

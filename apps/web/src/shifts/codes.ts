@@ -10,7 +10,7 @@ export interface CodeStyle {
   chip: string;
   /** Border colour for the selected state, the chip's text colour. */
   selected: string;
-  /** A selected code button's fill in the edit sheet. */
+  /** A selected code button's fill in the date sheet. */
   pickedFill: string;
   /** The code's text colour, for the letters on a code button. */
   text: string;

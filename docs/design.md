@@ -331,7 +331,7 @@ desktop.
     offline / sign-in needed), Import button.
   - Month grid, Monday-first, with previous/next month controls and a "Today" jump. Each date
     shows its shift code in a coloured chip and one dot per event (at most 4); today is outlined;
-    a date that needs a babysitter has a dashed `warn` border (`docs/ux-spec.md` §6.2).
+    a date that needs a babysitter has a dashed `warn` border (`docs/ux-spec.md` §5.3).
   - Tapping a date opens the **date sheet**: five standard code buttons plus "Other"
     (a two-letter input), the babysitter picker and the date's events, Save/Cancel. There is no
     note field and no "Clear"; choosing Day off (`X`) is how a shift is removed.

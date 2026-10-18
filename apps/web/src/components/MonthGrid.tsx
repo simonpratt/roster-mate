@@ -9,6 +9,7 @@ import {
   type DateString,
   type MonthString,
 } from "../lib/dates";
+import { needsBabysitter } from "../dates/repo";
 import { codeInfo } from "../shifts/codes";
 import type { Shift } from "../shifts/repo";
 import { CodeChip } from "./CodeChip";
@@ -16,24 +17,40 @@ import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 
 // The month grid, docs/ux-spec.md §5.3 and docs/designs/Main.dc.html: month controls, a
 // Monday-first weekday row and six rows of date cells. Each cell is a button showing the date
-// number, the shift's code chip and a marker row.
+// number, the shift's code chip and a row of event dots; a dashed amber border marks a date that
+// needs a babysitter.
 type MonthGridProps = {
   month: MonthString;
   today: DateString;
   /** The shifts in or around the month; undefined while loading. */
   shifts: Shift[] | undefined;
+  /** The number of events on each date that has any; undefined while loading. */
+  eventCounts: Map<string, number> | undefined;
+  /** The babysitter on each date that has one; undefined while loading. */
+  babysitters: Map<string, string> | undefined;
   onMonthChange: (month: MonthString) => void;
   onSelectDay: (date: DateString) => void;
 };
 
 const WEEKDAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
+/** A cell shows at most this many event dots. */
+const MAX_DOTS = 4;
+
 /** A horizontal swipe of at least this many px changes month. */
 const SWIPE_PX = 50;
 
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 
-export function MonthGrid({ month, today, shifts, onMonthChange, onSelectDay }: MonthGridProps) {
+export function MonthGrid({
+  month,
+  today,
+  shifts,
+  eventCounts,
+  babysitters,
+  onMonthChange,
+  onSelectDay,
+}: MonthGridProps) {
   const dates = useMemo(() => monthGridDates(month), [month]);
   const byDate = useMemo(() => new Map((shifts ?? []).map((s) => [s.date, s])), [shifts]);
   const touch = useRef<{ x: number; y: number } | null>(null);
@@ -100,6 +117,10 @@ export function MonthGrid({ month, today, shifts, onMonthChange, onSelectDay }: 
             key={date}
             date={date}
             shift={byDate.get(date)}
+            events={eventCounts?.get(date) ?? 0}
+            babysitter={babysitters?.get(date) ?? ""}
+            // Unmarked until the babysitters have loaded, so a cell doesn't flash amber.
+            needsBabysitter={babysitters !== undefined && needsBabysitter(byDate.get(date), babysitters.get(date) ?? "", date, today)}
             inMonth={monthOf(date) === month}
             today={today}
             onSelect={onSelectDay}
@@ -113,24 +134,31 @@ export function MonthGrid({ month, today, shifts, onMonthChange, onSelectDay }: 
 type DayCellProps = {
   date: DateString;
   shift: Shift | undefined;
+  events: number;
+  /** The babysitter's name, or "" for none. */
+  babysitter: string;
+  needsBabysitter: boolean;
   inMonth: boolean;
   today: DateString;
   onSelect: (date: DateString) => void;
 };
 
-function DayCell({ date, shift, inMonth, today, onSelect }: DayCellProps) {
+function DayCell({ date, shift, events, babysitter, needsBabysitter, inMonth, today, onSelect }: DayCellProps) {
   const isToday = date === today;
   const name =
     formatLongDate(date) +
     ", " +
     (shift ? codeInfo(shift.code).label : "no shift") +
+    (babysitter ? `, babysitter ${babysitter}` : needsBabysitter ? ", no babysitter" : "") +
+    (events === 0 ? "" : events === 1 ? ", 1 event" : `, ${events} events`) +
     (isToday ? ", today" : "");
 
-  const cell = isToday
-    ? "bg-surface border-text ring-1 ring-inset ring-text"
-    : inMonth
-      ? "bg-cell border-cell-line"
-      : "border-cell-line-dim";
+  // Needs a babysitter: the dashed border stays outside, and today's ring sits inside it.
+  const border = needsBabysitter
+    ? `border-[1.5px] border-dashed ${inMonth ? "border-warn" : "border-warn-dim"}`
+    : `border ${isToday ? "border-text" : inMonth ? "border-cell-line" : "border-cell-line-dim"}`;
+  const fill = !inMonth ? "" : needsBabysitter ? "bg-warn-fill" : isToday ? "bg-surface" : "bg-cell";
+  const cell = `${border} ${fill} ${isToday ? "ring-1 ring-inset ring-text" : ""}`;
   const number = !inMonth
     ? "text-text-dim"
     : isToday
@@ -146,7 +174,7 @@ function DayCell({ date, shift, inMonth, today, onSelect }: DayCellProps) {
       data-date={date}
       aria-current={isToday ? "date" : undefined}
       onClick={() => onSelect(date)}
-      className={`flex h-17.5 min-w-0 flex-col items-center justify-between rounded-field border pt-1.5 pb-1.75 ${cell} ${focus}`}
+      className={`flex h-17.5 min-w-0 flex-col items-center justify-between rounded-field pt-1.5 pb-1.75 ${cell} ${focus}`}
     >
       <span className={`font-mono text-caption tabular-nums ${number}`}>{dayOfMonth(date)}</span>
       {shift ? (
@@ -154,8 +182,11 @@ function DayCell({ date, shift, inMonth, today, onSelect }: DayCellProps) {
       ) : (
         <span className="h-8" />
       )}
-      {/* The marker row, kept for the date's event and babysitter markers (SIM-38). */}
-      <span className="size-1.25" />
+      <span data-testid="event-dots" className="flex h-1.25 gap-0.75">
+        {Array.from({ length: Math.min(events, MAX_DOTS) }, (_, i) => (
+          <span key={i} className={`size-1.25 rounded-full ${inMonth ? "bg-text" : "bg-text-dim"}`} />
+        ))}
+      </span>
     </button>
   );
 }

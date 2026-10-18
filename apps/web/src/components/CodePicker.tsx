@@ -1,8 +1,8 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import { isStandardCode, OTHER_STYLE, STANDARD_CODES, type CodeStyle, type ShiftCode } from "../shifts/codes";
 import { CheckIcon } from "./icons";
 
-// The code picker, docs/ux-spec.md §5.4 and the edit sheet in docs/designs/Main.dc.html: the five
+// The code picker, docs/ux-spec.md §5.4 and the date sheet in docs/designs/Main.dc.html: the five
 // standard codes and "Other" as a radio group, then (when Other is chosen) a two-letter input.
 // Typing a standard code in that input selects its button instead of Other; the input stays
 // open so a longer Other code that starts with one (XD) can still be typed.
@@ -34,13 +34,11 @@ function toCodeLetters(s: string): string {
 type CodePickerProps = {
   value: PickerValue;
   onChange: (value: PickerValue) => void;
-  /** Shown under the buttons, above the Other input. */
-  hint?: ReactNode;
 };
 
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 
-export function CodePicker({ value, onChange, hint }: CodePickerProps) {
+export function CodePicker({ value, onChange }: CodePickerProps) {
   const otherInput = useRef<HTMLInputElement>(null);
   const focusOther = useRef(false);
   const otherOpen = value.other !== null;
@@ -63,8 +61,7 @@ export function CodePicker({ value, onChange, hint }: CodePickerProps) {
 
   return (
     <>
-      <div className="flex flex-col gap-2.5">
-        <div role="radiogroup" aria-label="Shift" className="grid grid-cols-6 gap-1.5">
+      <div role="radiogroup" aria-label="Shift" className="grid grid-cols-6 gap-1.5">
           {STANDARD_CODES.map((c) => (
             <CodeButton
               key={c.code}
@@ -84,8 +81,6 @@ export function CodePicker({ value, onChange, hint }: CodePickerProps) {
             checked={selected === "other"}
             onPick={pickOther}
           />
-        </div>
-        {hint}
       </div>
 
       {otherOpen && (

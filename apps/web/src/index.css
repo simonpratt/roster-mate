@@ -23,6 +23,7 @@
   --color-failed: #ef4444;
   --color-ok: #34d399;
   --color-warn: #f5a524;
+  --color-warn-fill: #2a1f0a; /* a cell that needs a babysitter */
   --color-focus: #7dd3fc;
 
   /* Further values from docs/designs/ (Login, Tokens) that the §4.1 table doesn't name. */
@@ -43,15 +44,16 @@
   --color-border-subtle: #23272f; /* sync pill and empty-state card */
   --color-cell-line: #1c2027; /* calendar cell border */
   --color-cell-line-dim: #15181d; /* adjacent-month cell border */
-  --color-text-dim: #5a616d; /* adjacent-month day numbers and note dots */
+  --color-text-dim: #5a616d; /* adjacent-month day numbers and event dots */
+  --color-warn-dim: #7a5512; /* an adjacent-month cell that needs a babysitter */
   --color-on-danger: #1a0a0d; /* text on the danger-filled Sign in button */
   --color-failed-surface: #2a1416; /* Sync failed pill */
   --color-failed-line: #5a2228;
   --color-failed-soft: #fecaca;
   --color-failed-action: #ffffff; /* Retry on the Sync failed pill */
   --color-scrim: rgb(4 5 7 / 0.72); /* behind the sign-out dialog */
-  --color-scrim-sheet: rgb(4 5 7 / 0.66); /* behind the edit sheet */
-  --color-picker: #1a1d24; /* an unselected code button in the edit sheet */
+  --color-scrim-sheet: rgb(4 5 7 / 0.66); /* behind the date sheet */
+  --color-picker: #1a1d24; /* an unselected code button or babysitter chip in the date sheet */
 
   /* Import values from docs/designs/Import.dc.html; review markers from Tokens.dc.html. Markers
      are outlined so they never read as a shift chip. */
@@ -108,7 +110,7 @@
   --text-heading: 21px; /* dialog title */
   --text-heading--font-weight: 600;
   --text-heading--letter-spacing: -0.01em;
-  --text-sheet-title: 22px; /* edit sheet heading */
+  --text-sheet-title: 22px; /* date sheet heading */
   --text-sheet-title--font-weight: 600;
   --text-sheet-title--letter-spacing: -0.01em;
   --text-title: 18px;

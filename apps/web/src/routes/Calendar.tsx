@@ -5,11 +5,12 @@ import { AppHeader } from "../components/AppHeader";
 import { Banner } from "../components/Banner";
 import { buttonClassName } from "../components/Button";
 import { ConfirmDialog } from "../components/ConfirmDialog";
-import { EditShiftSheet } from "../components/EditShiftSheet";
+import { DateSheet } from "../components/DateSheet";
 import { CameraIcon } from "../components/icons";
 import { MonthGrid } from "../components/MonthGrid";
 import { NextShift } from "../components/NextShift";
 import { SyncIndicator } from "../components/SyncIndicator";
+import { useBabysittersInRange, useEventCounts } from "../dates/repo";
 import { monthGridDates, monthOf, type DateString } from "../lib/dates";
 import { useToday } from "../lib/useToday";
 import { useHasLocalShifts, useNextShift, useShiftsInRange } from "../shifts/repo";
@@ -17,7 +18,7 @@ import { sync } from "../sync/engine";
 import { countPendingEdits, usePendingCount, useSyncStatus } from "../sync/status";
 
 // The Calendar (/), the home screen: docs/ux-spec.md §6.2 and docs/designs/Main.dc.html with
-// its Calendar* states. Tapping a date opens the edit sheet (§6.3).
+// its Calendar* states. Tapping a date opens the date sheet (§6.3).
 export function Calendar() {
   const navigate = useNavigate();
   const today = useToday();
@@ -25,7 +26,10 @@ export function Calendar() {
   const returnMonth = (useLocation().state as { month?: string } | null)?.month;
   const [month, setMonth] = useState(() => returnMonth ?? monthOf(today));
   const dates = monthGridDates(month);
-  const shifts = useShiftsInRange(dates[0]!, dates[dates.length - 1]!);
+  const [first, last] = [dates[0]!, dates[dates.length - 1]!];
+  const shifts = useShiftsInRange(first, last);
+  const eventCounts = useEventCounts(first, last);
+  const babysitters = useBabysittersInRange(first, last);
   const next = useNextShift(today);
   const hasShifts = useHasLocalShifts();
   const { status } = useSyncStatus();
@@ -99,7 +103,15 @@ export function Calendar() {
 
       <NextShift shift={next} today={today} onShow={(date) => setMonth(monthOf(date))} />
 
-      <MonthGrid month={month} today={today} shifts={shifts} onMonthChange={setMonth} onSelectDay={setEditing} />
+      <MonthGrid
+        month={month}
+        today={today}
+        shifts={shifts}
+        eventCounts={eventCounts}
+        babysitters={babysitters}
+        onMonthChange={setMonth}
+        onSelectDay={setEditing}
+      />
 
       {hasShifts === false && (
         <div className="mx-4 mt-4 flex flex-col gap-3.5 rounded-panel border border-border-subtle bg-surface p-4.5">
@@ -111,7 +123,7 @@ export function Calendar() {
         </div>
       )}
 
-      {editing && <EditShiftSheet date={editing} today={today} onClose={onCloseSheet} />}
+      {editing && <DateSheet date={editing} today={today} onClose={onCloseSheet} />}
 
       {confirmSignOut && (
         <ConfirmDialog

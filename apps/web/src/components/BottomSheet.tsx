@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode, type TouchEvent } from "react";
 
-// The bottom sheet, docs/ux-spec.md §5.5 and the edit sheet in docs/designs/Main.dc.html: fixed
+// The bottom sheet, docs/ux-spec.md §5.5 and the date sheet in docs/designs/Main.dc.html: fixed
 // to the bottom over a scrim, a drag handle, at most 90 % of the screen tall with its own scroll.
 // It slides up in 200 ms and down in 150 ms (§4.6, none with reduced motion), closes on a scrim
 // tap, Escape or a downward drag past 30 % of its height, traps focus, and returns focus on close

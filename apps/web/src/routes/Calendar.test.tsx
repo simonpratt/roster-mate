@@ -60,17 +60,73 @@ describe("Calendar month grid", () => {
     expect(cells).toHaveLength(42);
     await waitFor(() => expect(cells[0]).toHaveAccessibleName("Monday 26 October, Day"));
     expect(cells[0]).toHaveTextContent("26D");
-    expect(cells[41]).toHaveAccessibleName("Sunday 6 December, Night");
+    // A working shift from today on with no babysitter says so.
+    await waitFor(() => expect(cells[41]).toHaveAccessibleName("Sunday 6 December, Night, no babysitter"));
     expect(cells[41]).toHaveTextContent("6N");
 
     expect(screen.getByRole("button", { name: "Tuesday 3 November, Late" })).toHaveTextContent("3L");
     expect(screen.getByRole("button", { name: "Wednesday 4 November, Day off" })).toHaveTextContent("4X");
-    expect(screen.getByRole("button", { name: "Friday 20 November, SE" })).toHaveTextContent("20SE");
+    expect(screen.getByRole("button", { name: "Friday 20 November, SE, no babysitter" })).toHaveTextContent("20SE");
     expect(screen.getByRole("button", { name: "Thursday 5 November, no shift" })).toHaveTextContent(/^5$/);
     expect(screen.getByRole("button", { name: "Sunday 15 November, no shift, today" })).toHaveAttribute(
       "aria-current",
       "date",
     );
+  });
+
+  it("marks event dots and dates that need a babysitter", async () => {
+    stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
+    await seed({
+      "2026-11-10": "D", // past
+      "2026-11-15": "E", // today
+      "2026-11-16": "D",
+      "2026-11-17": "L",
+      "2026-11-18": "X",
+      "2026-11-21": "SE",
+      "2026-12-01": "N", // next month
+      "2026-12-02": "D",
+    });
+    await db.babysitters.bulkPut([
+      { date: "2026-11-17", name: "Mum", editedAt: 1 },
+      { date: "2026-12-02", name: "Dad", editedAt: 1 },
+      { date: "2026-11-21", name: "", editedAt: 1 }, // cleared
+    ]);
+    const events = (date: string, n: number) =>
+      Array.from({ length: n }, (_, i) => ({ id: `${date}-${i}`, date, text: `Event ${i}`, createdAt: i, editedAt: 1 }));
+    await db.events.bulkPut([...events("2026-11-17", 1), ...events("2026-11-19", 6), ...events("2026-11-10", 2)]);
+    renderApp("/");
+
+    const cell = (name: string) => screen.findByRole("button", { name });
+    const dots = (el: HTMLElement) => within(el).getByTestId("event-dots").children;
+
+    const today = await cell("Sunday 15 November, Early, no babysitter, today");
+    expect(today).toHaveClass("border-dashed", "border-warn", "bg-warn-fill", "ring-text");
+    const needs = await cell("Monday 16 November, Day, no babysitter");
+    expect(needs).toHaveClass("border-dashed", "border-warn", "bg-warn-fill");
+    expect(dots(needs)).toHaveLength(0);
+    const minded = await cell("Tuesday 17 November, Late, babysitter Mum, 1 event");
+    expect(minded).not.toHaveClass("border-dashed");
+    expect(dots(minded)).toHaveLength(1);
+    expect(dots(minded)[0]).toHaveClass("bg-text");
+    expect(await cell("Saturday 21 November, SE, no babysitter")).toHaveClass("border-dashed");
+    expect(await cell("Wednesday 18 November, Day off")).not.toHaveClass("border-dashed");
+    const past = await cell("Tuesday 10 November, Day, 2 events");
+    expect(past).not.toHaveClass("border-dashed");
+    expect(dots(past)).toHaveLength(2);
+    // At most four dots.
+    const busy = await cell("Thursday 19 November, no shift, 6 events");
+    expect(dots(busy)).toHaveLength(4);
+    // Outside the month: the dim border, no fill.
+    const next = await cell("Tuesday 1 December, Night, no babysitter");
+    expect(next).toHaveClass("border-dashed", "border-warn-dim");
+    expect(next).not.toHaveClass("bg-warn-fill");
+    expect(await cell("Wednesday 2 December, Day, babysitter Dad")).not.toHaveClass("border-dashed");
+
+    // The dashed border is on exactly the cells that need a babysitter.
+    for (const c of within(screen.getByTestId("month-grid")).getAllByRole("button")) {
+      expect(c.classList.contains("border-dashed")).toBe(c.getAttribute("aria-label")!.includes("no babysitter"));
+    }
+    expect(screen.getAllByRole("button", { name: /no babysitter/ })).toHaveLength(4);
   });
 
   it("changes month with the buttons, a swipe and Today", async () => {

@@ -73,6 +73,7 @@ set to the page background. Define these as custom Tailwind theme tokens (values
 | `ok` | #34D399 | Synced dot |
 | `warn` | #F5A524 | Pending dot, needs-a-babysitter border and label |
 | `warn-fill` | #2A1F0A | Fill of a cell that needs a babysitter |
+| `warn-dim` | #7A5512 | Border of an adjacent-month cell that needs a babysitter |
 | `focus` | #7DD3FC | Focus rings (2 px, offset 2 px) |
 
 The primary button is near-white rather than a hue so it never competes with or mimics a shift
@@ -203,7 +204,7 @@ dot) until that run finishes.
 - **Cell**: day number at the top (Caption, mono), shift chip centred, event dots at the bottom:
   one 5 px `text` dot per event, at most 4, 3 px apart (`text-dim` outside the month).
 - **Needs a babysitter** (a working shift dated today or later with no babysitter): 1.5 px dashed
-  `warn` border and a `#2A1F0A` fill; outside the month the border is `#7A5512` with no fill.
+  `warn` border and a `warn-fill` fill; outside the month the border is `warn-dim` with no fill.
   Days off, unrostered dates and past dates are never marked. The dashed line, not only its
   colour, sets it apart (`docs/designs/Main.dc.html`).
 - **Today**: `text` outline around the cell, day number bold. When today needs a babysitter, the
@@ -260,8 +261,10 @@ routine status.
 A wrapping row of 44 px pill chips, `role="radiogroup"` labelled "Babysitter": "None", every name
 used on any date (one chip per name, ignoring case; sorted A–Z), then a dashed "+ Someone else".
 The selected chip gets a `text` border, `surface-raised` fill and a check icon. Choosing Someone
-else reveals a "Name" input (`maxlength=40`, `autocapitalize="words"`, focused); typing a known name
-(ignoring case) selects that name's chip instead, and the input stays open. There is no list to
+else reveals a "Name" input (`maxlength=40`, `autocapitalize="words"`, placeholder "e.g. Aunty Bec",
+focused); typing a known name (trimmed, ignoring case) selects that name's chip instead and saves
+that name's spelling, and the input stays open. Save stays disabled while the Name input is open
+and blank. There is no list to
 manage: a name leaves the chips once no date uses it. While the date needs a babysitter and None
 is selected, "Needs a babysitter" shows beside the label in `warn`
 (`docs/designs/DateSheetNewSitter.dc.html`).
@@ -270,9 +273,10 @@ is selected, "Needs a babysitter" shows beside the label in `warn`
 
 Labelled "Events": one row per event, in the order they were added, each a text input
 (`maxlength=200`) with a 44 px remove button (`aria-label` "Remove event: {text}"), then an empty
-input with placeholder "Add an event". Typing in that input makes it a row and a new empty input
-appears below; Enter moves to the next input rather than submitting. On Save, text is trimmed and
-a blank row counts as removed.
+input with placeholder "Add an event". Typing in that input makes it a row (focus stays in it) and a
+new empty input appears below; Enter moves to the next input rather than submitting. Removing a row
+moves focus to the input below it. On Save, text is trimmed: a blank saved row is removed and a
+blank new one dropped.
 
 ## 6. Screens
 
@@ -523,7 +527,7 @@ exception, already used in the indicator).
 | SIM-10 Login | §6.1, §4, §8 |
 | SIM-12 Offline store / PWA | §4.1 tokens, §4.2 code colours in `codes.ts`, §5.2 statuses, §7.1, §7.4 |
 | SIM-13 Calendar view | §5.1–5.3, §6.2, §7.2 |
-| SIM-14 Edit sheet | §5.4, §5.5, §6.3 |
+| SIM-14 Edit sheet (now the date sheet) | §5.4, §5.5, §6.3 |
 | SIM-16 Import | §6.4, §5.4, §5.7 |
 | SIM-24 / SIM-35 Events and babysitters | §5.3, §5.8, §5.9, §6.3, §8 |
 
