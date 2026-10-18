@@ -21,7 +21,7 @@ export function NextShift({ shift, today, onShow }: NextShiftProps) {
   );
   return (
     <section aria-labelledby="next-shift" className="px-4 pt-4 pb-5">
-      <p className="m-0 text-footnote font-medium tracking-[0.04em] text-text-muted uppercase">Next shift</p>
+      <p className="m-0 text-footnote font-medium tracking-caps text-text-muted uppercase">Next shift</p>
       <h1 id="next-shift" className="m-0 mt-2.5 text-display">
         {shift ? (
           <button

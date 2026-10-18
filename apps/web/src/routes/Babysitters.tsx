@@ -7,6 +7,7 @@ import { ShareCard } from "../components/ShareCard";
 import { babysitterInitials, babysitterSections, dateLabel, datesText } from "../dates/babysitters";
 import {
   confirmBabysitter,
+  NO_BABYSITTER,
   useDatesNeedingBabysitter,
   useKnownBabysitters,
   useUpcomingBabysitters,
@@ -48,7 +49,7 @@ export function Babysitters() {
               label={dateLabel({
                 date: s.date,
                 code: s.code,
-                babysitter: { name: "", confirmed: false },
+                babysitter: NO_BABYSITTER,
                 needsBabysitter: true,
                 events: 0,
                 today: "",

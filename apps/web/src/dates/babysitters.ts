@@ -54,7 +54,7 @@ export interface DateLabelParts {
  * confirmed, 1 event, today".
  */
 export function dateLabel({ date, code, babysitter, needsBabysitter, events, today }: DateLabelParts): string {
-  const sitter = babysitter.name
+  const babysitterText = babysitter.name
     ? `, babysitter ${babysitter.name}, ${babysitter.confirmed ? "confirmed" : "tentative"}`
     : needsBabysitter
       ? ", no babysitter"
@@ -63,7 +63,7 @@ export function dateLabel({ date, code, babysitter, needsBabysitter, events, tod
     formatLongDate(date) +
     ", " +
     (code ? codeInfo(code).label : "no shift") +
-    sitter +
+    babysitterText +
     (events === 0 ? "" : events === 1 ? ", 1 event" : `, ${events} events`) +
     (date === today ? ", today" : "")
   );

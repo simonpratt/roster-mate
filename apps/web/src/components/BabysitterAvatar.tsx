@@ -29,7 +29,7 @@ const rings: Record<AvatarRing, string> = {
 
 const looks: Record<"small" | "large", Record<AvatarStatus, string>> = {
   small: {
-    needs: "size-2 bg-sitter-need",
+    needs: "size-2 bg-babysitter-need",
     tentative: "size-4 border border-dashed border-text-disabled bg-cell text-initials text-text-muted",
     confirmed: "size-4 bg-border-strong text-initials text-text",
   },
@@ -48,7 +48,7 @@ export function BabysitterAvatar({ status, initials = "", size = "small", ring, 
       data-status={status}
       className={`flex flex-none items-center justify-center rounded-full font-mono leading-none ${looks[size][status]} ${ring ? rings[ring] : ""} ${className}`}
     >
-      {status === "needs" ? size === "large" && <span className="size-2.5 rounded-full bg-sitter-need" /> : initials}
+      {status === "needs" ? size === "large" && <span className="size-2.5 rounded-full bg-babysitter-need" /> : initials}
     </span>
   );
 }

@@ -4,7 +4,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../db";
 import { addDays, type DateString } from "../lib/dates";
-import type { ShiftCode } from "../shifts/codes";
+import { isWorkingCode, type ShiftCode } from "../shifts/codes";
 import { knownBabysitters } from "./repo";
 
 /** The share window's first and last dates, both inclusive. */
@@ -26,7 +26,7 @@ export function shareWindow(
 ): ShareWindow {
   let end = today;
   for (const s of shifts) {
-    if (s.code !== null && s.code !== "X" && s.date > end) end = s.date;
+    if (isWorkingCode(s.code) && s.date > end) end = s.date;
   }
   return { start: addDays(end, -(SHARE_WINDOW_DATES - 1)), end };
 }
@@ -78,7 +78,7 @@ export function useBabysitterShare(today: DateString): BabysitterShare | undefin
     const lastWorking = await db.shifts
       .orderBy("date")
       .reverse()
-      .filter((s) => s.code !== null && s.code !== "X")
+      .filter((s) => isWorkingCode(s.code))
       .first();
     const rows = await db.babysitters.orderBy("date").toArray();
     return { today, share: babysitterShare(rows, shareWindow(today, lastWorking ? [lastWorking] : [])) };

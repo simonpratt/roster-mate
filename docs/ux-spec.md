@@ -74,7 +74,7 @@ set to the page background. Define these as custom Tailwind theme tokens (values
 | `failed` | #EF4444 | Sync-failed dot |
 | `ok` | #34D399 | Synced dot |
 | `warn` | #F5A524 | Pending dot, "Needs a babysitter" label in the date sheet |
-| `sitter-need` | #C98A2A | The needs-a-babysitter dot on a shift chip, "No babysitter" on the Babysitters screen |
+| `babysitter-need` | #C98A2A | The needs-a-babysitter dot on a shift chip, "No babysitter" on the Babysitters screen |
 | `focus` | #7DD3FC | Focus rings (2 px, offset 2 px) |
 
 The primary button is near-white rather than a hue so it never competes with or mimics a shift
@@ -287,7 +287,7 @@ cell. Status is shown by shape as well as colour:
 
 | State | Look |
 |---|---|
-| Needs a babysitter | An 8 px `sitter-need` dot, offset 3 px past the corner, no letters |
+| Needs a babysitter | An 8 px `babysitter-need` dot, offset 3 px past the corner, no letters |
 | Tentative | 16 px, `cell` fill, 1 px dashed `text-disabled` border, `text-muted` initials |
 | Confirmed | 16 px, `border-strong` fill, no border, `text` initials |
 
@@ -519,10 +519,10 @@ babysitter in the window the card shows "No babysitters in these eight weeks." i
 and rows.
 
 **Needs a babysitter**: shown only while at least one date needs a babysitter. The same header as a
-babysitter's section, with a 28 px dashed `text-dim` circle holding a 10 px `sitter-need` dot,
+babysitter's section, with a 28 px dashed `text-dim` circle holding a 10 px `babysitter-need` dot,
 the title "Needs a babysitter" and "{n} dates" ("1 date") in `text-muted`. Then one row per such
 date, earliest first: date ("Fri 23 Oct"), the shift chip with the amber dot (§5.10), and "No
-babysitter" in `sitter-need`. Rows look like every other row: no dashed or amber border.
+babysitter" in `babysitter-need`. Rows look like every other row: no dashed or amber border.
 
 **One section per babysitter** with a date today or later, A–Z: the 28 px avatar, name, and a
 summary in `text-muted` ("{n} to confirm" or "All confirmed"); a compact secondary "Confirm all"

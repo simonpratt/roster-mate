@@ -23,7 +23,7 @@
   --color-failed: #ef4444;
   --color-ok: #34d399;
   --color-warn: #f5a524;
-  --color-sitter-need: #c98a2a; /* the needs-a-babysitter dot, "No babysitter" (§5.10, §6.5) */
+  --color-babysitter-need: #c98a2a; /* the needs-a-babysitter dot, "No babysitter" (§5.10, §6.5) */
   --color-focus: #7dd3fc;
 
   /* Further values from docs/designs/ (Login, Tokens) that the §4.1 table doesn't name. */
@@ -89,6 +89,9 @@
   --font-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
+  /* The uppercase labels above a section ("Next shift", "Share") */
+  --tracking-caps: 0.04em;
+
   /* Type scale, §4.3, plus the sizes the Login design uses (brand, callout, footnote) */
   --text-brand: 34px;
   --text-brand--font-weight: 700;
@@ -149,6 +152,7 @@
   }
 
   /* Corner radii from the designs */
+  --radius-swatch: 3px; /* the Share card's bar segments and swatches (Babysitters.dc.html) */
   --radius-chip-sm: 9px; /* a Babysitters row chip (Babysitters.dc.html) */
   --radius-control: 10px;
   --radius-field: 12px;

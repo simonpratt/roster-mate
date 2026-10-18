@@ -115,7 +115,7 @@ describe("useBabysitterShare", () => {
       { date: "2026-10-29", code: null, editedAt: 1 },
     ]);
     await db.babysitters.bulkPut([
-      { date: "2026-08-30", name: "Dad", confirmed: true, editedAt: 1 }, // the day before the window
+      { date: "2026-08-30", name: "Dad", confirmed: true, editedAt: 1 }, // the date before the window
       { date: "2026-10-10", name: "Mum", confirmed: false, editedAt: 1 },
       { date: "2026-10-12", name: "Mum", confirmed: true, editedAt: 1 }, // no shift
       { date: "2026-10-28", name: "Dad", confirmed: false, editedAt: 1 }, // after the window

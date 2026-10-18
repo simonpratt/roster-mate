@@ -64,7 +64,7 @@ type BabysitterDateRowProps = {
 };
 
 const statusText: Record<AvatarStatus, ReactNode> = {
-  needs: <span className="text-sitter-need">No babysitter</span>,
+  needs: <span className="text-babysitter-need">No babysitter</span>,
   tentative: <span className="text-text-muted">Tentative</span>,
   confirmed: (
     <span className="flex items-center gap-1.5 text-text">

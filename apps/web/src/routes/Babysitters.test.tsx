@@ -104,7 +104,7 @@ describe("Babysitters screen", () => {
       "Wednesday 18 November, SE, no babysitter",
     ]);
     expect(within(needs).getAllByText("No babysitter")).toHaveLength(2);
-    expect(within(needs).getAllByText("No babysitter")[0]).toHaveClass("text-sitter-need");
+    expect(within(needs).getAllByText("No babysitter")[0]).toHaveClass("text-babysitter-need");
     for (const row of within(needs).getAllByRole("button")) {
       expect(row).toHaveClass("h-13", "bg-cell", "border-cell-line");
       expect(row.className).not.toMatch(/dashed|warn/);
@@ -172,7 +172,7 @@ describe("Babysitters screen", () => {
     // runs from Tue 6 Oct.
     await seed({ "2026-11-16": "D", "2026-11-30": "N", "2026-12-02": "X" });
     const rows: Record<string, string | [string, boolean]> = {
-      "2026-10-05": "Mel", // the day before the window
+      "2026-10-05": "Mel", // the date before the window
       "2026-12-02": "Mel", // after it
       "2026-10-06": ["Mel", true],
     };

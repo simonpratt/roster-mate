@@ -349,12 +349,16 @@ desktop.
     offline / sign-in needed), Import button.
   - Month grid, Monday-first, with previous/next month controls and a "Today" jump. Each date
     shows its shift code in a coloured chip and one dot per event (at most 4); today is outlined;
-    a date that needs a babysitter has a dashed `warn` border (`docs/ux-spec.md` §5.3).
+    a babysitter avatar on the chip's corner shows a needs-a-babysitter dot, or the babysitter's
+    initials, dashed while tentative and filled once confirmed (`docs/ux-spec.md` §5.3, §5.10).
   - Tapping a date opens the **date sheet**: five standard code buttons plus "Other"
     (a two-letter input), the babysitter picker with its Confirmed switch and the date's events,
     Save/Cancel. There is no
     note field and no "Clear"; choosing Day off (`X`) is how a shift is removed.
 - **Import**: as described above.
+- **Babysitters** (`/babysitters`, from the header's ⋯ menu): the Share card over the share
+  window, the dates that need a babysitter, then one section per babysitter with its upcoming
+  dates and Confirm all; tapping a date opens the date sheet (`docs/ux-spec.md` §6.5).
 
 ## PWA
 

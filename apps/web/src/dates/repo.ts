@@ -5,7 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import type { Table } from "dexie";
 import { db, type EventRow } from "../db";
 import { newId } from "../lib/uuid";
-import type { ShiftCode } from "../shifts/codes";
+import { isWorkingCode, type ShiftCode } from "../shifts/codes";
 import { checkCode, checkDate, toShift, type Shift } from "../shifts/repo";
 import { sync } from "../sync/engine";
 import type { DatedBabysitter } from "./babysitters";
@@ -191,7 +191,7 @@ export function needsBabysitter(
   date: string,
   today: string,
 ): boolean {
-  return !!shift && shift.code !== "X" && date >= today && babysitter === "";
+  return !!shift && isWorkingCode(shift.code) && date >= today && babysitter === "";
 }
 
 /**

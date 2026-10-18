@@ -25,7 +25,7 @@ export function ShareCard({ windowText, entries }: ShareCardProps) {
       className="mx-4 mt-2 flex flex-col gap-3.5 rounded-panel border border-border-subtle bg-surface p-4"
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id={titleId} className="m-0 text-footnote font-medium tracking-[0.04em] text-text-muted uppercase">
+        <h2 id={titleId} className="m-0 text-footnote font-medium tracking-caps text-text-muted uppercase">
           Share
         </h2>
         <p className="m-0 text-footnote font-medium text-text-muted tabular-nums">{windowText}</p>
@@ -36,7 +36,7 @@ export function ShareCard({ windowText, entries }: ShareCardProps) {
             {entries.map((e, i) => (
               <span
                 key={e.name}
-                className={`min-w-1 rounded-[3px] ${grey(i)}`}
+                className={`min-w-1 rounded-swatch ${grey(i)}`}
                 style={{ flex: `${e.count} 1 0` }}
               />
             ))}
@@ -44,7 +44,7 @@ export function ShareCard({ windowText, entries }: ShareCardProps) {
           <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
             {entries.map((e, i) => (
               <li key={e.name} className="flex min-h-8 items-center gap-2.5 text-callout">
-                <span aria-hidden="true" className={`size-2.5 flex-none rounded-[3px] ${grey(i)}`} />
+                <span aria-hidden="true" className={`size-2.5 flex-none rounded-swatch ${grey(i)}`} />
                 <span className="min-w-0 flex-1 truncate font-medium">{e.name}</span>
                 <span className="text-text-soft tabular-nums">
                   {e.count} {e.count === 1 ? "date" : "dates"} · {e.percent}%

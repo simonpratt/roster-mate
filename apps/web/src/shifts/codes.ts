@@ -108,6 +108,11 @@ export function isStandardCode(s: string): boolean {
   return STANDARD_CODES.some((c) => c.code === s);
 }
 
+/** Whether a date's code is a working shift: any code but X (Day off); null (unrostered) is not. */
+export function isWorkingCode(code: ShiftCode | null): boolean {
+  return code !== null && code !== "X";
+}
+
 /** Label and classes for a valid shift code; any non-standard code is an Other code. */
 export function codeInfo(code: ShiftCode): CodeInfo {
   return STANDARD_CODES.find((c) => c.code === code) ?? { code, label: code, standard: false, ...OTHER_STYLE };

@@ -106,11 +106,11 @@ describe("Calendar month grid", () => {
     const today = await cell("Sunday 15 November, Early, no babysitter, today");
     expect(today).toHaveClass("border-text", "bg-surface", "ring-text");
     expect(avatar(today)).toHaveAttribute("data-status", "needs");
-    expect(avatar(today)).toHaveClass("size-2", "bg-sitter-need", "ring-surface", "-top-0.75", "-right-0.75");
+    expect(avatar(today)).toHaveClass("size-2", "bg-babysitter-need", "ring-surface", "-top-0.75", "-right-0.75");
     expect(avatar(today)).toHaveTextContent("");
     const needs = await cell("Monday 16 November, Day, no babysitter");
     expect(needs).toHaveClass("border-cell-line", "bg-cell");
-    expect(avatar(needs)).toHaveClass("bg-sitter-need", "ring-cell");
+    expect(avatar(needs)).toHaveClass("bg-babysitter-need", "ring-cell");
     expect(dots(needs)).toHaveLength(0);
 
     // Tentative: dashed initials, 7 px past the chip's corner. Mum and Mel share an initial.
