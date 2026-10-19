@@ -242,6 +242,8 @@ describe("Date sheet", () => {
   });
 
   it("adds the year to the heading outside the current year", async () => {
+    // In December, so January 2027 is the month after today's.
+    vi.setSystemTime(new Date(2026, 11, 20, 9, 0));
     renderApp("/");
     await screen.findByText("Offline");
     fireEvent.click(screen.getByRole("button", { name: "Monday 4 January, no shift" }));

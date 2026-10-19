@@ -208,9 +208,10 @@ dot) until that run finishes.
 - **Bar** above the scroll: the title of the month whose dates are at the top of the scroll
   (its own title has scrolled at least half out of view), and the "Today" button. The bar's
   title is a live region. The bar and the single-letter weekday row (M T W T F S S) stay put.
-- **No end**: the Calendar opens with six months either side of the month it opens on (and
-  today's month); scrolling within a screen of either end adds six more there, keeping the
-  dates in view still when they are added above.
+- **One month back, no end ahead**: the Calendar opens on its month (today's, or Import's)
+  with one month before it and one after, reaching today's month too. Nothing is added
+  above. Scrolling within a screen of the bottom adds three more months, as does a view
+  taller than that.
 - **Cell**: 84 px tall. Day number at the top (Caption, mono), shift chip centred with the
   babysitter avatar (§5.10) on its top-right corner, event dots at the bottom: one 5 px `text`
   dot per event, at most 4, 3 px apart. The cell's border and fill never change with the
@@ -647,6 +648,7 @@ doesn't want, and the ticket specs still stand on their own.
 
 ## 11. Open questions
 
-1. Should past months be reachable without limit? Default: yes, the month scroll has no end (SIM-44).
+1. ~~Should past months be reachable without limit?~~ Resolved: no. The scroll reaches one month
+   before the month it opens on, and has no end ahead (§5.3).
 2. Should the review list hide "Same" rows behind a "Show unchanged" toggle when there are many?
    Default: show them, unchecked, as SIM-16 specifies.

@@ -61,12 +61,9 @@ describe("Calendar month grid", () => {
     expect(screen.queryByRole("button", { name: "Next month" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Previous month" })).not.toBeInTheDocument();
 
-    // Six months either side, earliest first, each titled.
+    // One month either side, earliest first, each titled.
     const months = screen.getAllByRole("region");
-    expect(months.map((m) => m.getAttribute("aria-label"))).toEqual([
-      "May 2026", "June 2026", "July 2026", "August 2026", "September 2026", "October 2026", "November 2026",
-      "December 2026", "January 2027", "February 2027", "March 2027", "April 2027", "May 2027",
-    ]);
+    expect(months.map((m) => m.getAttribute("aria-label"))).toEqual(["October 2026", "November 2026", "December 2026"]);
     const november = screen.getByRole("region", { name: "November 2026" });
     expect(within(november).getByRole("heading", { level: 2 })).toHaveTextContent("November 2026");
     // Only November's dates: 1 November is a Sunday, after six blanks.
@@ -181,36 +178,56 @@ describe("Calendar month grid", () => {
     expect(screen.getAllByRole("button", { name: /no babysitter/ })).toHaveLength(4);
   });
 
-  it("adds months near either end, keeping the view still when they go above", async () => {
+  it("adds months near the bottom, and none above", async () => {
     stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
     renderApp("/");
-    await screen.findByRole("region", { name: "May 2027" });
+    await screen.findByRole("region", { name: "December 2026" });
     const scroll = screen.getByTestId("month-scroll");
     const region = (name: string) => screen.queryByRole("region", { name });
 
-    // jsdom has no layout: an 800 px view over 1000 px per month, scrolled near the top.
+    // jsdom has no layout: an 800 px view over 1000 px per month.
     Object.defineProperty(scroll, "clientHeight", { configurable: true, value: 800 });
     Object.defineProperty(scroll, "scrollHeight", {
       configurable: true,
       get: () => scroll.querySelectorAll("section").length * 1000,
     });
-    scroll.scrollTop = 500;
+    // At the top: no months before October.
+    scroll.scrollTop = 0;
     fireEvent.scroll(scroll);
-    expect(await screen.findByRole("region", { name: "November 2025" })).toBeInTheDocument();
-    expect(region("October 2025")).toBeNull();
-    // Moved down by the six months added above, so the same dates stay in view.
-    expect(scroll.scrollTop).toBe(6_500);
+    expect(region("September 2026")).toBeNull();
+    expect(region("January 2027")).toBeNull();
 
-    // Near the bottom: six more after May 2027.
-    scroll.scrollTop = 17_500;
+    // Near the bottom: three more after December.
+    scroll.scrollTop = 1_500;
     fireEvent.scroll(scroll);
-    expect(await screen.findByRole("region", { name: "November 2027" })).toBeInTheDocument();
-    expect(region("December 2027")).toBeNull();
+    expect(await screen.findByRole("region", { name: "March 2027" })).toBeInTheDocument();
+    expect(region("April 2027")).toBeNull();
     // In the middle: nothing more.
-    scroll.scrollTop = 10_000;
+    scroll.scrollTop = 2_000;
     fireEvent.scroll(scroll);
-    expect(region("October 2025")).toBeNull();
-    expect(region("December 2027")).toBeNull();
+    expect(region("April 2027")).toBeNull();
+    expect(region("September 2026")).toBeNull();
+  });
+
+  it("fills a view taller than the months shown", async () => {
+    stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
+    // A 4000 px view over 1000 px per month, set before the first layout.
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, value: 4000 });
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.querySelectorAll("section").length * 1000;
+      },
+    });
+    try {
+      renderApp("/");
+      // 3 months, then 6, then 9: the first count whose bottom is more than a view below the top.
+      expect(await screen.findByRole("region", { name: "June 2027" })).toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: "July 2027" })).toBeNull();
+    } finally {
+      delete (HTMLElement.prototype as { clientHeight?: number }).clientHeight;
+      delete (HTMLElement.prototype as { scrollHeight?: number }).scrollHeight;
+    }
   });
 
   it("opens on the month Import returns to, and Today scrolls back to today's month", async () => {
@@ -218,9 +235,10 @@ describe("Calendar month grid", () => {
     const scrollTo = vi.spyOn(Element.prototype, "scrollTo");
     renderApp({ pathname: "/", state: { month: "2027-03" } });
     expect(await screen.findByRole("heading", { level: 1, name: "March 2027" })).toBeInTheDocument();
-    // Today's month is in reach as well as six months past March.
-    expect(screen.getByRole("region", { name: "May 2026" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "September 2027" })).toBeInTheDocument();
+    // Today's month is in reach, from the month before it to the month after March.
+    const months = screen.getAllByRole("region").map((m) => m.getAttribute("aria-label"));
+    expect(months[0]).toBe("October 2026");
+    expect(months[months.length - 1]).toBe("April 2027");
 
     fireEvent.click(screen.getByRole("button", { name: "Today" }));
     expect(scrollTo).toHaveBeenCalledExactlyOnceWith({ top: expect.any(Number), behavior: "smooth" });

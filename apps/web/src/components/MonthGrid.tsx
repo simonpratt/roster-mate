@@ -11,7 +11,7 @@ import { ChipWithAvatar, type AvatarStatus } from "./BabysitterAvatar";
 // showing the date number, the shift's code chip with the babysitter avatar on its corner (§5.10),
 // and a row of event dots. The cell's border and fill never depend on the babysitter.
 type MonthGridProps = {
-  /** The months to show, earliest first; the Calendar adds to either end as asked. */
+  /** The months to show, earliest first; the Calendar adds to the end as asked. */
   months: MonthString[];
   /** The month to open on. */
   initialMonth: MonthString;
@@ -24,8 +24,8 @@ type MonthGridProps = {
   babysitters: Map<string, BabysitterStatus> | undefined;
   /** Every known babysitter name, for telling initials apart. */
   knownBabysitters: readonly string[];
-  /** Called when the scroll comes within a screen of the first or last month. */
-  onNearEnd: (end: "start" | "end") => void;
+  /** Called when the scroll comes within a screen of its bottom. */
+  onNearEnd: () => void;
   onSelectDay: (date: DateString) => void;
 };
 
@@ -52,8 +52,6 @@ export function MonthGrid({
   const [topMonth, setTopMonth] = useState(initialMonth);
   // Where to scroll once that month is rendered: on mount, and after Today.
   const pendingScroll = useRef<{ month: MonthString; smooth: boolean } | null>({ month: initialMonth, smooth: false });
-  // The first month and scroll height before months were added above, to keep the view still.
-  const before = useRef<{ first: MonthString; height: number } | null>(null);
 
   /**
    * The scroll offset that puts a month's dates at the top, its title just above the view; null
@@ -73,19 +71,23 @@ export function MonthGrid({
     return true;
   }
 
+  /** Within a screen of the bottom; a view taller than the months shown counts too. */
+  function nearEnd(el: HTMLElement): boolean {
+    return el.scrollHeight - el.scrollTop - el.clientHeight < el.clientHeight;
+  }
+
   useLayoutEffect(() => {
     const el = scroller.current;
     if (!el) return;
-    if (before.current && before.current.first !== months[0]) {
-      el.scrollTop += el.scrollHeight - before.current.height;
-    }
-    before.current = null;
     const target = pendingScroll.current;
     if (target && scrollToMonth(target.month, target.smooth)) {
-      pendingScroll.current = null;
+      // Too few months below may stop the scroll short of the month; scroll again once more arrive.
+      if (target.smooth || !nearEnd(el)) pendingScroll.current = null;
       if (!target.smooth) setTopMonth(target.month);
     }
-  }, [months]);
+    // A tall screen may never scroll near the end, so fill it here.
+    if (nearEnd(el)) onNearEnd();
+  }, [months, onNearEnd]);
 
   function onScroll() {
     const el = scroller.current;
@@ -97,14 +99,7 @@ export function MonthGrid({
       if ((section.offsetTop + grid.offsetTop) / 2 <= el.scrollTop + 1) top = section.dataset.month!;
     }
     setTopMonth(top);
-    if (el.scrollTop < el.clientHeight) {
-      // Asked once until the months above arrive.
-      if (before.current) return;
-      before.current = { first: months[0]!, height: el.scrollHeight };
-      onNearEnd("start");
-    } else if (el.scrollHeight - el.scrollTop - el.clientHeight < el.clientHeight) {
-      onNearEnd("end");
-    }
+    if (nearEnd(el)) onNearEnd();
   }
 
   // Today's month may not be rendered yet after a midnight rollover; the Calendar then adds it

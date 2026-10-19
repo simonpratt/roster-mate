@@ -76,5 +76,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
+    // Room for several findBy waits of up to 5 s each (src/test-setup.ts).
+    testTimeout: 20000,
   },
 });

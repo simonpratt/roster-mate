@@ -1,8 +1,8 @@
 import { expect, signIn, test } from "../fixtures/test";
 
-// The Calendar scrolls through stacked months with no end (docs/ux-spec.md §5.3). It opens on
-// December 2026, today's month.
-test("scrolls through stacked months, adding more at either end, and Today scrolls back", async ({ page }) => {
+// The Calendar scrolls through stacked months, from one month back with no end ahead
+// (docs/ux-spec.md §5.3). It opens on December 2026, today's month.
+test("scrolls through stacked months, one month back and more ahead, and Today scrolls back", async ({ page }) => {
   await signIn(page);
   const scroll = page.getByTestId("month-scroll");
   const bar = page.getByRole("heading", { level: 1 });
@@ -18,10 +18,16 @@ test("scrolls through stacked months, adding more at either end, and Today scrol
   await expect(page.getByRole("button", { name: /^\w+ 31 December/ })).toBeInViewport();
   await expect(page.getByRole("heading", { level: 2, name: "January 2027" })).toBeInViewport();
 
-  // Up past the first month shown: earlier months arrive and the bar follows.
-  for (let i = 0; i < 12; i++) await scroll.evaluate((el) => el.scrollBy(0, -1200));
-  await expect(page.getByRole("region", { name: "January 2026" })).toBeAttached();
+  // Down: later months keep arriving.
+  for (let i = 0; i < 6; i++) await scroll.evaluate((el) => el.scrollBy(0, 1200));
+  await expect(page.getByRole("region", { name: "May 2027" })).toBeAttached();
   await expect(bar).not.toHaveText("December 2026");
+
+  // Up to the top: November is the first month, and nothing arrives above it.
+  await scroll.evaluate((el) => el.scrollTo(0, 0));
+  await expect(bar).toHaveText("November 2026");
+  await expect(page.getByRole("region").first()).toHaveAccessibleName("November 2026");
+  await expect(page.getByRole("region", { name: "October 2026" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Today", exact: true }).click();
   await expect(bar).toHaveText("December 2026");

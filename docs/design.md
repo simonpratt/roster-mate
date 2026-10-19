@@ -346,7 +346,8 @@ desktop.
 - **Login**: username, password, submit, error message.
 - **Calendar** (home, `/`):
   - Header: sync status dot (synced / pending N / offline / sign-in needed), Import button.
-  - Month grid: the months stacked in one endless vertical scroll, each Monday-first with its own
+  - Month grid: the months stacked in one vertical scroll, from the month before the one it
+    opens on and with no end ahead, each Monday-first with its own
     title and only its own dates, under a bar naming the month at the top and a "Today" jump. Each date
     shows its shift code in a coloured chip and one dot per event (at most 4); today is outlined;
     a babysitter avatar on the chip's corner shows a needs-a-babysitter dot, or the babysitter's

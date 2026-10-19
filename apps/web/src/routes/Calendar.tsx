@@ -67,13 +67,9 @@ export function Calendar() {
     else await signOut();
   }
 
-  // Scrolling near either end adds more months, so the calendar has no end (§5.3).
-  const onNearEnd = useCallback((end: "start" | "end") => {
-    setMonths((ms) =>
-      end === "start"
-        ? [...monthsFrom(addMonths(ms[0]!, -GROW_BY), GROW_BY), ...ms]
-        : [...ms, ...monthsFrom(addMonths(ms[ms.length - 1]!, 1), GROW_BY)],
-    );
+  // Scrolling near the bottom adds more months, so the calendar has no end there (§5.3).
+  const onNearEnd = useCallback(() => {
+    setMonths((ms) => [...ms, ...monthsFrom(addMonths(ms[ms.length - 1]!, 1), GROW_BY)]);
   }, []);
 
   // Past midnight on the last day shown, today's month may be new: add it for the Today button.
@@ -157,18 +153,18 @@ export function Calendar() {
 
 const NONE: string[] = [];
 
-/** How many months the calendar adds at an end, and shows on each side of where it opens. */
-const GROW_BY = 6;
+/** How many months the calendar adds at the bottom. */
+const GROW_BY = 3;
 
 /** n months from month on. */
 function monthsFrom(month: MonthString, n: number): MonthString[] {
   return Array.from({ length: n }, (_, i) => addMonths(month, i));
 }
 
-/** GROW_BY months either side of the month opened on, reaching today's month too. */
+/** One month either side of the month opened on, reaching today's month too. */
 function monthsAround(month: MonthString, todayMonth: MonthString): MonthString[] {
-  const from = addMonths(month < todayMonth ? month : todayMonth, -GROW_BY);
-  const to = addMonths(month > todayMonth ? month : todayMonth, GROW_BY);
+  const from = addMonths(month < todayMonth ? month : todayMonth, -1);
+  const to = addMonths(month > todayMonth ? month : todayMonth, 1);
   const months = [from];
   while (months[months.length - 1]! < to) months.push(addMonths(months[months.length - 1]!, 1));
   return months;
