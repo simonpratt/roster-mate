@@ -2,14 +2,17 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { addDays, addMonths, dayOfMonth, formatMonth, monthDates, monthOf, weekdayIndex, type DateString, type MonthString } from "../lib/dates";
 import { babysitterInitials, dateLabel } from "../dates/babysitters";
 import { NO_BABYSITTER, needsBabysitter, type BabysitterStatus } from "../dates/repo";
+import type { ShiftCode } from "../shifts/codes";
 import type { Shift } from "../shifts/repo";
+import { swappedFrom } from "../shifts/swapped";
 import { ChipWithAvatar, type AvatarStatus } from "./BabysitterAvatar";
 
 // The month grid, docs/ux-spec.md §5.3 and docs/designs/Main.dc.html: a bar naming the month at
 // the top of the scroll with the Today button, a Monday-first weekday row, then the months stacked
 // in one vertical scroll, each with its own title and only its own dates. Each cell is a button
-// showing the date number, the shift's code chip with the babysitter avatar on its corner (§5.10),
-// and a row of event dots. The cell's border and fill never depend on the babysitter.
+// showing the date number, the shift's code chip with the babysitter avatar on its top-right
+// corner (§5.10) and the swap badge on its bottom-left (§5.11), and the event caption. The cell's
+// border and fill never depend on the babysitter or a swap.
 type MonthGridProps = {
   /** The months to show, earliest first; the Calendar adds to the end as asked. */
   months: MonthString[];
@@ -18,8 +21,10 @@ type MonthGridProps = {
   today: DateString;
   /** The shifts in the months; undefined while loading. */
   shifts: Shift[] | undefined;
-  /** The number of events on each date that has any; undefined while loading. */
-  eventCounts: Map<string, number> | undefined;
+  /** Each event's text on each date that has any, in the date sheet's order; undefined while loading. */
+  events: Map<string, string[]> | undefined;
+  /** The code the latest import saved for each date; undefined while loading. */
+  importedCodes: Map<string, ShiftCode | null> | undefined;
   /** The babysitter on each date that has one; undefined while loading. */
   babysitters: Map<string, BabysitterStatus> | undefined;
   /** Every known babysitter name, for telling initials apart. */
@@ -31,9 +36,6 @@ type MonthGridProps = {
 
 const WEEKDAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
-/** A cell shows at most this many event dots. */
-const MAX_DOTS = 4;
-
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 
 export function MonthGrid({
@@ -41,7 +43,8 @@ export function MonthGrid({
   initialMonth,
   today,
   shifts,
-  eventCounts,
+  events,
+  importedCodes,
   babysitters,
   knownBabysitters,
   onNearEnd,
@@ -147,7 +150,8 @@ export function MonthGrid({
             month={month}
             today={today}
             byDate={byDate}
-            eventCounts={eventCounts}
+            events={events}
+            importedCodes={importedCodes}
             babysitters={babysitters}
             knownBabysitters={knownBabysitters}
             onSelectDay={onSelectDay}
@@ -162,14 +166,24 @@ type MonthSectionProps = {
   month: MonthString;
   today: DateString;
   byDate: Map<string, Shift>;
-  eventCounts: Map<string, number> | undefined;
+  events: Map<string, string[]> | undefined;
+  importedCodes: Map<string, ShiftCode | null> | undefined;
   babysitters: Map<string, BabysitterStatus> | undefined;
   knownBabysitters: readonly string[];
   onSelectDay: (date: DateString) => void;
 };
 
 /** One month: its title, blanks up to the 1st's weekday, then its dates. */
-function MonthSection({ month, today, byDate, eventCounts, babysitters, knownBabysitters, onSelectDay }: MonthSectionProps) {
+function MonthSection({
+  month,
+  today,
+  byDate,
+  events,
+  importedCodes,
+  babysitters,
+  knownBabysitters,
+  onSelectDay,
+}: MonthSectionProps) {
   const dates = useMemo(() => monthDates(month), [month]);
   const title = formatMonth(month);
   return (
@@ -184,7 +198,9 @@ function MonthSection({ month, today, byDate, eventCounts, babysitters, knownBab
             key={date}
             date={date}
             shift={byDate.get(date)}
-            events={eventCounts?.get(date) ?? 0}
+            events={events?.get(date) ?? NO_EVENTS}
+            // Unmarked until the imported codes have loaded, as with babysitters.
+            swappedFrom={swappedFrom(byDate.get(date)?.code, importedCodes?.get(date))}
             babysitter={babysitters?.get(date) ?? NO_BABYSITTER}
             known={knownBabysitters}
             // Unmarked until the babysitters have loaded, so a cell doesn't flash the amber dot.
@@ -198,6 +214,8 @@ function MonthSection({ month, today, byDate, eventCounts, babysitters, knownBab
   );
 }
 
+const NO_EVENTS: string[] = [];
+
 /** The first and last dates of the months, for querying them. */
 export function monthsRange(months: MonthString[]): [DateString, DateString] {
   return [`${months[0]}-01`, addDays(`${addMonths(months[months.length - 1]!, 1)}-01`, -1)];
@@ -206,7 +224,10 @@ export function monthsRange(months: MonthString[]): [DateString, DateString] {
 type DayCellProps = {
   date: DateString;
   shift: Shift | undefined;
-  events: number;
+  /** Each event's text, in the date sheet's order. */
+  events: readonly string[];
+  /** The imported code the shift was swapped from, or null when it isn't swapped. */
+  swappedFrom: ShiftCode | null;
   /** The babysitter, or NO_BABYSITTER for none. */
   babysitter: BabysitterStatus;
   known: readonly string[];
@@ -215,10 +236,10 @@ type DayCellProps = {
   onSelect: (date: DateString) => void;
 };
 
-function DayCell({ date, shift, events, babysitter, known, needsBabysitter, today, onSelect }: DayCellProps) {
+function DayCell({ date, shift, events, swappedFrom, babysitter, known, needsBabysitter, today, onSelect }: DayCellProps) {
   const isToday = date === today;
   const code = shift?.code ?? null;
-  const name = dateLabel({ date, code, babysitter, needsBabysitter, events, today });
+  const name = dateLabel({ date, code, babysitter, needsBabysitter, swappedFrom, events, today });
 
   const cell = isToday ? "border border-text bg-surface ring-1 ring-inset ring-text" : "border border-cell-line bg-cell";
   const number = isToday ? "font-bold text-text" : date < today ? "text-text-disabled" : "text-text-soft";
@@ -245,16 +266,30 @@ function DayCell({ date, shift, events, babysitter, known, needsBabysitter, toda
           code={code}
           size="grid"
           avatar={status && { status, initials: babysitterInitials(babysitter.name, known) }}
+          swapped={swappedFrom !== null}
           ring={isToday ? "surface" : "cell"}
         />
       ) : (
         <span className="h-8" />
       )}
-      <span data-testid="event-dots" className="flex h-1.25 gap-0.75">
-        {Array.from({ length: Math.min(events, MAX_DOTS) }, (_, i) => (
-          <span key={i} className="size-1.25 rounded-full bg-text" />
-        ))}
-      </span>
+      <EventCaption events={events} />
     </button>
+  );
+}
+
+/**
+ * The event caption, §5.3: the first event's text, cut off with an ellipsis, then " +{n}" for the
+ * rest, which always shows in full. An empty line on a date without events keeps the chip in place.
+ */
+function EventCaption({ events }: { events: readonly string[] }) {
+  return (
+    <span aria-hidden="true" className="flex h-2.75 w-full justify-center px-0.75 text-event whitespace-nowrap">
+      {events.length > 0 && (
+        <span data-testid="event-caption" className="min-w-0 truncate font-semibold text-text-soft">
+          {events[0]}
+        </span>
+      )}
+      {events.length > 1 && <span className="flex-none font-medium text-text-muted">{`\u00a0+${events.length - 1}`}</span>}
+    </span>
   );
 }

@@ -9,10 +9,11 @@ import { DateSheet } from "../components/DateSheet";
 import { CameraIcon } from "../components/icons";
 import { MonthGrid, monthsRange } from "../components/MonthGrid";
 import { SyncIndicator } from "../components/SyncIndicator";
-import { useBabysittersInRange, useEventCounts, useKnownBabysitters } from "../dates/repo";
+import { useBabysittersInRange, useEventTexts, useKnownBabysitters } from "../dates/repo";
 import { addMonths, monthOf, type DateString, type MonthString } from "../lib/dates";
 import { useToday } from "../lib/useToday";
 import { useHasLocalShifts, useShiftsInRange } from "../shifts/repo";
+import { useImportedCodes } from "../shifts/swapped";
 import { sync } from "../sync/engine";
 import { countPendingEdits, usePendingCount, useSyncStatus } from "../sync/status";
 
@@ -27,7 +28,8 @@ export function Calendar() {
   const [months, setMonths] = useState(() => monthsAround(initialMonth, monthOf(today)));
   const [first, last] = monthsRange(months);
   const shifts = useShiftsInRange(first, last);
-  const eventCounts = useEventCounts(first, last);
+  const events = useEventTexts(first, last);
+  const importedCodes = useImportedCodes();
   const babysitters = useBabysittersInRange(first, last);
   const knownBabysitters = useKnownBabysitters();
   const hasShifts = useHasLocalShifts();
@@ -126,7 +128,8 @@ export function Calendar() {
         initialMonth={initialMonth}
         today={today}
         shifts={shifts}
-        eventCounts={eventCounts}
+        events={events}
+        importedCodes={importedCodes}
         babysitters={babysitters}
         knownBabysitters={knownBabysitters ?? NONE}
         onNearEnd={onNearEnd}

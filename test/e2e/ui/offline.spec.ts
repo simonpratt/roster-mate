@@ -22,7 +22,7 @@ test("keeps an offline edit in the outbox, then sends it once online @smoke", as
   await sheet.getByRole("textbox", { name: "Add a note or event" }).fill("Car service");
   await sheet.getByRole("button", { name: "Save" }).click();
   const cell = decemberCell(page, 15);
-  await expect(cell).toHaveAccessibleName(/^\w+ 15 December, Early, (no babysitter, )?\d+ events?$/);
+  await expect(cell).toHaveAccessibleName(/^\w+ 15 December, Early(, no babysitter)?(, Car service)+$/);
   await expect(syncPill(page)).toHaveText("Offline");
 
   await context.setOffline(false);

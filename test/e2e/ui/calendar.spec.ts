@@ -1,4 +1,8 @@
-import { expect, signIn, test } from "../fixtures/test";
+import { fileURLToPath } from "node:url";
+import { decemberCell, expect, signIn, syncPill, test } from "../fixtures/test";
+
+// The fake Claude reads 8 December 2026 as Day (D). Not @smoke: it calls extraction.
+const roster = fileURLToPath(new URL("../fixtures/files/roster.jpg", import.meta.url));
 
 // The Calendar scrolls through stacked months, from one month back with no end ahead
 // (docs/ux-spec.md §5.3). It opens on December 2026, today's month.
@@ -32,4 +36,29 @@ test("scrolls through stacked months, one month back and more ahead, and Today s
   await page.getByRole("button", { name: "Today", exact: true }).click();
   await expect(bar).toHaveText("December 2026");
   await expect(page.getByRole("button", { name: /^Tuesday 1 December/ })).toBeInViewport();
+});
+
+// A shift changed since the import that saved it is swapped (CONTEXT.md Swapped): the cell names
+// the imported code and shows the swap badge (docs/ux-spec.md §5.11).
+test("a shift changed after its import shows as swapped", async ({ page }) => {
+  await signIn(page);
+  await page.getByRole("link", { name: "Import", exact: true }).click();
+  await page.getByLabel("Choose from library").setInputFiles(roster);
+  await page.getByRole("button", { name: "Save 5 shifts" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "December 2026" })).toBeVisible();
+  // Synced first, so the import's shift change is on the phone before the sheet edit replaces it.
+  await expect(syncPill(page)).toHaveText("Synced");
+  const cell = decemberCell(page, 8);
+  await expect(cell).toHaveAccessibleName("Tuesday 8 December, Day, no babysitter");
+  await expect(cell.getByTestId("swap-badge")).toHaveCount(0);
+
+  await cell.click();
+  const sheet = page.getByRole("dialog");
+  await sheet.getByRole("radio", { name: "L, Late" }).click();
+  await sheet.getByRole("button", { name: "Save" }).click();
+  await expect(sheet).toBeHidden();
+  await expect(cell).toHaveAccessibleName("Tuesday 8 December, Late, swapped from Day, no babysitter");
+  await expect(cell.getByTestId("swap-badge")).toBeVisible();
+  await expect(syncPill(page)).toHaveText("Synced");
+  await expect(cell).toHaveAccessibleName(/swapped from Day/);
 });

@@ -258,7 +258,7 @@ describe("Date sheet", () => {
       ["e2", "2026-11-24", "Dry cleaning"],
       ["e3", "2026-11-24", "Call Jo"],
     ]);
-    const { sheet } = await openSheet("Tuesday 24 November, Night, no babysitter, 3 events");
+    const { sheet } = await openSheet("Tuesday 24 November, Night, no babysitter, Dentist 3pm, Dry cleaning, Call Jo");
 
     // Events in the order they were added, then the empty Add a note or event line.
     expect(eventInputs(sheet).map((i) => (i as HTMLInputElement).value)).toEqual(["Dentist 3pm", "Dry cleaning", "Call Jo"]);
@@ -292,7 +292,7 @@ describe("Date sheet", () => {
       events: { added: ["Swimming"], changed: [{ id: "e1", text: "Dentist 4pm" }], removed: ["e2", "e3"] },
     });
     expect(
-      await screen.findByRole("button", { name: "Tuesday 24 November, Night, babysitter Mum, tentative, 2 events" }),
+      await screen.findByRole("button", { name: "Tuesday 24 November, Night, babysitter Mum, tentative, Dentist 4pm, Swimming" }),
     ).toBeInTheDocument();
     expect((await db.events.where("date").equals("2026-11-24").sortBy("createdAt")).map((e) => e.text)).toEqual([
       "Dentist 4pm",
@@ -392,7 +392,7 @@ describe("Date sheet", () => {
     await seed({ "2026-11-24": "N" });
     await seedBabysitters({ "2026-11-02": "Mum" });
     await seedEvents([["e1", "2026-11-24", "Dentist 3pm"]]);
-    const { sheet } = await openSheet("Tuesday 24 November, Night, no babysitter, 1 event");
+    const { sheet } = await openSheet("Tuesday 24 November, Night, no babysitter, Dentist 3pm");
     fireEvent.click(sitterChip(sheet, "Mum"));
     fireEvent.change(eventInputs(sheet)[0]!, { target: { value: "Dentist 4pm" } });
     fireEvent.change(addEvent(sheet), { target: { value: "Swimming" } });
@@ -421,7 +421,7 @@ describe("Date sheet", () => {
       }),
     );
     expect(
-      await screen.findByRole("button", { name: "Thursday 26 November, no shift, babysitter Aunty Bec, tentative, 1 event" }),
+      await screen.findByRole("button", { name: "Thursday 26 November, no shift, babysitter Aunty Bec, tentative, School concert" }),
     ).toBeInTheDocument();
     expect(await db.shifts.get("2026-11-26")).toBeUndefined();
     expect(await db.outbox.count()).toBe(0);
@@ -499,7 +499,7 @@ describe("Date sheet", () => {
 
   it("turns the Add a note or event line into a row as it's typed in, and Enter moves to the next line", async () => {
     await seedEvents([["e1", "2026-11-24", "Dentist 3pm"]]);
-    const { sheet } = await openSheet("Tuesday 24 November, no shift, 1 event");
+    const { sheet } = await openSheet("Tuesday 24 November, no shift, Dentist 3pm");
     const add = addEvent(sheet);
     add.focus();
     fireEvent.change(add, { target: { value: "S" } });

@@ -127,6 +127,8 @@
   --text-footnote--line-height: 1.5;
   --text-initials: 8px; /* a babysitter avatar on a chip, §5.10 */
   --text-initials--font-weight: 700;
+  --text-event: 9px; /* the event caption in a calendar cell, §5.3 */
+  --text-event--line-height: 11px;
   --text-caption: 12px;
   --text-caption--font-weight: 500;
   --text-code-sm: 13px; /* shift code in a Babysitters row chip (Babysitters.dc.html) */

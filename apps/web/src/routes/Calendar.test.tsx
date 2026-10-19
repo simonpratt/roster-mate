@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { db, type ShiftRow } from "../db";
+import { db, type ShiftChangeRow, type ShiftRow } from "../db";
 import { renderApp, setOnline, stubFetch } from "../test-utils";
 
 const SESSION = { status: 200, body: { username: "simon" } };
@@ -92,7 +92,7 @@ describe("Calendar month grid", () => {
     );
   });
 
-  it("marks event dots and each date's babysitter with its avatar", async () => {
+  it("captions each date's events and marks its babysitter with its avatar", async () => {
     stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
     await seed({
       "2026-11-10": "D", // past
@@ -114,11 +114,11 @@ describe("Calendar month grid", () => {
     ]);
     const events = (date: string, n: number) =>
       Array.from({ length: n }, (_, i) => ({ id: `${date}-${i}`, date, text: `Event ${i}`, createdAt: i, editedAt: 1 }));
-    await db.events.bulkPut([...events("2026-11-17", 1), ...events("2026-11-19", 6), ...events("2026-11-10", 2)]);
+    await db.events.bulkPut([...events("2026-11-17", 1), ...events("2026-11-19", 3), ...events("2026-11-10", 2)]);
     renderApp("/");
 
     const cell = (name: string) => screen.findByRole("button", { name });
-    const dots = (el: HTMLElement) => within(el).getByTestId("event-dots").children;
+    const caption = (el: HTMLElement) => within(el).queryByTestId("event-caption")?.parentElement ?? null;
     const avatar = (el: HTMLElement) => within(el).queryByTestId("babysitter-avatar");
 
     // Today is a Sunday: a weekend date never needs a babysitter.
@@ -130,16 +130,17 @@ describe("Calendar month grid", () => {
     expect(avatar(needs)).toHaveAttribute("data-status", "needs");
     expect(avatar(needs)).toHaveClass("size-2", "bg-babysitter-need", "ring-cell", "-top-0.75", "-right-0.75");
     expect(avatar(needs)).toHaveTextContent("");
-    expect(dots(needs)).toHaveLength(0);
+    expect(caption(needs)).toBeNull();
 
     // Tentative: dashed initials, 7 px past the chip's corner. Mum and Mel share an initial.
-    const tentative = await cell("Tuesday 17 November, Late, babysitter Mum, tentative, 1 event");
+    const tentative = await cell("Tuesday 17 November, Late, babysitter Mum, tentative, Event 0");
     expect(avatar(tentative)).toHaveAttribute("data-status", "tentative");
     expect(avatar(tentative)).toHaveClass("size-4", "border-dashed", "border-text-disabled", "bg-cell", "text-text-muted");
     expect(avatar(tentative)).toHaveClass("-top-1.75", "-right-1.75");
     expect(avatar(tentative)).toHaveTextContent(/^Mu$/);
-    expect(dots(tentative)).toHaveLength(1);
-    expect(dots(tentative)[0]).toHaveClass("bg-text");
+    expect(caption(tentative)).toHaveTextContent(/^Event 0$/);
+    expect(caption(tentative)).toHaveClass("h-2.75", "px-0.75", "text-event");
+    expect(within(tentative).getByTestId("event-caption")).toHaveClass("truncate", "font-semibold", "text-text-soft");
 
     // Confirmed, and on a past date too.
     const past = await cell("Monday 9 November, Night, babysitter Mel, confirmed");
@@ -155,14 +156,16 @@ describe("Calendar month grid", () => {
 
     // No avatar: a day off, a past shift, a weekend shift, a date with no shift.
     expect(avatar(await cell("Wednesday 18 November, Day off"))).toBeNull();
-    const pastShift = await cell("Tuesday 10 November, Day, 2 events");
+    const pastShift = await cell("Tuesday 10 November, Day, Event 0, Event 1");
     expect(avatar(pastShift)).toBeNull();
-    expect(dots(pastShift)).toHaveLength(2);
+    expect(caption(pastShift)).toHaveTextContent(/^Event 0 \+1$/);
     expect(avatar(await cell("Saturday 21 November, SE"))).toBeNull();
-    // At most four dots.
-    const busy = await cell("Thursday 19 November, no shift, 6 events");
-    expect(dots(busy)).toHaveLength(4);
+    // The first event, then the count of the rest, which never shrinks.
+    const busy = await cell("Thursday 19 November, no shift, Event 0, Event 1, Event 2");
+    expect(caption(busy)).toHaveTextContent(/^Event 0 \+2$/);
+    expect(within(caption(busy)!).getByText("+2")).toHaveClass("flex-none", "font-medium", "text-text-muted");
     expect(avatar(busy)).toBeNull();
+    expect(screen.queryByTestId("event-dots")).toBeNull();
 
     // The next month's cells look like any other.
     const next = await cell("Tuesday 1 December, Night, no babysitter");
@@ -177,6 +180,71 @@ describe("Calendar month grid", () => {
       expect(needsDot).toBe(c.getAttribute("aria-label")!.includes("no babysitter"));
     }
     expect(screen.getAllByRole("button", { name: /no babysitter/ })).toHaveLength(2);
+  });
+
+  it("badges a swapped shift until it's set back to the imported code", async () => {
+    // Offline, so the pending import edit stays pending.
+    setOnline(false);
+    stubFetch({ "/api/session": SESSION });
+    await seed({
+      "2026-11-12": "N", // past, swapped from Day
+      "2026-11-15": "E", // today, swapped from Late
+      "2026-11-16": "X", // a swapped Day off, with a babysitter
+      "2026-11-17": "L", // imported Late, unchanged
+      "2026-11-18": "E", // swapped back again
+      "2026-11-19": "D", // never imported
+      "2026-11-20": "N", // a pending import, not yet synced
+    });
+    const change = (rev: number, date: string, to: ShiftChangeRow["to"], source: ShiftChangeRow["source"]) => ({
+      rev,
+      date,
+      from: null,
+      to,
+      source,
+      editedAt: rev,
+    });
+    await db.shiftChanges.bulkPut([
+      change(1, "2026-11-12", "D", "import"),
+      change(2, "2026-11-15", "L", "import"),
+      change(3, "2026-11-16", "D", "import"),
+      change(4, "2026-11-17", "L", "import"),
+      change(5, "2026-11-18", "L", "import"),
+      change(6, "2026-11-18", "E", "import"),
+      change(7, "2026-11-19", "D", "sheet"),
+      change(8, "2026-11-20", "D", "import"),
+    ]);
+    await db.outbox.put({ date: "2026-11-20", code: "N", editedAt: 9, source: "import" });
+    await db.babysitters.put({ date: "2026-11-16", name: "Mum", confirmed: true, editedAt: 1 });
+    renderApp("/");
+
+    const cell = (name: string) => screen.findByRole("button", { name });
+    const badge = (el: HTMLElement) => within(el).queryByTestId("swap-badge");
+
+    const past = await cell("Thursday 12 November, Night, swapped from Day");
+    expect(badge(past)).toHaveClass("-bottom-1.25", "-left-1.25", "size-3.75", "bg-caution-surface", "text-caution");
+    expect(badge(past)).toHaveClass("border-mark-changed-line", "ring-cell");
+    expect(badge(await cell("Sunday 15 November, Early, swapped from Late, today"))).toHaveClass("ring-surface");
+    const dayOff = await cell("Monday 16 November, Day off, swapped from Day, babysitter Mum, confirmed");
+    expect(badge(dayOff)).toBeInTheDocument();
+    expect(within(dayOff).getByTestId("babysitter-avatar")).toHaveClass("-top-1.75", "-right-1.75");
+    for (const name of [
+      "Tuesday 17 November, Late, no babysitter",
+      "Wednesday 18 November, Early, no babysitter",
+      "Thursday 19 November, Day, no babysitter",
+      "Friday 20 November, Night, no babysitter",
+    ]) {
+      expect(badge(await cell(name))).toBeNull();
+    }
+    expect(screen.getAllByTestId("swap-badge")).toHaveLength(3);
+
+    // Saving the imported code back in the date sheet ends the swap.
+    fireEvent.click(past);
+    const sheet = await screen.findByRole("dialog");
+    fireEvent.click(within(sheet).getByRole("radio", { name: "D, Day" }));
+    fireEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+    const back = await cell("Thursday 12 November, Day");
+    expect(badge(back)).toBeNull();
+    expect(screen.getAllByTestId("swap-badge")).toHaveLength(2);
   });
 
   it("adds months near the bottom, and none above", async () => {

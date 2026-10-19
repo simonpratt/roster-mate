@@ -26,20 +26,46 @@ describe("babysitterInitials", () => {
 });
 
 describe("dateLabel", () => {
-  const base = { date: "2026-11-06", code: "L" as const, needsBabysitter: false, events: 0, today: "2026-11-01" };
+  const base = { date: "2026-11-06", code: "L" as const, needsBabysitter: false, events: [] as string[], today: "2026-11-01" };
 
   it("reads like a calendar cell", () => {
     expect(dateLabel({ ...base, babysitter: { name: "Mum", confirmed: true } })).toBe(
       "Friday 6 November, Late, babysitter Mum, confirmed",
     );
-    expect(dateLabel({ ...base, babysitter: { name: "Mum", confirmed: false }, events: 2 })).toBe(
-      "Friday 6 November, Late, babysitter Mum, tentative, 2 events",
+    expect(dateLabel({ ...base, babysitter: { name: "Mum", confirmed: false }, events: ["Gym", "Call the bank"] })).toBe(
+      "Friday 6 November, Late, babysitter Mum, tentative, Gym, Call the bank",
     );
-    expect(dateLabel({ ...base, babysitter: { name: "", confirmed: false }, needsBabysitter: true, events: 1 })).toBe(
-      "Friday 6 November, Late, no babysitter, 1 event",
+    expect(dateLabel({ ...base, babysitter: { name: "", confirmed: false }, needsBabysitter: true, events: ["Footy final"] })).toBe(
+      "Friday 6 November, Late, no babysitter, Footy final",
     );
     expect(dateLabel({ ...base, code: null, babysitter: { name: "", confirmed: false }, today: "2026-11-06" })).toBe(
       "Friday 6 November, no shift, today",
+    );
+  });
+
+  it("says what a swapped shift was swapped from, after the shift", () => {
+    expect(
+      dateLabel({
+        ...base,
+        date: "2026-10-21",
+        code: "N",
+        swappedFrom: "D",
+        babysitter: { name: "Mum", confirmed: true },
+        today: "2026-10-21",
+      }),
+    ).toBe("Wednesday 21 October, Night, swapped from Day, babysitter Mum, confirmed, today");
+    expect(
+      dateLabel({
+        ...base,
+        date: "2026-10-09",
+        code: "X",
+        swappedFrom: "SE",
+        babysitter: { name: "", confirmed: false },
+        events: ["Gym", "Call the bank"],
+      }),
+    ).toBe("Friday 9 October, Day off, swapped from SE, Gym, Call the bank");
+    expect(dateLabel({ ...base, swappedFrom: null, babysitter: { name: "", confirmed: false } })).toBe(
+      "Friday 6 November, Late",
     );
   });
 });

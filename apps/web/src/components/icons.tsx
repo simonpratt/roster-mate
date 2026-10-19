@@ -191,3 +191,12 @@ export function XIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/** The swap badge's ⇄ glyph (docs/ux-spec.md §5.11): two opposed arrows on a 10 px grid. */
+export function SwapIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 10 10" aria-hidden="true" className={className} {...stroke} strokeWidth={1.4}>
+      <path d="M1.5 3.2h6.5M6.2 1.2l2 2-2 2M8.5 6.8H2M3.8 4.8l-2 2 2 2" />
+    </svg>
+  );
+}

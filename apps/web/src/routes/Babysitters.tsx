@@ -51,7 +51,7 @@ export function Babysitters() {
                 code: s.code,
                 babysitter: NO_BABYSITTER,
                 needsBabysitter: true,
-                events: 0,
+                events: [],
                 today: "",
               })}
               code={s.code}
@@ -79,7 +79,7 @@ export function Babysitters() {
                 key={d.date}
                 date={d.date}
                 dateText={formatShortDate(d.date)}
-                label={dateLabel({ date: d.date, code: d.code, babysitter: d, needsBabysitter: false, events: 0, today: "" })}
+                label={dateLabel({ date: d.date, code: d.code, babysitter: d, needsBabysitter: false, events: [], today: "" })}
                 code={d.code}
                 status={d.confirmed ? "confirmed" : "tentative"}
                 initials={initials}

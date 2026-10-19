@@ -45,15 +45,18 @@ export interface DateLabelParts {
   /** The babysitter's name and status, or name "" for none. */
   babysitter: { name: string; confirmed: boolean };
   needsBabysitter: boolean;
-  events: number;
+  /** The imported code the shift was swapped from (CONTEXT.md Swapped); absent or null when not swapped. */
+  swappedFrom?: ShiftCode | null;
+  /** Each event's text, in the date sheet's order. */
+  events: readonly string[];
   today: DateString;
 }
 
 /**
- * A date's accessible name, as on a calendar cell: "Friday 6 November, Late, babysitter Mum,
- * confirmed, 1 event, today".
+ * A date's accessible name, as on a calendar cell (docs/ux-spec.md §5.3): "Wednesday 21 October,
+ * Night, swapped from Day, babysitter Mum, confirmed, Dentist 3pm, today".
  */
-export function dateLabel({ date, code, babysitter, needsBabysitter, events, today }: DateLabelParts): string {
+export function dateLabel({ date, code, babysitter, needsBabysitter, swappedFrom, events, today }: DateLabelParts): string {
   const babysitterText = babysitter.name
     ? `, babysitter ${babysitter.name}, ${babysitter.confirmed ? "confirmed" : "tentative"}`
     : needsBabysitter
@@ -63,8 +66,9 @@ export function dateLabel({ date, code, babysitter, needsBabysitter, events, tod
     formatLongDate(date) +
     ", " +
     (code ? codeInfo(code).label : "no shift") +
+    (swappedFrom ? `, swapped from ${codeInfo(swappedFrom).label}` : "") +
     babysitterText +
-    (events === 0 ? "" : events === 1 ? ", 1 event" : `, ${events} events`) +
+    events.map((text) => `, ${text}`).join("") +
     (date === today ? ", today" : "")
   );
 }

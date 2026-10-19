@@ -145,15 +145,19 @@ export function useDate(date: string): DateContents | undefined {
   return result?.date === date ? result.contents : undefined;
 }
 
-/** The number of events on each date from..to (inclusive) that has any; undefined while loading. */
-export function useEventCounts(from: string, to: string): Map<string, number> | undefined {
+/**
+ * Each event's text on each date from..to (inclusive) that has any, in the date sheet's order;
+ * undefined while loading.
+ */
+export function useEventTexts(from: string, to: string): Map<string, string[]> | undefined {
   return useLiveQuery(async () => {
-    const counts = new Map<string, number>();
-    await db.events
-      .where("date")
-      .between(from, to, true, true)
-      .each((e) => counts.set(e.date, (counts.get(e.date) ?? 0) + 1));
-    return counts;
+    const texts = new Map<string, string[]>();
+    for (const e of (await db.events.where("date").between(from, to, true, true).toArray()).sort(byCreated)) {
+      const list = texts.get(e.date);
+      if (list) list.push(e.text);
+      else texts.set(e.date, [e.text]);
+    }
+    return texts;
   }, [from, to]);
 }
 

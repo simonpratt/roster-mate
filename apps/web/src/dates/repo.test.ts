@@ -10,7 +10,7 @@ import {
   useBabysittersInRange,
   useDate,
   useDatesNeedingBabysitter,
-  useEventCounts,
+  useEventTexts,
   useKnownBabysitters,
   useUpcomingBabysitters,
 } from "./repo";
@@ -119,10 +119,10 @@ describe("date queries", () => {
     await waitFor(() => expect(result.current).toEqual({ shift: null, babysitter: { name: "", confirmed: false }, events: [] }));
   });
 
-  it("useEventCounts and useBabysittersInRange cover the range, with named babysitters only", async () => {
+  it("useEventTexts and useBabysittersInRange cover the range, with named babysitters only", async () => {
     await db.events.bulkPut([
-      { id: ID_1, date: "2026-11-03", text: "a", createdAt: 1, editedAt: 1 },
-      { id: ID_2, date: "2026-11-03", text: "b", createdAt: 2, editedAt: 1 },
+      { id: ID_1, date: "2026-11-03", text: "b", createdAt: 2, editedAt: 1 },
+      { id: ID_2, date: "2026-11-03", text: "a", createdAt: 1, editedAt: 1 },
       { id: "00000000-0000-4000-8000-000000000003", date: "2026-11-30", text: "c", createdAt: 1, editedAt: 1 },
       { id: "00000000-0000-4000-8000-000000000004", date: "2026-12-01", text: "d", createdAt: 1, editedAt: 1 },
     ]);
@@ -132,14 +132,15 @@ describe("date queries", () => {
       { date: "2026-12-01", name: "Dad", confirmed: false, editedAt: 1 },
     ]);
     const { result } = renderHook(() => ({
-      counts: useEventCounts("2026-11-01", "2026-11-30"),
+      events: useEventTexts("2026-11-01", "2026-11-30"),
       sitters: useBabysittersInRange("2026-11-01", "2026-11-30"),
     }));
     await waitFor(() =>
       expect(result.current).toEqual({
-        counts: new Map([
-          ["2026-11-03", 2],
-          ["2026-11-30", 1],
+        // In the order they were added.
+        events: new Map([
+          ["2026-11-03", ["a", "b"]],
+          ["2026-11-30", ["c"]],
         ]),
         sitters: new Map([["2026-11-03", { name: "Mum", confirmed: true }]]),
       }),

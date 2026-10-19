@@ -378,9 +378,12 @@ desktop.
   - Month grid: the months stacked in one vertical scroll, from the month before the one it
     opens on and with no end ahead, each Monday-first with its own
     title and only its own dates, under a bar naming the month at the top and a "Today" jump. Each date
-    shows its shift code in a coloured chip and one dot per event (at most 4); today is outlined;
-    a babysitter avatar on the chip's corner shows a needs-a-babysitter dot, or the babysitter's
-    initials, dashed while tentative and filled once confirmed (`docs/ux-spec.md` §5.3, §5.10).
+    shows its shift code in a coloured chip and a caption with its first event's text and "+n" for
+    the rest; today is outlined; a babysitter avatar on the chip's top-right corner shows a
+    needs-a-babysitter dot, or the babysitter's initials, dashed while tentative and filled once
+    confirmed; a swap badge on its bottom-left marks a swapped shift, one whose code differs from
+    the latest import's, worked out on the phone from the synced shift changes and the pending
+    import edits (`docs/ux-spec.md` §5.3, §5.10, §5.11).
   - Tapping a date opens the **date sheet**: five standard code buttons plus "Other"
     (a two-letter input), the babysitter picker with its Confirmed switch and the date's events,
     Save/Cancel. There is no
