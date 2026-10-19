@@ -53,6 +53,12 @@ The server records one each time a sync applies a shift edit that changes the co
 loses last-write-wins, or saves the code the date already had, is not one.
 _Avoid_: audit entry, log entry, revision
 
+**Swapped**:
+Said of a shift whose code differs from the code the latest import saved for its date, as after
+agreeing a swap at work or correcting a misread roster. A date no import has saved is never
+swapped. Changing the code back to the imported one, or a later import that saves the date, ends it.
+_Avoid_: modified, overridden, edited (for this)
+
 **History**:
 Every shift change, newest first, grouped by save; the screen where the user checks that nothing
 changed by mistake.

@@ -197,7 +197,8 @@ dot) until that run finishes.
  ├───┼───┼───┼───┼───┼───┼───┤
  │ 2 │ 3 │ 4 │ ...                ← ° avatar on the chip's corner: initials, or an
  │ N°│ L°│ E•│                      amber dot (•) when the date needs a babysitter
- │ ••│   │   │                    ← • one dot per event
+ │ ⇄ │   │   │                    ← ⇄ swap badge on the chip's bottom-left (§5.11)
+ │Gym│   │Den│                    ← the first event's text, cut off, then "+n"
    ...
  │30 │
  December 2026                             ← the next month's own title
@@ -217,21 +218,29 @@ dot) until that run finishes.
   above. Scrolling within a screen of the bottom adds three more months, as does a view
   taller than that.
 - **Cell**: 84 px tall. Day number at the top (Caption, mono), shift chip centred with the
-  babysitter avatar (§5.10) on its top-right corner, event dots at the bottom: one 5 px `text`
-  dot per event, at most 4, 3 px apart. The cell's border and fill never change with the
-  babysitter (`docs/designs/Main.dc.html`).
+  babysitter avatar (§5.10) on its top-right corner and the swap badge (§5.11) on its
+  bottom-left, and the event caption at the bottom. The cell's border and fill never change with
+  the babysitter or a swap (`docs/designs/Main.dc.html`).
+- **Event caption** (SIM-47, replaces the event dots): one 11 px line, 3 px in from each side
+  of the cell. The first event's text in 9 px Schibsted Grotesk semibold `text-soft`, cut off
+  with an ellipsis, then " +{n}" in 9 px medium `text-muted` when the date has more events; the
+  count always shows in full and the text gives way. Events show in the order the date sheet
+  lists them. A date with no events keeps the line empty so the chip doesn't move.
 - **Needs a babysitter** (a working shift on a weekday, dated today or later, with no babysitter):
   the avatar's amber dot. Days off, unrostered dates, weekend dates and past dates never get it.
 - **Today**: `text` outline around the cell, day number bold.
 - **Unrostered date**: day number only.
 - **Day off**: the outlined `X` chip (§4.2).
-- **Past days**: day number dimmed; chips unchanged (history is useful for swaps).
+- **Past days**: day number dimmed; chips, swap badges and captions unchanged (history is useful
+  for swaps).
 - **Navigation**: vertical scrolling only, plus the "Today" button (always shown), which
   scrolls back to today's month. There are no ‹ › buttons and no sideways swipe.
-- **Accessible name** per cell: shift, then ", babysitter {name}, tentative" or ", babysitter
-  {name}, confirmed" (or ", no babysitter" when it needs one), then the event count, then
-  ", today": "Saturday 24 October, Night, no babysitter, 1 event" / "Friday 6 November, Late,
-  babysitter Mum, confirmed" / "Wednesday 4 November, no shift". Cells are buttons.
+- **Accessible name** per cell: shift, then ", swapped from {code label}" when swapped, then
+  ", babysitter {name}, tentative" or ", babysitter {name}, confirmed" (or ", no babysitter" when
+  it needs one), then each event's text, then ", today": "Saturday 24 October, Night, no
+  babysitter, Footy final" / "Wednesday 21 October, Night, swapped from Day, babysitter Mum,
+  confirmed" / "Friday 9 October, Day off, Gym, Call the bank" / "Wednesday 4 November, no
+  shift". Cells are buttons.
 
 ### 5.4 Code picker
 
@@ -313,6 +322,17 @@ another known name (§5.8) starts with the same letter ignoring case, both use t
 letters, the first uppercased and the second lowercased (`Mum` → `Mu`, `Mel` → `Me`); if those
 still clash, the name, the date sheet and the accessible name tell them apart. The avatar is
 `aria-hidden`: the cell's accessible name carries the babysitter and status.
+
+### 5.11 Swap badge
+
+A 15 px circle on the bottom-left corner of a swapped shift's chip (CONTEXT.md **Swapped**),
+offset 5 px past the corner, opposite the babysitter avatar: `caution-surface` fill, 1 px
+`mark-changed-line` border, ringed 2 px in the background colour behind it like the avatar, with a
+9 px ⇄ glyph (two opposed arrows, 1.4 px `caution` stroke, paths in `Main.dc.html`). It uses the
+import review's Changed colours so "differs from the roster" reads the same on both screens.
+It shows on every swapped shift, Day off included, and on past dates as normal. The badge is
+`aria-hidden`: the cell's accessible name carries "swapped from {code label}". Only the month grid
+shows it.
 
 ## 6. Screens
 
@@ -663,6 +683,7 @@ Drawn in `docs/designs/History.dc.html` and `HistoryEmpty.dc.html`.
 | Discard import | Discard this import? |
 | Babysitter | Babysitter · None · + Someone else · Name · Needs a babysitter · Confirmed |
 | Babysitters screen | Babysitters · Share · {n} dates / 1 date · {p}% · No babysitters in these eight weeks. · Needs a babysitter · {n} to confirm · All confirmed · Confirm all · Tentative · Confirmed · No upcoming babysitters. Choose one for a date in the calendar. |
+| Calendar cell | swapped from {code label} (accessible name only) · +{n} (more events) |
 | Events | Notes and events (the date sheet's heading) · Add a note or event · Remove event: {text} |
 | History | History · Every change to a shift, newest first. · Not synced yet · {n} changes / 1 change · Today · Yesterday · Date sheet · Import · Edit · {n} shifts · No shift changes yet. Shifts you change or import show here. |
 | Sign out with pending | You have {n} pending edits. Signing out keeps them on this phone, but they won't sync until you sign in again. |
@@ -711,3 +732,5 @@ doesn't want, and the ticket specs still stand on their own.
 - SIM-45: History in the ⋯ menu between Babysitters and Sign out, and the new History screen
   (`History.dc.html`, `HistoryEmpty.dc.html`, §6.6). The date sheet's Events heading reads "Notes and
   events" and its empty line "Add a note or event" (`Main.dc.html`).
+- SIM-47: the month grid's cells show a swap badge on a swapped shift's chip (§5.11) and the first
+  event's text in place of the event dots (§5.3); CONTEXT.md gains **Swapped** (`Main.dc.html`).

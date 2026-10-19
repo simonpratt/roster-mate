@@ -86,11 +86,15 @@ body{margin:0}
                   <sc-if value="{{d.showAvatar}}" hint-placeholder-val="{{ false }}">
                     <span aria-hidden="true" style="position: absolute; top: {{d.avatarTop}}; right: {{d.avatarRight}}; width: {{d.avatarSize}}; height: {{d.avatarSize}}; box-sizing: border-box; border-radius: 50%; border: 1px {{d.badgeLineStyle}} {{d.badgeLine}}; background: {{d.badgeBg}}; color: {{d.badgeFg}}; box-shadow: 0 0 0 2px {{d.cellBgSolid}}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 8px; font-weight: 700">{{d.avatarText}}</span>
                   </sc-if>
+                  <sc-if value="{{d.swapped}}" hint-placeholder-val="{{ false }}">
+                    <span aria-hidden="true" style="position: absolute; left: -5px; bottom: -5px; width: 15px; height: 15px; box-sizing: border-box; border-radius: 50%; border: 1px solid #5A3A1C; background: #2A1E10; color: #FDBA74; box-shadow: 0 0 0 2px {{d.cellBgSolid}}; display: flex; align-items: center; justify-content: center">
+                      <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 3.2h6.5M6.2 1.2l2 2-2 2M8.5 6.8H2M3.8 4.8l-2 2 2 2"></path></svg>
+                    </span>
+                  </sc-if>
                 </span>
-                <span style="display: flex; gap: 3px; height: 5px">
-                  <sc-for list="{{d.dots}}" as="dot" hint-placeholder-count="0">
-                    <span style="width: 5px; height: 5px; border-radius: 3px; background: #ECEEF2"></span>
-                  </sc-for>
+                <span style="align-self: stretch; box-sizing: border-box; height: 11px; padding: 0 3px; display: flex; justify-content: center; font-size: 9px; line-height: 11px; white-space: nowrap">
+                  <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: #C9CDD4">{{d.cap}}</span>
+                  <span style="flex: none; font-weight: 500; color: #9AA1AD">{{d.capMore}}</span>
                 </span>
               </button>
             </sc-if>
@@ -274,6 +278,10 @@ class Component extends DCLogic {
         INITIAL[key] = PATTERN[n % PATTERN.length];
       }
     }
+    // What the imports saved (CONTEXT.md Swapped). A shift whose code differs from its date's here
+    // is swapped; these dates were changed in the date sheet since, and a sheet edit can add or undo one.
+    const IMPORTED = Object.assign({}, INITIAL);
+    Object.assign(INITIAL, { '10-8': 'E', '10-17': 'X', '10-21': 'N' });
     const EVENTS = {
       '10-3': ['School photos'], '10-9': ['Gym', 'Call the bank'], '10-15': ['Bin night'],
       '10-18': ['Lunch with Sam', 'Footy', 'Haircut'], '10-22': ['Dentist 3pm', 'Pick up dry cleaning'],
@@ -370,10 +378,12 @@ class Component extends DCLogic {
       const sitter = sitters[key] || '';
       const needs = !!k && k !== 'X' && ord(key) >= ord(TODAY) && !sitter;
       const isConfirmed = !!sitter && !!confirmed[key];
+      const was = IMPORTED[key];
+      const swapped = !!k && !!was && k !== was;
       return {
         real: true, h: cellH + 'px',
         num: cell.d,
-        aria: WD[weekday(cell.m, cell.d)] + ' ' + cell.d + ' ' + monthName(cell.m) + ', ' + (c ? labelOf(k) : 'no shift') + (sitter ? ', babysitter ' + sitter + (isConfirmed ? ', confirmed' : ', tentative') : (needs ? ', no babysitter' : '')) + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' event' : ' events') : '') + (isToday ? ', today' : ''),
+        aria: WD[weekday(cell.m, cell.d)] + ' ' + cell.d + ' ' + monthName(cell.m) + ', ' + (c ? labelOf(k) : 'no shift') + (swapped ? ', swapped from ' + labelOf(was) : '') + (sitter ? ', babysitter ' + sitter + (isConfirmed ? ', confirmed' : ', tentative') : (needs ? ', no babysitter' : '')) + evs.map((e) => ', ' + e).join('') + (isToday ? ', today' : ''),
         ...cellLook(needs ? 'need' : (sitter ? (isConfirmed ? 'conf' : 'tent') : null), sitter, isToday, inMonth, isEditing, !!k),
         pick: () => this.setState(Object.assign({ editing: key }, RESET)),
         cellBg: !inMonth ? 'transparent' : (isToday ? '#161920' : '#121418'),
@@ -385,7 +395,9 @@ class Component extends DCLogic {
         chipLine: c ? c.line : 'transparent',
         chipOpacity: inMonth ? 1 : 0.45,
         code: k || '',
-        dots: evs.slice(0, 4).map(() => ({}))
+        swapped,
+        cap: evs[0] || '',
+        capMore: evs.length > 1 ? '\u00a0+' + (evs.length - 1) : ''
       };
     };
 
