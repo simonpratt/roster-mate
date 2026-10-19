@@ -108,6 +108,10 @@ body{margin:0}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9AA1AD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"></path><path d="M18.5 14.2a6.5 6.5 0 0 1 3 5.8"></path></svg>
           Babysitters
         </a>
+        <a href="History.dc.html" role="menuitem" style="height: 48px; padding: 0 12px; border-radius: 10px; color: #ECEEF2; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 12px; text-decoration: none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9AA1AD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36"></path><path d="M3 4v5h5"></path><path d="M12 7.5V12l3 2"></path></svg>
+          History
+        </a>
         <sc-if value="{{signOutConfirms}}" hint-placeholder-val="{{ false }}">
           <button type="button" role="menuitem" onClick="{{askSignOut}}" style="width: 100%; height: 48px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: #ECEEF2; font: inherit; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9AA1AD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 16l-4-4 4-4"></path><path d="M6 12h10"></path></svg>
@@ -207,7 +211,7 @@ body{margin:0}
           </sc-if>
         </div>
         <div style="display: flex; flex-direction: column; gap: 8px">
-          <span style="font-size: 14px; font-weight: 500; color: #C9CDD4">Events</span>
+          <span style="font-size: 14px; font-weight: 500; color: #C9CDD4">Notes and events</span>
           <sc-for list="{{eventRows}}" as="e" hint-placeholder-count="2">
             <div style="display: flex; align-items: center; gap: 6px">
               <input type="text" maxlength="200" aria-label="Event" value="{{e.text}}" onChange="{{e.onText}}" style="flex: 1; min-width: 0; height: 48px; box-sizing: border-box; border-radius: 12px; border: 1px solid #2E333C; background: #0E1014; color: #ECEEF2; padding: 0 14px; font: inherit; font-size: 16px">
@@ -217,7 +221,7 @@ body{margin:0}
             </div>
           </sc-for>
           <div style="display: flex; align-items: center; gap: 6px">
-            <input id="event-new" type="text" maxlength="200" aria-label="Add an event" placeholder="Add an event" value="{{newEvent}}" onChange="{{onNewEvent}}" onKeyDown="{{onNewEventKey}}" style="flex: 1; min-width: 0; height: 48px; box-sizing: border-box; border-radius: 12px; border: 1px solid #2E333C; background: #0E1014; color: #ECEEF2; padding: 0 14px; font: inherit; font-size: 16px">
+            <input id="event-new" type="text" maxlength="200" aria-label="Add a note or event" placeholder="Add a note or event" value="{{newEvent}}" onChange="{{onNewEvent}}" onKeyDown="{{onNewEventKey}}" style="flex: 1; min-width: 0; height: 48px; box-sizing: border-box; border-radius: 12px; border: 1px solid #2E333C; background: #0E1014; color: #ECEEF2; padding: 0 14px; font: inherit; font-size: 16px">
             <span aria-hidden="true" style="flex: none; width: 44px"></span>
           </div>
         </div>
@@ -444,7 +448,7 @@ class Component extends DCLogic {
     const pickedCode = finalCode || cur;
     const needsSitter = sheetOpen && !!pickedCode && pickedCode !== 'X' && ord(editing) >= ord(TODAY) && sitterPick === '';
 
-    // Events: one editable line each, then an empty "Add an event" line.
+    // Notes and events: one editable line each, then an empty "Add a note or event" line.
     const curEvents = sheetOpen ? (events[editing] || []) : [];
     const drafts = s.eventDrafts || curEvents;
     const newEvent = s.newEvent || '';

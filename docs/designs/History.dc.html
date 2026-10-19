@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roster Mate — History</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 844px; box-sizing: border-box; padding-bottom: 32px; background: #0E1014; color: #ECEEF2; color-scheme: dark; font-family: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="display: flex; align-items: center; gap: 4px; padding: 8px 16px 8px 4px; height: 60px; box-sizing: border-box; flex: none">
+    <a href="Main.dc.html" aria-label="Back to calendar" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #C9CDD4">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <h1 style="margin: 0; font-size: 17px; font-weight: 600">History</h1>
+  </header>
+
+  <p style="margin: 4px 16px 0; font-size: 15px; line-height: 1.45; color: #9AA1AD">Every change to a shift, newest first.</p>
+
+  <sc-if value="{{hasPending}}" hint-placeholder-val="{{ true }}">
+    <section aria-labelledby="pending-title" style="margin: 24px 16px 0; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; align-items: center; gap: 12px; min-height: 44px">
+        <span aria-hidden="true" style="flex: none; width: 28px; height: 28px; box-sizing: border-box; border-radius: 14px; border: 1px dashed #5A616D; display: flex; align-items: center; justify-content: center">
+          <span style="width: 10px; height: 10px; border-radius: 5px; background: #F5A524"></span>
+        </span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px">
+          <h2 id="pending-title" style="margin: 0; font-size: 17px; font-weight: 600">Not synced yet</h2>
+          <p style="margin: 0; font-size: 13px; color: #9AA1AD">{{pendingSummary}}</p>
+        </div>
+      </div>
+      <sc-for list="{{pending}}" as="r" hint-placeholder-count="1">
+        <button type="button" data-date="{{r.key}}" aria-label="{{r.aria}}" style="height: 52px; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border: 1px solid #1C2027; background: #121418; color: #ECEEF2; font: inherit; font-size: 15px; font-weight: 500; display: grid; grid-template-columns: minmax(0, 1fr) 16px 34px; align-items: center; gap: 10px; text-align: left; cursor: pointer">
+          <span style="font-variant-numeric: tabular-nums">{{r.date}}</span>
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8C93A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+          <span aria-hidden="true" style="width: 34px; height: 28px; box-sizing: border-box; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: {{r.toBg}}; color: {{r.toFg}}; box-shadow: inset 0 0 0 1px {{r.toLine}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 13px">{{r.to}}</span>
+        </button>
+      </sc-for>
+    </section>
+  </sc-if>
+
+  <sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+    <section aria-label="{{g.title}}" style="margin: 24px 16px 0; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; flex-direction: column; gap: 1px; min-height: 44px; justify-content: center">
+        <h2 style="margin: 0; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums">{{g.title}}</h2>
+        <p style="margin: 0; font-size: 13px; color: #9AA1AD">{{g.summary}}</p>
+      </div>
+      <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="2">
+        <button type="button" data-date="{{r.key}}" aria-label="{{r.aria}}" style="height: 52px; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border: 1px solid #1C2027; background: #121418; color: #ECEEF2; font: inherit; font-size: 15px; font-weight: 500; display: grid; grid-template-columns: minmax(0, 1fr) 34px 16px 34px; align-items: center; gap: 10px; text-align: left; cursor: pointer">
+          <span style="font-variant-numeric: tabular-nums">{{r.date}}</span>
+          <span aria-hidden="true" style="width: 34px; height: 28px; box-sizing: border-box; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: {{r.fromBg}}; color: {{r.fromFg}}; box-shadow: inset 0 0 0 1px {{r.fromLine}}; border: {{r.fromBorder}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 13px">{{r.from}}</span>
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8C93A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+          <span aria-hidden="true" style="width: 34px; height: 28px; box-sizing: border-box; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: {{r.toBg}}; color: {{r.toFg}}; box-shadow: inset 0 0 0 1px {{r.toLine}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 13px">{{r.to}}</span>
+        </button>
+      </sc-for>
+    </section>
+  </sc-for>
+
+  <sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+    <p style="margin: 28px 16px 0; font-size: 15px; line-height: 1.45; color: #9AA1AD">No shift changes yet. Shifts you change or import show here.</p>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"empty":{"editor":"boolean","default":false},"$preview":{"width":390,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const WDL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const MS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const ML = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const CODES = {
+      D: { label: 'Day', bg: '#3B2A0A', fg: '#FCC35A', line: '#3B2A0A' },
+      E: { label: 'Early', bg: '#0A2C3D', fg: '#7DD3FC', line: '#0A2C3D' },
+      L: { label: 'Late', bg: '#2A1C47', fg: '#C9B6FD', line: '#2A1C47' },
+      N: { label: 'Night', bg: '#1B2050', fg: '#A5B1FF', line: '#1B2050' },
+      X: { label: 'Day off', bg: 'transparent', fg: '#8C93A0', line: '#3A404B' }
+    };
+    const OTHER = { bg: '#232E0C', fg: '#C8EC72', line: '#232E0C' };
+    const info = (k) => CODES[k] || OTHER;
+    const labelOf = (k) => (k === null ? 'not rostered' : CODES[k] ? CODES[k].label : k);
+    const dateOf = (key) => { const a = key.split('-'); return new Date(2026, Number(a[0]) - 1, Number(a[1])); };
+    const shortDate = (key) => { const d = dateOf(key); return WD[d.getDay()] + ' ' + d.getDate() + ' ' + MS[d.getMonth()]; };
+    const longDate = (key) => { const d = dateOf(key); return WDL[d.getDay()] + ' ' + d.getDate() + ' ' + ML[d.getMonth()]; };
+
+    // The same sample as the Calendar (Main.dc.html): today is Thursday 15 October 2026.
+    // Each save is one group: its edit time, where it was made, and the shifts it changed.
+    // from: null is an unrostered date.
+    const SAVES = [
+      { when: 'Today · 8:42 am', source: 'Date sheet', rows: [['10-23', 'D', 'SE']] },
+      { when: 'Mon 12 Oct · 7:15 pm', source: 'Date sheet', rows: [['10-20', 'X', 'E']] },
+      { when: 'Fri 2 Oct · 6:03 pm', source: 'Import', rows: [
+        ['10-22', 'E', 'D'], ['10-24', null, 'N'], ['10-25', null, 'N'], ['10-26', null, 'N'],
+        ['10-27', null, 'X'], ['10-28', null, 'X']
+      ] },
+      { when: 'Mon 28 Sep · 9:30 pm', source: 'Date sheet', rows: [['10-10', 'L', 'N']] }
+    ];
+    const PENDING = [['10-17', 'L']];
+
+    const p = this.props || {};
+    const isEmpty = p.empty === true || p.empty === 'true';
+    const saves = isEmpty ? [] : SAVES;
+    const pendingList = isEmpty ? [] : PENDING;
+
+    const chip = (k, side) => {
+      if (k === null) return { [side]: '', [side + 'Bg']: 'transparent', [side + 'Fg']: 'transparent', [side + 'Line']: 'transparent', [side + 'Border']: '1px dashed #3A404B' };
+      const c = info(k);
+      return { [side]: k, [side + 'Bg']: c.bg, [side + 'Fg']: c.fg, [side + 'Line']: c.line, [side + 'Border']: '0' };
+    };
+
+    const groups = saves.map((g) => ({
+      title: g.when,
+      summary: g.rows.length > 1 ? g.source + ' · ' + g.rows.length + ' shifts' : g.source,
+      rows: g.rows.map(([k, from, to]) => Object.assign(
+        { key: k, date: shortDate(k), aria: longDate(k) + ', ' + labelOf(from) + ' to ' + labelOf(to) },
+        chip(from, 'from'), chip(to, 'to')
+      ))
+    }));
+    const pending = pendingList.map(([k, to]) => Object.assign(
+      { key: k, date: shortDate(k), aria: longDate(k) + ', ' + labelOf(to) + ', not synced yet' },
+      chip(to, 'to')
+    ));
+
+    return {
+      hasPending: pending.length > 0,
+      pendingSummary: pending.length + (pending.length === 1 ? ' change' : ' changes'),
+      pending,
+      groups,
+      isEmpty: groups.length === 0 && pending.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

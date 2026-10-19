@@ -46,12 +46,26 @@ _Avoid_: blank, cleared, empty day
 The user's shifts laid out by month; the app's home screen.
 _Avoid_: roster (for this), schedule
 
+**Shift change**:
+A record that a date's shift code went from one value (or unrostered) to another: the date, the
+code before and after, the edit time and where the edit was made (the date sheet or an import).
+The server records one each time a sync applies a shift edit that changes the code, so an edit that
+loses last-write-wins, or saves the code the date already had, is not one.
+_Avoid_: audit entry, log entry, revision
+
+**History**:
+Every shift change, newest first, grouped by save; the screen where the user checks that nothing
+changed by mistake.
+_Avoid_: audit log, changelog, activity
+
 ### Events and babysitters
 
 **Event**:
 Short free text on a date, such as "Dentist 3pm", with no time. A date can have any number of
-events, and an event doesn't need a shift. Events replace the notes shifts used to carry.
-_Avoid_: note, appointment, reminder
+events, and an event doesn't need a shift. Events replace the notes shifts used to carry. The date
+sheet heads them "Notes and events", since the user writes plain notes there too; everywhere else
+(code, API, tests, tickets) they are events.
+_Avoid_: note (except in that heading), appointment, reminder
 
 **Babysitter**:
 The person minding the children on a date, named by free text such as "Mum". A date has at most one

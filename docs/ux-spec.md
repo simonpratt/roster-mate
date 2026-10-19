@@ -37,6 +37,7 @@ published schedule, and the image uploaded is a **Roster photo**.
                          ├── tap date ─► Date sheet (overlay on /)
                          ├── Import ───► /import ──(save)──► / (month of first saved date)
                          └── ⋯ menu ──┬► Babysitters ──► /babysitters ── tap date ─► Date sheet
+                                      ├► History ─────► /history ────── tap date ─► Date sheet
                                       └► Sign out ──► /login
 ```
 
@@ -47,9 +48,11 @@ published schedule, and the image uploaded is a **Roster photo**.
 | (overlay) | Date sheet | Tapping a date on `/` | Yes |
 | `/import` | Import | Header Import button | No — shows "Import needs a connection" |
 | `/babysitters` | Babysitters | ⋯ menu | Yes |
+| `/history` | History | ⋯ menu | Yes |
 
-There is no tab bar. The Calendar is the hub; Import, Babysitters and Login are leaf screens with a
-back control. Browser/OS back closes the date sheet first, then leaves Import or Babysitters.
+There is no tab bar. The Calendar is the hub; Import, Babysitters, History and Login are leaf screens
+with a back control. Browser/OS back closes the date sheet first, then leaves Import, Babysitters or
+History.
 
 ## 4. Visual system
 
@@ -155,8 +158,9 @@ cloud-off (offline). Icon-only buttons always carry an `aria-label`.
 The month grid (§5.3) follows directly; there is no next-shift block (removed in SIM-44).
 - **Import** button: camera icon with visible label "Import". When offline it stays visible;
   the Import screen explains why it cannot proceed.
-- **Menu (⋮)**: a small popover with "Babysitters" (users icon, goes to `/babysitters`, §6.5)
-  above "Sign out" (`docs/designs/CalendarMenu.dc.html`). With an
+- **Menu (⋮)**: a small popover with "Babysitters" (users icon, goes to `/babysitters`, §6.5),
+  "History" (history icon: a counter-clockwise arrow round a clock hand, goes to `/history`, §6.6)
+  and "Sign out", in that order (`docs/designs/CalendarMenu.dc.html`). With an
   empty outbox, Sign out goes straight to `/login`. Otherwise it opens a centred dialog
   (`docs/designs/CalendarSignOut.dc.html`): "Sign out?" / "You have N pending edits. Signing out
   keeps them on this phone, but they won't sync until you sign in again." [Cancel] [Sign out].
@@ -373,10 +377,10 @@ Tapping a date opens the date sheet (§6.3). Long-press does nothing (avoid conf
   Babysitter            Needs a babysitter ← only while one is needed
   (None) (Dad) (Jo) (✓ Mum) (+ Someone else)
   Confirmed                         [ ●] ← switch, only while a name is picked (§5.8)
-  Events
+  Notes and events
   [ Dentist 3pm              ] [×]
   [ Pick up dry cleaning     ] [×]
-  [ Add an event             ]
+  [ Add a note or event      ]
   [ Cancel ]            [    Save    ]
 ```
 
@@ -553,6 +557,53 @@ Rows are 52 px buttons on `cell` with a `cell-line` border (`docs/designs/Babysi
 `BabysittersEmpty.dc.html`). Each row is a button whose accessible name reads like a calendar cell's: "Friday 30
 October, Late, babysitter Mum, tentative". Section headings are `h2`.
 
+### 6.6 History (`/history`)
+
+Every shift change, newest first, so the user can check that nothing changed by mistake (SIM-45).
+Reached from the ⋯ menu. Header: back arrow (to `/`) and title "History". It reads only IndexedDB,
+so it works offline; changes made on another phone appear once this one has synced. Tapping a row
+opens the date sheet (§6.3) for that date over this screen, and focus returns to the row on close.
+The list updates live.
+
+```
+  ←  History
+  Every change to a shift, newest first.
+  (•) Not synced yet                      ← only while the outbox holds shift edits
+      1 change
+  Sat 17 Oct                   →  [L]
+  Today · 8:42 am                         ← one group per save
+  Date sheet
+  Fri 23 Oct            [D]    →  [SE]
+  Fri 2 Oct · 6:03 pm
+  Import · 6 shifts
+  Thu 22 Oct            [E]    →  [D]
+  Sat 24 Oct            [ ]    →  [N]     ← dashed empty chip: was unrostered
+  ...
+```
+
+- **Intro**: "Every change to a shift, newest first." in `text-muted`.
+- **Not synced yet**: shown only while the shift outbox holds pending edits. The same header as the
+  Babysitters screen's Needs a babysitter section, with a 10 px `warn` dot in the dashed circle,
+  the title "Not synced yet" and "{n} changes" ("1 change"). One row per pending shift edit, by
+  date: date, an arrow, and the new code's chip. The code it replaces isn't shown: the server
+  records that when the edit syncs, and the row then moves into a group below.
+- **Groups**: one per save, newest first. A save is the shift changes with the same edit time and
+  source. Heading (`h2`): "Today", "Yesterday" or the short date ("Mon 12 Oct", with the year when it
+  isn't the current year), then " · " and the time ("8:42 am", `en-AU`, lowercase am/pm), from the
+  edit time on the phone that made it. Under it in `text-muted` the source: "Date sheet", "Import",
+  or "Edit" when the source isn't known (an edit from an older version of the app), followed by
+  " · {n} shifts" when the save changed more than one. Rows by date, earliest first.
+- **Row**: a 52 px button on `cell` with a `cell-line` border, like a Babysitters row: the date
+  ("Fri 23 Oct"), the code it had (a 34 × 28 px chip, §4.2; an unrostered date is an empty chip with
+  a 1 px dashed `border-strong` outline), an arrow in `text-faint`, and the code it got. Accessible
+  name: "Friday 23 October, Day to SE" / "Saturday 24 October, not rostered to Night"; a pending row
+  "Saturday 17 October, Late, not synced yet". Section headings are `h2`.
+- **Empty**: with no changes and nothing pending, "No shift changes yet. Shifts you change or import
+  show here." in `text-muted`.
+- Only shift codes are listed. Events and babysitters have no history.
+
+Drawn in `docs/designs/History.dc.html` and `HistoryEmpty.dc.html`.
+
 ## 7. Cross-cutting behaviour
 
 ### 7.1 Offline and sync
@@ -612,7 +663,8 @@ October, Late, babysitter Mum, tentative". Section headings are `h2`.
 | Discard import | Discard this import? |
 | Babysitter | Babysitter · None · + Someone else · Name · Needs a babysitter · Confirmed |
 | Babysitters screen | Babysitters · Share · {n} dates / 1 date · {p}% · No babysitters in these eight weeks. · Needs a babysitter · {n} to confirm · All confirmed · Confirm all · Tentative · Confirmed · No upcoming babysitters. Choose one for a date in the calendar. |
-| Events | Events · Add an event · Remove event: {text} |
+| Events | Notes and events (the date sheet's heading) · Add a note or event · Remove event: {text} |
+| History | History · Every change to a shift, newest first. · Not synced yet · {n} changes / 1 change · Today · Yesterday · Date sheet · Import · Edit · {n} shifts · No shift changes yet. Shifts you change or import show here. |
 | Sign out with pending | You have {n} pending edits. Signing out keeps them on this phone, but they won't sync until you sign in again. |
 
 Tone: short, plain, second person, no exclamation marks, no technical terms ("sync" is the one
@@ -632,6 +684,7 @@ exception, already used in the indicator).
 | SIM-42 Babysitter visibility | §3, §4.1, §5.1 menu, §5.3, §5.10, §6.5 (without the share card), §8 |
 | SIM-43 Babysitter share | §6.5 share card, §8 |
 | SIM-44 Scrollable calendar | §4.6, §5.1, §5.3, §6.2 |
+| SIM-45 Shift history | §3, §5.1 menu, §6.3 Notes and events, §6.6, §8 |
 
 ## 10. Additions beyond the tickets
 
@@ -652,3 +705,9 @@ doesn't want, and the ticket specs still stand on their own.
    before the month it opens on, and has no end ahead (§5.3).
 2. Should the review list hide "Same" rows behind a "Show unchanged" toggle when there are many?
    Default: show them, unchecked, as SIM-16 specifies.
+
+## 12. Design changelog
+
+- SIM-45: History in the ⋯ menu between Babysitters and Sign out, and the new History screen
+  (`History.dc.html`, `HistoryEmpty.dc.html`, §6.6). The date sheet's Events heading reads "Notes and
+  events" and its empty line "Add a note or event" (`Main.dc.html`).
