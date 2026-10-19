@@ -1,6 +1,7 @@
 // Reading and writing a date's shift, babysitter and events on the phone (ADR 0003). A save is
 // a pending edit for each part it changes: it goes to each part's table and outbox in one
-// transaction and then triggers one sync (docs/design.md § Sync protocol).
+// transaction and then triggers one sync (docs/design.md § Sync protocol). A shift edit made here
+// carries `source: "sheet"` for its shift change (ADR 0004).
 import { useLiveQuery } from "dexie-react-hooks";
 import type { Table } from "dexie";
 import { db, type EventRow } from "../db";
@@ -82,7 +83,7 @@ export async function saveDate(date: string, edit: DateEdit): Promise<void> {
     if (edit.code !== undefined) {
       const row = { date, code: edit.code, editedAt };
       await db.shifts.put(row);
-      await db.outbox.put(row);
+      await db.outbox.put({ ...row, source: "sheet" });
     }
     if (babysitter !== undefined) {
       const row = { date, name: babysitter.name, confirmed: babysitter.confirmed, editedAt };

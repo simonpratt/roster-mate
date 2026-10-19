@@ -47,7 +47,7 @@ const saveButton = (sheet: HTMLElement) => within(sheet).getByRole("button", { n
 const sitterGroup = (sheet: HTMLElement) => within(sheet).getByRole("radiogroup", { name: "Babysitter" });
 const sitterChip = (sheet: HTMLElement, name: string) => within(sitterGroup(sheet)).getByRole("radio", { name });
 const eventInputs = (sheet: HTMLElement) => within(sheet).queryAllByRole("textbox", { name: "Event" });
-const addEvent = (sheet: HTMLElement) => within(sheet).getByRole("textbox", { name: "Add an event" });
+const addEvent = (sheet: HTMLElement) => within(sheet).getByRole("textbox", { name: "Add a note or event" });
 
 beforeEach(() => {
   // Sunday 15 November 2026, 9 am local time; only Date is faked.
@@ -115,7 +115,7 @@ describe("Date sheet", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(saveDate).toHaveBeenCalledExactlyOnceWith("2026-11-03", { code: "L" });
     expect(await screen.findByRole("button", { name: "Tuesday 3 November, Late" })).toHaveTextContent("3L");
-    expect(await db.outbox.get("2026-11-03")).toEqual({ date: "2026-11-03", code: "L", editedAt: expect.any(Number) });
+    expect(await db.outbox.get("2026-11-03")).toEqual({ date: "2026-11-03", code: "L", editedAt: expect.any(Number), source: "sheet" });
     // Focus is back on the tapped date.
     expect(cell).toHaveFocus();
   });
@@ -260,10 +260,12 @@ describe("Date sheet", () => {
     ]);
     const { sheet } = await openSheet("Tuesday 24 November, Night, no babysitter, 3 events");
 
-    // Events in the order they were added, then the empty Add an event line.
+    // Events in the order they were added, then the empty Add a note or event line.
     expect(eventInputs(sheet).map((i) => (i as HTMLInputElement).value)).toEqual(["Dentist 3pm", "Dry cleaning", "Call Jo"]);
     expect(addEvent(sheet)).toHaveValue("");
-    expect(addEvent(sheet)).toHaveAttribute("placeholder", "Add an event");
+    expect(addEvent(sheet)).toHaveAttribute("placeholder", "Add a note or event");
+    expect(within(sheet).getByText("Notes and events")).toBeInTheDocument();
+    expect(within(sheet).queryByText("Events")).not.toBeInTheDocument();
     expect(eventInputs(sheet)[0]).toHaveAttribute("maxlength", "200");
 
     // None, the known names A–Z, then Someone else.
@@ -486,7 +488,7 @@ describe("Date sheet", () => {
     expect(needs(sheet)).toBeInTheDocument();
   });
 
-  it("turns the Add an event line into a row as it's typed in, and Enter moves to the next line", async () => {
+  it("turns the Add a note or event line into a row as it's typed in, and Enter moves to the next line", async () => {
     await seedEvents([["e1", "2026-11-24", "Dentist 3pm"]]);
     const { sheet } = await openSheet("Tuesday 24 November, no shift, 1 event");
     const add = addEvent(sheet);

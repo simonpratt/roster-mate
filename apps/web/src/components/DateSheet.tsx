@@ -17,14 +17,29 @@ type DateSheetProps = {
   date: DateString;
   today: DateString;
   onClose: () => void;
+  /**
+   * Where focus goes on close; by default the first element with the date's data-date (its cell
+   * in the month grid). A screen that can list one date more than once passes the row tapped.
+   */
+  returnFocus?: () => HTMLElement | null;
 };
 
-export function DateSheet({ date, today, onClose }: DateSheetProps) {
+export function DateSheet({ date, today, onClose, returnFocus }: DateSheetProps) {
   const contents = useDate(date);
   const known = useKnownBabysitters();
   // Opens once the stored date has loaded, which IndexedDB answers at once.
   if (contents === undefined || known === undefined) return null;
-  return <DateForm key={date} date={date} today={today} contents={contents} known={known} onClose={onClose} />;
+  return (
+    <DateForm
+      key={date}
+      date={date}
+      today={today}
+      contents={contents}
+      known={known}
+      onClose={onClose}
+      returnFocus={returnFocus}
+    />
+  );
 }
 
 type DateFormProps = DateSheetProps & {
@@ -33,7 +48,7 @@ type DateFormProps = DateSheetProps & {
   known: string[];
 };
 
-function DateForm({ date, today, contents, known, onClose }: DateFormProps) {
+function DateForm({ date, today, contents, known, onClose, returnFocus }: DateFormProps) {
   const titleId = useId();
   // The fields start from the date as it was on opening and then hold the user's values, even if
   // a sync changes the stored ones meanwhile (§7.1). Save sends only what differs from opening,
@@ -85,8 +100,8 @@ function DateForm({ date, today, contents, known, onClose }: DateFormProps) {
     <BottomSheet
       labelledBy={titleId}
       onClose={onClose}
-      // Focus goes back to the date's cell in the month grid.
-      returnFocus={() => document.querySelector<HTMLElement>(`[data-date="${date}"]`)}
+      // Focus goes back to the date's cell in the month grid, or the row the screen names.
+      returnFocus={returnFocus ?? (() => document.querySelector<HTMLElement>(`[data-date="${date}"]`))}
     >
       {(close) => (
         <form

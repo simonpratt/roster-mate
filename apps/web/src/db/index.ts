@@ -1,4 +1,4 @@
-// The phone's copy of the shifts, events and babysitters (docs/design.md § Data model, ADR 0001,
+// The phone's copy of the shifts, events, babysitters and shift changes (docs/design.md § Data model, ADR 0001,
 // ADR 0003). The UI reads and writes only this database; the sync engine (src/sync/engine.ts) is
 // the only code that talks to the server.
 import Dexie, { type EntityTable, type Table } from "dexie";
@@ -17,8 +17,30 @@ export interface ShiftRow {
   rev?: number;
 }
 
+/**
+ * Where a shift edit was made: the date sheet or an import's Save. `restore` marks the re-send
+ * after a server reset, which the server applies without recording a shift change (ADR 0004).
+ */
+export type ShiftEditSource = "sheet" | "import" | "restore";
+
 /** A pending edit: the latest local change for a date that the server hasn't confirmed. */
-export type OutboxRow = Omit<ShiftRow, "rev">;
+export type OutboxRow = Omit<ShiftRow, "rev"> & {
+  /** Absent on rows queued before SIM-45; the server then records the change's source as unknown. */
+  source?: ShiftEditSource;
+};
+
+/**
+ * A shift change the server recorded (ADR 0004), keyed by the rev of the write. `from: null` is a
+ * date that had no shift; `source: null` an edit from a client that didn't say.
+ */
+export interface ShiftChangeRow {
+  rev: number;
+  date: string;
+  from: ShiftCode | null;
+  to: ShiftCode | null;
+  source: "sheet" | "import" | null;
+  editedAt: number;
+}
 
 /** A live event, keyed by its UUID. A deleted event is removed from this table. */
 export interface EventRow {
@@ -62,6 +84,7 @@ export const db = new Dexie("roster-mate") as Dexie & {
   eventOutbox: EntityTable<EventOutboxRow, "id">;
   babysitters: EntityTable<BabysitterRow, "date">;
   babysitterOutbox: EntityTable<BabysitterOutboxRow, "date">;
+  shiftChanges: EntityTable<ShiftChangeRow, "rev">;
   meta: EntityTable<MetaRow, "key">;
 };
 
@@ -96,9 +119,14 @@ db.version(3).upgrade(async (tx) => {
   await tx.table("babysitterOutbox").toCollection().modify(tentative);
 });
 
+// Version 4 adds the shift changes pulled from the server (SIM-45, ADR 0004).
+db.version(4).stores({
+  shiftChanges: "rev, editedAt",
+});
+
 /** Every table, for transactions that span them all. */
 export function allTables(): Table[] {
-  return [db.shifts, db.outbox, db.events, db.eventOutbox, db.babysitters, db.babysitterOutbox, db.meta];
+  return [db.shifts, db.outbox, db.events, db.eventOutbox, db.babysitters, db.babysitterOutbox, db.shiftChanges, db.meta];
 }
 
 /** Deletes every row in every table. For tests and sign-out. */

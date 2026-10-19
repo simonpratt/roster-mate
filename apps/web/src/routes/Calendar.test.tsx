@@ -314,14 +314,22 @@ describe("Sync pill and sign-in banner", () => {
 });
 
 describe("Menu", () => {
-  it("shows Babysitters above Sign out, and Babysitters opens /babysitters", async () => {
+  it("shows Babysitters, History, Sign out, and Babysitters opens /babysitters", async () => {
     stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
     renderApp("/");
     fireEvent.click(await screen.findByRole("button", { name: "More" }));
     const items = within(screen.getByRole("menu", { name: "More" })).getAllByRole("menuitem");
-    expect(items.map((i) => i.textContent)).toEqual(["Babysitters", "Sign out"]);
+    expect(items.map((i) => i.textContent)).toEqual(["Babysitters", "History", "Sign out"]);
     fireEvent.click(items[0]!);
     expect(await screen.findByRole("heading", { level: 1, name: "Babysitters" })).toBeInTheDocument();
+  });
+
+  it("opens /history from History", async () => {
+    stubFetch({ "/api/session": SESSION, "/api/sync": SYNCED });
+    renderApp("/");
+    fireEvent.click(await screen.findByRole("button", { name: "More" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "History" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "History" })).toBeInTheDocument();
   });
 });
 

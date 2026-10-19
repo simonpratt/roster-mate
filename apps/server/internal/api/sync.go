@@ -30,10 +30,21 @@ type syncRequest struct {
 }
 
 // syncChange is one shift edit. An older cached client may still send a note; the decoder
-// ignores it.
+// ignores it. It may also leave out source, which is then stored as unknown.
 type syncChange struct {
 	Date     string  `json:"date"`
 	Code     *string `json:"code"`
+	EditedAt int64   `json:"editedAt"`
+	Source   *string `json:"source"`
+}
+
+// syncShiftChange is a recorded shift change in a response.
+type syncShiftChange struct {
+	Rev      int64   `json:"rev"`
+	Date     string  `json:"date"`
+	From     *string `json:"from"`
+	To       *string `json:"to"`
+	Source   *string `json:"source"`
 	EditedAt int64   `json:"editedAt"`
 }
 
@@ -71,10 +82,12 @@ type syncResponse struct {
 	Shifts      []syncShift      `json:"shifts"`
 	Events      []syncEvent      `json:"events"`
 	Babysitters []syncBabysitter `json:"babysitters"`
+	// ShiftChanges is always present, [] when there are none.
+	ShiftChanges []syncShiftChange `json:"shiftChanges"`
 }
 
 // sync applies the phone's pending edits and returns every shift, event and babysitter
-// changed since its last sync. A request with any invalid item applies none of them.
+// changed since its last sync, with the shift changes recorded since then. A request with any invalid item applies none of them.
 func sync(st *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req syncRequest
@@ -102,11 +115,15 @@ func sync(st *store.Store) http.HandlerFunc {
 
 func toResponse(pull store.Pull, dbID string) syncResponse {
 	res := syncResponse{
-		Rev:         pull.Rev,
-		DBID:        dbID,
-		Shifts:      make([]syncShift, len(pull.Shifts)),
-		Events:      make([]syncEvent, len(pull.Events)),
-		Babysitters: make([]syncBabysitter, len(pull.Babysitters)),
+		Rev:          pull.Rev,
+		DBID:         dbID,
+		Shifts:       make([]syncShift, len(pull.Shifts)),
+		Events:       make([]syncEvent, len(pull.Events)),
+		Babysitters:  make([]syncBabysitter, len(pull.Babysitters)),
+		ShiftChanges: make([]syncShiftChange, len(pull.ShiftChanges)),
+	}
+	for i, sc := range pull.ShiftChanges {
+		res.ShiftChanges[i] = syncShiftChange(sc)
 	}
 	for i, s := range pull.Shifts {
 		res.Shifts[i] = syncShift(s)
@@ -147,7 +164,15 @@ func validateSync(req syncRequest) (store.Push, error) {
 		if c.EditedAt <= 0 {
 			return store.Push{}, fmt.Errorf("changes[%d]: editedAt must be positive", i)
 		}
-		push.Shifts[i] = store.Change{Date: c.Date, Code: c.Code, EditedAt: c.EditedAt}
+		var source string
+		if c.Source != nil {
+			switch source = *c.Source; source {
+			case store.SourceSheet, store.SourceImport, store.SourceRestore:
+			default:
+				return store.Push{}, fmt.Errorf("changes[%d]: source must be sheet, import or restore", i)
+			}
+		}
+		push.Shifts[i] = store.Change{Date: c.Date, Code: c.Code, EditedAt: c.EditedAt, Source: source}
 	}
 	for i, e := range req.Events {
 		if !uuidPattern.MatchString(e.ID) {

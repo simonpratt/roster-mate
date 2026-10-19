@@ -260,3 +260,70 @@ func TestSyncConfirmedBabysitter(t *testing.T) {
 		t.Errorf("pull = %s; want Mum confirmed", out)
 	}
 }
+
+func sourced(date, code, source string, editedAt int64) string {
+	return fmt.Sprintf(`{"date":%q,"code":%q,"editedAt":%d,"source":%q}`, date, code, editedAt, source)
+}
+
+// The response's shiftChanges holds exactly the changes after since, all of them when since is
+// ahead of rev, and [] otherwise.
+func TestSyncReturnsShiftChangesAfterSince(t *testing.T) {
+	base, c := newSyncServer(t, newStore(t))
+	_, out := do(t, "POST", base+"/api/sync", syncBody(0), c)
+	if !strings.Contains(out, `"shiftChanges":[]`) {
+		t.Errorf("empty sync = %s; want shiftChanges []", out)
+	}
+	body := syncBody(0, sourced("2026-11-03", "L", "import", 10), change("2026-11-04", "D", 10))
+	if res, out := do(t, "POST", base+"/api/sync", body, c); res.StatusCode != 200 {
+		t.Fatalf("push: %d %q", res.StatusCode, out)
+	}
+	_, out = do(t, "POST", base+"/api/sync", syncBody(2, sourced("2026-11-03", "N", "sheet", 20)), c)
+	got := decodeSync(t, out)
+	l, n := "L", "N"
+	sheet := "sheet"
+	if len(got.ShiftChanges) != 1 {
+		t.Fatalf("pull from 2 = %s; want one change", out)
+	}
+	if sc := got.ShiftChanges[0]; sc.Rev != 3 || sc.Date != "2026-11-03" || *sc.From != l || *sc.To != n || *sc.Source != sheet || sc.EditedAt != 20 {
+		t.Errorf("change = %s", out)
+	}
+	if !strings.Contains(out, `"shiftChanges":[{"rev":3,"date":"2026-11-03","from":"L","to":"N","source":"sheet","editedAt":20}]`) {
+		t.Errorf("wire shape = %s", out)
+	}
+
+	_, out = do(t, "POST", base+"/api/sync", syncBody(99), c)
+	got = decodeSync(t, out)
+	if len(got.ShiftChanges) != 3 || got.ShiftChanges[0].Rev != 1 || got.ShiftChanges[1].Source != nil || got.ShiftChanges[0].From != nil {
+		t.Errorf("pull from ahead of rev = %s; want all three in rev order", out)
+	}
+	if !strings.Contains(out, `"from":null`) || !strings.Contains(out, `"source":null`) {
+		t.Errorf("nulls not serialised as null: %s", out)
+	}
+
+	_, out = do(t, "POST", base+"/api/sync", syncBody(3), c)
+	if !strings.Contains(out, `"shiftChanges":[]`) {
+		t.Errorf("pull from 3 = %s; want shiftChanges []", out)
+	}
+}
+
+// An invalid source is a 400 that applies none of the request.
+func TestSyncRejectsInvalidSourceAndWritesNothing(t *testing.T) {
+	base, c := newSyncServer(t, newStore(t))
+	for _, bad := range []string{"", "Sheet", "calendar"} {
+		body := syncBody(0, sourced("2026-11-01", "D", "sheet", 1), sourced("2026-11-02", "E", bad, 1))
+		res, out := do(t, "POST", base+"/api/sync", body, c)
+		if res.StatusCode != 400 || !strings.Contains(out, "changes[1]: source must be sheet, import or restore") {
+			t.Errorf("source %q: %d %q; want 400 naming changes[1]", bad, res.StatusCode, out)
+		}
+	}
+	_, out := do(t, "POST", base+"/api/sync", syncBody(0), c)
+	if got := decodeSync(t, out); got.Rev != 0 || len(got.Shifts)+len(got.ShiftChanges) != 0 {
+		t.Errorf("after rejected syncs: %s; want nothing stored", out)
+	}
+	// Every valid source applies.
+	body := syncBody(0, sourced("2026-11-01", "D", "sheet", 1), sourced("2026-11-02", "E", "import", 1), sourced("2026-11-03", "L", "restore", 1))
+	_, out = do(t, "POST", base+"/api/sync", body, c)
+	if got := decodeSync(t, out); got.Rev != 3 || len(got.ShiftChanges) != 2 {
+		t.Errorf("valid sources: %s; want 3 writes and 2 changes (restore records none)", out)
+	}
+}

@@ -3,6 +3,7 @@ import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { getSession, UnauthorizedError } from "./api";
 import { Babysitters } from "./routes/Babysitters";
 import { Calendar } from "./routes/Calendar";
+import { History } from "./routes/History";
 import { Import } from "./routes/Import";
 import { Login } from "./routes/Login";
 import { useSyncTriggers } from "./sync/triggers";
@@ -16,6 +17,7 @@ export function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/import" element={<Import />} />
       <Route path="/babysitters" element={<Babysitters />} />
+      <Route path="/history" element={<History />} />
       <Route path="*" element={<Calendar />} />
     </Routes>
   );

@@ -25,8 +25,8 @@ func TestOpenCreatesDBInWALModeWithMeta(t *testing.T) {
 		t.Errorf("journal_mode = %q, %v; want wal", mode, err)
 	}
 	v, err := s.SchemaVersion()
-	if err != nil || v != 4 {
-		t.Errorf("SchemaVersion = %d, %v; want 4", v, err)
+	if err != nil || v != 5 {
+		t.Errorf("SchemaVersion = %d, %v; want 5", v, err)
 	}
 }
 
@@ -240,7 +240,7 @@ func TestBadMigrationNames(t *testing.T) {
 	}
 }
 
-// Reset empties shifts, events and babysitters and keeps meta: the session secret, the
+// Reset empties shifts, shift changes, events and babysitters and keeps meta: the session secret, the
 // database id and the rev counter.
 func TestResetClearsRowsAndKeepsMeta(t *testing.T) {
 	s := openTemp(t)
@@ -266,14 +266,14 @@ func TestResetClearsRowsAndKeepsMeta(t *testing.T) {
 		t.Fatalf("Reset: %v", err)
 	}
 
-	for _, table := range []string{"shifts", "events", "babysitters"} {
+	for _, table := range []string{"shifts", "shift_changes", "events", "babysitters"} {
 		var n int
 		if err := s.DB.QueryRow("SELECT count(*) FROM " + table).Scan(&n); err != nil || n != 0 {
 			t.Errorf("%s rows after reset = %d, %v; want 0", table, n, err)
 		}
 	}
 	all := syncPush(t, s, 0, Push{})
-	if all.Rev != 3 || len(all.Shifts)+len(all.Events)+len(all.Babysitters) != 0 {
+	if all.Rev != 3 || len(all.Shifts)+len(all.Events)+len(all.Babysitters)+len(all.ShiftChanges) != 0 {
 		t.Errorf("pull after reset = %+v; want rev 3 and nothing else", all)
 	}
 	if got, err := s.SessionSecret(); err != nil || string(got) != string(secret) {

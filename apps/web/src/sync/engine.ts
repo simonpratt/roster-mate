@@ -9,6 +9,7 @@ import {
   type BabysitterRow,
   type EventOutboxRow,
   type OutboxRow,
+  type ShiftChangeRow,
   type ShiftRow,
 } from "../db";
 
@@ -32,6 +33,8 @@ interface SyncResponse {
   events?: (EventOutboxRow & { rev: number })[];
   // confirmed is read as false when missing, as from a server older than SIM-41.
   babysitters?: (Omit<BabysitterRow, "confirmed"> & { confirmed?: boolean; rev: number })[];
+  // Read as [] when missing, as from a server older than SIM-45.
+  shiftChanges?: ShiftChangeRow[];
 }
 
 /** One request's worth of pending edits. */
@@ -150,7 +153,9 @@ const size = (b: Batch) => b.changes.length + b.events.length + b.babysitters.le
 async function post(since: number, batch: Batch): Promise<SyncResponse> {
   const body = {
     since,
-    changes: batch.changes.map(({ date, code, editedAt }) => ({ date, code, editedAt })),
+    changes: batch.changes.map(({ date, code, editedAt, source }) =>
+      source ? { date, code, editedAt, source } : { date, code, editedAt },
+    ),
     events: batch.events.map(({ id, date, text, deleted, createdAt, editedAt }) => ({
       id,
       date,
@@ -183,8 +188,9 @@ async function getMeta<T>(key: "lastRev" | "dbId", fallback: T): Promise<T> {
 
 /**
  * Removes each sent outbox entry that hasn't been replaced since, stores the returned shifts,
- * events and babysitters except where a newer local edit is pending, and records the server's rev
- * and dbId. A returned event tombstone deletes the local event.
+ * events and babysitters except where a newer local edit is pending, stores the returned shift
+ * changes, and records the server's rev and dbId. A returned event tombstone deletes the local
+ * event.
  */
 async function apply(sent: Batch, res: SyncResponse) {
   await db.transaction("rw", allTables(), async () => {
@@ -232,6 +238,13 @@ async function apply(sent: Batch, res: SyncResponse) {
       });
     }
 
+    const changes = res.shiftChanges ?? [];
+    if (changes.length > 0) {
+      await db.shiftChanges.bulkPut(
+        changes.map(({ rev, date, from, to, source, editedAt }) => ({ rev, date, from, to, source, editedAt })),
+      );
+    }
+
     await db.meta.bulkPut([
       { key: "lastRev", value: res.rev },
       { key: "dbId", value: res.dbId },
@@ -240,9 +253,10 @@ async function apply(sent: Batch, res: SyncResponse) {
 }
 
 /**
- * After a server reset: queues every local shift with a code, every live event and every
- * babysitter with a name, keeping their editedAt (a newer pending edit stays), and starts again
- * from rev 0 against the new dbId.
+ * After a server reset: queues every local shift with a code (as a `restore`, so the server
+ * records no shift change), every live event and every babysitter with a name, keeping their
+ * editedAt (a newer pending edit stays), drops the old server's shift changes, whose revs are
+ * void, and starts again from rev 0 against the new dbId.
  */
 async function requeueAll(dbId: string) {
   await db.transaction("rw", allTables(), async () => {
@@ -250,7 +264,7 @@ async function requeueAll(dbId: string) {
       if (s.code === null) continue;
       const pending = await db.outbox.get(s.date);
       if (pending && pending.editedAt >= s.editedAt) continue;
-      await db.outbox.put({ date: s.date, code: s.code, editedAt: s.editedAt });
+      await db.outbox.put({ date: s.date, code: s.code, editedAt: s.editedAt, source: "restore" });
     }
     for (const e of await db.events.toArray()) {
       const pending = await db.eventOutbox.get(e.id);
@@ -264,6 +278,7 @@ async function requeueAll(dbId: string) {
       if (pending && pending.editedAt >= b.editedAt) continue;
       await db.babysitterOutbox.put({ date: b.date, name: b.name, confirmed: b.confirmed, editedAt: b.editedAt });
     }
+    await db.shiftChanges.clear();
     await db.meta.bulkPut([
       { key: "lastRev", value: 0 },
       { key: "dbId", value: dbId },

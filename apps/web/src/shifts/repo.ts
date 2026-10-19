@@ -34,18 +34,17 @@ function toRow(edit: ShiftEdit, editedAt: number): ShiftRow {
   return { date: edit.date, code: edit.code, editedAt };
 }
 
-/** Saves one shift. The UI always writes a code; Day off (X) is how a shift is removed. */
-export async function setShift(date: string, code: ShiftCode): Promise<void> {
-  await setShifts([{ date, code }]);
-}
-
-/** Saves many shifts in one transaction with one sync trigger, as an import does. */
+/**
+ * Saves an import's shifts in one transaction with one editedAt and one sync trigger; each
+ * pending edit carries `source: "import"`. The UI always writes a code; Day off (X) is how a
+ * shift is removed.
+ */
 export async function setShifts(edits: ShiftEdit[]): Promise<void> {
   const editedAt = Date.now();
   const rows = edits.map((e) => toRow(e, editedAt));
   await db.transaction("rw", db.shifts, db.outbox, async () => {
     await db.shifts.bulkPut(rows);
-    await db.outbox.bulkPut(rows);
+    await db.outbox.bulkPut(rows.map((r) => ({ ...r, source: "import" as const })));
   });
   void sync.trigger();
 }

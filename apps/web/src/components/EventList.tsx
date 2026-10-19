@@ -3,10 +3,11 @@ import { EVENT_TEXT_MAX, type DateEdit, type Event } from "../dates/repo";
 import { newId } from "../lib/uuid";
 import { XIcon } from "./icons";
 
-// The event list, docs/ux-spec.md §5.9 and the date sheet in docs/designs/Main.dc.html: one
-// input and remove button per event, then an empty "Add an event" input. Typing in that input
-// makes it a row (the same element, so focus and the caret stay put) and a new empty input
-// appears below. Enter moves to the next input rather than submitting the sheet.
+// The event list, docs/ux-spec.md §5.9 and the date sheet in docs/designs/Main.dc.html: headed
+// "Notes and events" (the only place the UI says notes; CONTEXT.md, Event), one input and remove
+// button per event, then an empty "Add a note or event" input. Typing in that input makes it a
+// row (the same element, so focus and the caret stay put) and a new empty input appears below.
+// Enter moves to the next input rather than submitting the sheet.
 
 /** One line of the list: a saved event (id) or a new one (no id). */
 export type EventDraft = {
@@ -19,7 +20,7 @@ export type EventDraft = {
 
 const blank = (): EventDraft => ({ key: newId(), id: null, text: "" });
 
-/** The list's lines for the saved events: one per event, then the empty "Add an event" line. */
+/** The list's lines for the saved events: one per event, then the empty "Add a note or event" line. */
 export function eventDraftsFor(events: readonly Event[]): EventDraft[] {
   return [...events.map((e) => ({ key: e.id, id: e.id, text: e.text })), blank()];
 }
@@ -42,7 +43,7 @@ export function eventChanges(saved: readonly Event[], drafts: readonly EventDraf
 }
 
 type EventListProps = {
-  /** The lines; the last is always the empty "Add an event" one. */
+  /** The lines; the last is always the empty "Add a note or event" one. */
   value: EventDraft[];
   onChange: (value: EventDraft[]) => void;
 };
@@ -82,7 +83,7 @@ export function EventList({ value, onChange }: EventListProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-label text-text-soft">Events</span>
+      <span className="text-label text-text-soft">Notes and events</span>
       {value.map((d, i) => {
         const last = i === value.length - 1;
         return (
@@ -95,8 +96,8 @@ export function EventList({ value, onChange }: EventListProps) {
               type="text"
               maxLength={EVENT_TEXT_MAX}
               autoComplete="off"
-              aria-label={last ? "Add an event" : "Event"}
-              placeholder={last ? "Add an event" : undefined}
+              aria-label={last ? "Add a note or event" : "Event"}
+              placeholder={last ? "Add a note or event" : undefined}
               value={d.text}
               onChange={(e) => setText(i, e.target.value)}
               onKeyDown={(e) => onKeyDown(e, i)}

@@ -185,7 +185,7 @@ func schemaVersion(db *sql.DB) (int, error) {
 	return version, nil
 }
 
-// Reset deletes every shift, event and babysitter in one transaction, for the test-only reset
+// Reset deletes every shift, shift change, event and babysitter in one transaction, for the test-only reset
 // route. meta is kept, so the session secret, database id and rev counter survive.
 func (s *Store) Reset(ctx context.Context) error {
 	tx, err := s.DB.BeginTx(ctx, nil)
@@ -193,7 +193,7 @@ func (s *Store) Reset(ctx context.Context) error {
 		return err
 	}
 	defer tx.Rollback()
-	for _, table := range []string{"shifts", "events", "babysitters"} {
+	for _, table := range []string{"shifts", "shift_changes", "events", "babysitters"} {
 		if _, err := tx.ExecContext(ctx, "DELETE FROM "+table); err != nil {
 			return fmt.Errorf("reset %s: %w", table, err)
 		}

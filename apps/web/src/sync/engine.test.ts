@@ -2,7 +2,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { db, type BabysitterOutboxRow, type EventOutboxRow, type OutboxRow } from "../db";
 import { saveDate } from "../dates/repo";
-import { setShift, useShift } from "../shifts/repo";
+import { setShifts, useShift } from "../shifts/repo";
 import { setOnline } from "../test-utils";
 import { sync } from "./engine";
 import { syncStatus, usePendingCount, useSyncStatus } from "./status";
@@ -74,7 +74,7 @@ describe("sync engine", () => {
   it("keeps an offline edit locally and in the outbox, then sends it once online", async () => {
     setOnline(false);
     const { fetchMock } = serve(() => ok(1));
-    await setShift("2026-11-03", "L");
+    await setShifts([{ date: "2026-11-03", code: "L" }]);
     await sync.idle();
 
     expect(fetchMock).not.toHaveBeenCalled();
@@ -102,9 +102,9 @@ describe("sync engine", () => {
       return ok(2, changes.map((c) => ({ ...c, rev: 2 })));
     });
 
-    await setShift("2026-11-03", "L");
+    await setShifts([{ date: "2026-11-03", code: "L" }]);
     await waitFor(() => expect(bodies).toHaveLength(1));
-    await setShift("2026-11-04", "E");
+    await setShifts([{ date: "2026-11-04", code: "E" }]);
     first.resolve(ok(1, [{ date: "2026-11-03", code: "L", editedAt: bodies[0]!.changes[0]!.editedAt, rev: 1 }]));
     await sync.idle();
 
@@ -125,7 +125,7 @@ describe("sync engine", () => {
 
     void sync.trigger();
     await waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1));
-    await setShift("2026-11-03", "N");
+    await setShifts([{ date: "2026-11-03", code: "N" }]);
     first.resolve(ok(1, [{ date: "2026-11-03", code: "D", editedAt: 1000, rev: 1 }]));
     await sync.idle();
 
@@ -150,7 +150,7 @@ describe("sync engine", () => {
 
   it("sets unauthorized on a 401 and keeps the outbox", async () => {
     serve(() => ({ status: 401, body: { error: "unauthorized" } }));
-    await setShift("2026-11-03", "L");
+    await setShifts([{ date: "2026-11-03", code: "L" }]);
     await sync.idle();
 
     expect(sync.getOutcome()).toBe("unauthorized");
@@ -162,8 +162,8 @@ describe("sync engine", () => {
   it("sets offline when the server can't be reached while navigator.onLine is true, keeping the count", async () => {
     setOnline(true);
     serve(() => new TypeError("Failed to fetch"));
-    await setShift("2026-11-03", "L");
-    await setShift("2026-11-04", "E");
+    await setShifts([{ date: "2026-11-03", code: "L" }]);
+    await setShifts([{ date: "2026-11-04", code: "E" }]);
     await sync.idle();
 
     expect(sync.getOutcome()).toBe("offline");
@@ -179,7 +179,7 @@ describe("sync engine", () => {
 
   it("sets error on a 500", async () => {
     serve(() => ({ status: 500, body: { error: "internal error" } }));
-    await setShift("2026-11-03", "L");
+    await setShifts([{ date: "2026-11-03", code: "L" }]);
     await sync.idle();
 
     expect(sync.getOutcome()).toBe("error");
@@ -215,6 +215,7 @@ describe("sync engine", () => {
       // Pending edits newer than the stored rows stay as they are.
       await db.outbox.put({ date: "2026-11-06", code: "N", editedAt: 555 });
       await db.eventOutbox.put({ id: ID_2, date: "2026-11-04", text: "Concert", deleted: false, createdAt: 130, editedAt: 666 });
+      await db.shiftChanges.put({ rev: 4, date: "2026-11-03", from: null, to: "D", source: "sheet", editedAt: 111 });
       await db.meta.bulkPut([
         { key: "lastRev", value: lastRev },
         { key: "dbId", value: dbId },
@@ -224,8 +225,9 @@ describe("sync engine", () => {
     const requeued = {
       since: 0,
       changes: [
-        { date: "2026-11-03", code: "D", editedAt: 111 },
-        { date: "2026-11-04", code: "E", editedAt: 222 },
+        { date: "2026-11-03", code: "D", editedAt: 111, source: "restore" },
+        { date: "2026-11-04", code: "E", editedAt: 222, source: "restore" },
+        // A pending edit is a real change: it keeps its own source (none, here).
         { date: "2026-11-06", code: "N", editedAt: 555 },
       ],
       events: [
@@ -253,6 +255,8 @@ describe("sync engine", () => {
       expect(await db.babysitterOutbox.count()).toBe(0);
       expect(await meta("dbId")).toBe("db-new");
       expect(await meta("lastRev")).toBe(3);
+      // The old server's revs are void: its shift changes go, to be pulled again from rev 0.
+      expect(await db.shiftChanges.count()).toBe(0);
       expect(sync.getOutcome()).toBe("ok");
     });
 
@@ -434,6 +438,46 @@ describe("sync engine", () => {
     expect(await db.events.get(ID_1)).toMatchObject({ text: "Mine" });
     expect(await db.events.get(ID_3)).toBeUndefined();
     expect(await db.babysitters.get("2026-11-03")).toMatchObject({ name: "Mum" });
+  });
+
+  it("sends each shift edit's source: sheet from the date sheet, import from an import's Save", async () => {
+    setOnline(false);
+    serve(() => ok(1));
+    await saveDate("2026-11-03", { code: "L" });
+    await setShifts([
+      { date: "2026-11-04", code: "E" },
+      { date: "2026-11-05", code: "SE" },
+    ]);
+    await sync.idle();
+    setOnline(true);
+    const { bodies } = serve(echo(3));
+    await sync.trigger();
+
+    expect(bodies[0]!.changes).toEqual([
+      { date: "2026-11-03", code: "L", editedAt: expect.any(Number), source: "sheet" },
+      { date: "2026-11-04", code: "E", editedAt: expect.any(Number), source: "import" },
+      { date: "2026-11-05", code: "SE", editedAt: expect.any(Number), source: "import" },
+    ]);
+  });
+
+  it("stores the pulled shift changes, keyed by rev", async () => {
+    await db.shiftChanges.put({ rev: 1, date: "2026-11-02", from: null, to: "D", source: "import", editedAt: 50 });
+    const changes = [
+      { rev: 2, date: "2026-11-03", from: "L", to: "N", source: "sheet", editedAt: 100 },
+      { rev: 3, date: "2026-11-04", from: null, to: "SE", source: null, editedAt: 200 },
+    ];
+    serve(() => ({ status: 200, body: { ...ok(3).body, shiftChanges: changes } }));
+    await sync.trigger();
+
+    expect(await db.shiftChanges.orderBy("rev").toArray()).toEqual([
+      { rev: 1, date: "2026-11-02", from: null, to: "D", source: "import", editedAt: 50 },
+      ...changes,
+    ]);
+
+    // From a server older than SIM-45 (no shiftChanges): nothing changes.
+    serve(() => ok(4));
+    await sync.trigger();
+    expect(await db.shiftChanges.count()).toBe(3);
   });
 
   it("runs one follow-up however many times it is triggered during a run", async () => {

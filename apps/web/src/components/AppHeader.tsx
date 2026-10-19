@@ -1,11 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { buttonClassName } from "./Button";
-import { CameraIcon, MoreVerticalIcon, SignOutIcon, UsersIcon } from "./icons";
+import { CameraIcon, HistoryIcon, MoreVerticalIcon, SignOutIcon, UsersIcon } from "./icons";
 
 // The Calendar's app header, docs/ux-spec.md §5.1 and docs/designs/Main.dc.html: the sync
 // indicator on the left, then Import and the overflow menu (docs/designs/CalendarMenu.dc.html):
-// Babysitters, then Sign out.
+// Babysitters, History, then Sign out.
 type AppHeaderProps = {
   /** The sync indicator. */
   sync: ReactNode;
@@ -70,6 +70,10 @@ export function AppHeader({ sync, onSignOut }: AppHeaderProps) {
             >
               <UsersIcon className="size-4.5 text-text-muted" />
               Babysitters
+            </Link>
+            <Link to="/history" role="menuitem" className={`${menuItem} ${focus}`}>
+              <HistoryIcon className="size-4.5 text-text-muted" />
+              History
             </Link>
             <button
               type="button"

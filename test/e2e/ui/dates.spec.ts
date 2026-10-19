@@ -10,7 +10,7 @@ test("saves a date's shift, babysitter and event, and a second phone sees them @
   await sheet.getByRole("radio", { name: "N, Night" }).click();
   await sheet.getByRole("radio", { name: "Someone else" }).click();
   await sheet.getByRole("textbox", { name: "Name" }).fill("Mum");
-  await sheet.getByRole("textbox", { name: "Add an event" }).fill("Dentist 3pm");
+  await sheet.getByRole("textbox", { name: "Add a note or event" }).fill("Dentist 3pm");
   await sheet.getByRole("button", { name: "Save" }).click();
   await expect(sheet).toBeHidden();
 

@@ -64,7 +64,7 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer, onLi
 	ex := extract.NewClaude(cfg.AnthropicAPIKey, cfg.AnthropicModel, cfg.RosterName, log, opts...)
 	handler := api.NewRouter(web.Handler(client.Dist()), a, st, ex)
 	if cfg.TestMode {
-		log.Warn("test mode is on: POST /api/test/reset deletes every shift, event and babysitter without a session; never set APP_TEST_MODE in production")
+		log.Warn("test mode is on: POST /api/test/reset deletes every shift, shift change, event and babysitter without a session; never set APP_TEST_MODE in production")
 		handler = api.WithTestRoutes(handler, st)
 	}
 	srv := &http.Server{

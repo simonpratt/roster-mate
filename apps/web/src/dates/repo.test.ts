@@ -46,7 +46,7 @@ describe("saveDate", () => {
     expect(transaction).toHaveBeenCalledTimes(1);
     expect(sync.trigger).toHaveBeenCalledTimes(1);
     expect(await db.shifts.get("2026-11-03")).toEqual({ date: "2026-11-03", code: "L", editedAt: 5000 });
-    expect(await db.outbox.get("2026-11-03")).toEqual({ date: "2026-11-03", code: "L", editedAt: 5000 });
+    expect(await db.outbox.get("2026-11-03")).toEqual({ date: "2026-11-03", code: "L", editedAt: 5000, source: "sheet" });
     expect(await db.babysitters.get("2026-11-03")).toEqual({ date: "2026-11-03", name: "Mum", confirmed: true, editedAt: 5000 });
     expect(await db.babysitterOutbox.get("2026-11-03")).toEqual({
       date: "2026-11-03",

@@ -260,10 +260,11 @@ func (a *app) login(t *testing.T) *http.Cookie {
 }
 
 type syncResult struct {
-	Rev         int64            `json:"rev"`
-	Shifts      []map[string]any `json:"shifts"`
-	Events      []map[string]any `json:"events"`
-	Babysitters []map[string]any `json:"babysitters"`
+	Rev          int64            `json:"rev"`
+	Shifts       []map[string]any `json:"shifts"`
+	Events       []map[string]any `json:"events"`
+	Babysitters  []map[string]any `json:"babysitters"`
+	ShiftChanges []map[string]any `json:"shiftChanges"`
 }
 
 func (a *app) sync(t *testing.T, cookie *http.Cookie, body string) syncResult {
@@ -284,15 +285,15 @@ const seed = `{"since":0,
 	"events":[{"id":"0b6f3e1c-2f4a-4c1d-9e8b-1a2b3c4d5e6f","date":"2026-12-08","text":"Dentist","createdAt":100,"editedAt":1000}],
 	"babysitters":[{"date":"2026-12-08","name":"Nan","editedAt":1000}]}`
 
-// With APP_TEST_MODE=1, POST /api/test/reset needs no session, empties shifts, events and
-// babysitters, and leaves sessions working.
+// With APP_TEST_MODE=1, POST /api/test/reset needs no session, empties shifts, shift changes,
+// events and babysitters, and leaves sessions working.
 func TestResetInTestMode(t *testing.T) {
 	a := startApp(t, map[string]string{"APP_TEST_MODE": "1"})
 	if !strings.Contains(a.stderr.String(), "test mode is on") {
 		t.Errorf("no test mode warning at startup:\n%s", a.stderr.String())
 	}
 	cookie := a.login(t)
-	if r := a.sync(t, cookie, seed); len(r.Shifts) != 1 || len(r.Events) != 1 || len(r.Babysitters) != 1 {
+	if r := a.sync(t, cookie, seed); len(r.Shifts) != 1 || len(r.Events) != 1 || len(r.Babysitters) != 1 || len(r.ShiftChanges) != 1 {
 		t.Fatalf("seed sync = %+v", r)
 	}
 
@@ -301,8 +302,8 @@ func TestResetInTestMode(t *testing.T) {
 	}
 
 	r := a.sync(t, cookie, `{"since":0}`)
-	if len(r.Shifts)+len(r.Events)+len(r.Babysitters) != 0 {
-		t.Errorf("sync after reset = %+v; want no shifts, events or babysitters", r)
+	if len(r.Shifts)+len(r.Events)+len(r.Babysitters)+len(r.ShiftChanges) != 0 {
+		t.Errorf("sync after reset = %+v; want no shifts, shift changes, events or babysitters", r)
 	}
 	if status, _ := a.do(t, "GET", "/api/session", "", nil, cookie); status != http.StatusOK {
 		t.Errorf("GET /api/session with the old cookie after reset = %d; want 200", status)
