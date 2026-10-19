@@ -73,7 +73,8 @@ babysitter, and a babysitter doesn't need a shift.
 _Avoid_: sitter, carer, childcare
 
 **Needs a babysitter**:
-Said of a date with a working shift, dated today or later, that has no babysitter.
+Said of a weekday (Monday to Friday) with a working shift, dated today or later, that has no
+babysitter. A weekend date never needs a babysitter, though it can still have one.
 _Avoid_: unarranged, uncovered
 
 **Tentative**:

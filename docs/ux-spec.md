@@ -220,8 +220,8 @@ dot) until that run finishes.
   babysitter avatar (§5.10) on its top-right corner, event dots at the bottom: one 5 px `text`
   dot per event, at most 4, 3 px apart. The cell's border and fill never change with the
   babysitter (`docs/designs/Main.dc.html`).
-- **Needs a babysitter** (a working shift dated today or later with no babysitter): the avatar's
-  amber dot. Days off, unrostered dates and past dates never get it.
+- **Needs a babysitter** (a working shift on a weekday, dated today or later, with no babysitter):
+  the avatar's amber dot. Days off, unrostered dates, weekend dates and past dates never get it.
 - **Today**: `text` outline around the cell, day number bold.
 - **Unrostered date**: day number only.
 - **Day off**: the outlined `X` chip (§4.2).

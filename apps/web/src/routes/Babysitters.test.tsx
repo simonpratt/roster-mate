@@ -93,14 +93,15 @@ describe("Babysitters screen", () => {
   });
 
   it("lists the dates that need a babysitter, and hides the section when there are none", async () => {
-    await seed({ "2026-11-14": "D", "2026-11-15": "E", "2026-11-16": "X", "2026-11-18": "SE", "2026-11-19": "L" });
+    await seed({ "2026-11-14": "D", "2026-11-15": "E", "2026-11-16": "X", "2026-11-17": "E", "2026-11-18": "SE", "2026-11-19": "L" });
     await seedBabysitters({ "2026-11-19": "Mum" });
     await open();
 
     const needs = await section("Needs a babysitter");
+    // Not Sunday 15 November: a weekend date never needs one.
     expect(within(needs).getByText("2 dates")).toBeInTheDocument();
     expect(rowNames(needs)).toEqual([
-      "Sunday 15 November, Early, no babysitter",
+      "Tuesday 17 November, Early, no babysitter",
       "Wednesday 18 November, SE, no babysitter",
     ]);
     expect(within(needs).getAllByText("No babysitter")).toHaveLength(2);
@@ -111,7 +112,7 @@ describe("Babysitters screen", () => {
     }
 
     // Giving both a babysitter hides the section.
-    await seedBabysitters({ "2026-11-15": "Mum", "2026-11-18": "Dad" });
+    await seedBabysitters({ "2026-11-17": "Mum", "2026-11-18": "Dad" });
     await waitFor(() => expect(screen.queryByRole("region", { name: "Needs a babysitter" })).not.toBeInTheDocument());
   });
 

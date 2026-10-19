@@ -77,9 +77,9 @@ describe("Calendar month grid", () => {
     // Each date appears once, in its own month.
     const october = screen.getByRole("region", { name: "October 2026" });
     expect(await within(october).findByRole("button", { name: "Monday 26 October, Day" })).toHaveTextContent("26D");
-    // A working shift from today on with no babysitter says so.
+    // A weekday working shift from today on with no babysitter says so; a weekend one doesn't.
     const december = screen.getByRole("region", { name: "December 2026" });
-    expect(await within(december).findByRole("button", { name: "Sunday 6 December, Night, no babysitter" })).toHaveTextContent("6N");
+    expect(await within(december).findByRole("button", { name: "Sunday 6 December, Night" })).toHaveTextContent("6N");
     expect(screen.getAllByRole("button", { name: /^\w+ 6 December/ })).toHaveLength(1);
 
     expect(screen.getByRole("button", { name: "Tuesday 3 November, Late" })).toHaveTextContent("3L");
@@ -121,14 +121,15 @@ describe("Calendar month grid", () => {
     const dots = (el: HTMLElement) => within(el).getByTestId("event-dots").children;
     const avatar = (el: HTMLElement) => within(el).queryByTestId("babysitter-avatar");
 
-    const today = await cell("Sunday 15 November, Early, no babysitter, today");
+    // Today is a Sunday: a weekend date never needs a babysitter.
+    const today = await cell("Sunday 15 November, Early, today");
     expect(today).toHaveClass("border-text", "bg-surface", "ring-text");
-    expect(avatar(today)).toHaveAttribute("data-status", "needs");
-    expect(avatar(today)).toHaveClass("size-2", "bg-babysitter-need", "ring-surface", "-top-0.75", "-right-0.75");
-    expect(avatar(today)).toHaveTextContent("");
+    expect(avatar(today)).toBeNull();
     const needs = await cell("Monday 16 November, Day, no babysitter");
     expect(needs).toHaveClass("border-cell-line", "bg-cell");
-    expect(avatar(needs)).toHaveClass("bg-babysitter-need", "ring-cell");
+    expect(avatar(needs)).toHaveAttribute("data-status", "needs");
+    expect(avatar(needs)).toHaveClass("size-2", "bg-babysitter-need", "ring-cell", "-top-0.75", "-right-0.75");
+    expect(avatar(needs)).toHaveTextContent("");
     expect(dots(needs)).toHaveLength(0);
 
     // Tentative: dashed initials, 7 px past the chip's corner. Mum and Mel share an initial.
@@ -152,12 +153,12 @@ describe("Calendar month grid", () => {
     expect(avatar(unrostered)).toHaveClass("top-1/2", "right-1/2");
     expect(unrostered).toHaveTextContent(/^24Mu$/);
 
-    // No avatar: a day off, a past shift, a date with no shift.
+    // No avatar: a day off, a past shift, a weekend shift, a date with no shift.
     expect(avatar(await cell("Wednesday 18 November, Day off"))).toBeNull();
     const pastShift = await cell("Tuesday 10 November, Day, 2 events");
     expect(avatar(pastShift)).toBeNull();
     expect(dots(pastShift)).toHaveLength(2);
-    expect(avatar(await cell("Saturday 21 November, SE, no babysitter"))).toHaveAttribute("data-status", "needs");
+    expect(avatar(await cell("Saturday 21 November, SE"))).toBeNull();
     // At most four dots.
     const busy = await cell("Thursday 19 November, no shift, 6 events");
     expect(dots(busy)).toHaveLength(4);
@@ -175,7 +176,7 @@ describe("Calendar month grid", () => {
       const needsDot = within(c).queryByTestId("babysitter-avatar")?.getAttribute("data-status") === "needs";
       expect(needsDot).toBe(c.getAttribute("aria-label")!.includes("no babysitter"));
     }
-    expect(screen.getAllByRole("button", { name: /no babysitter/ })).toHaveLength(4);
+    expect(screen.getAllByRole("button", { name: /no babysitter/ })).toHaveLength(2);
   });
 
   it("adds months near the bottom, and none above", async () => {

@@ -5,6 +5,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import type { Table } from "dexie";
 import { db, type EventRow } from "../db";
+import { weekdayIndex } from "../lib/dates";
 import { newId } from "../lib/uuid";
 import { isWorkingCode, type ShiftCode } from "../shifts/codes";
 import { checkCode, checkDate, toShift, type Shift } from "../shifts/repo";
@@ -185,14 +186,17 @@ export function knownBabysitters(names: readonly string[]): string[] {
   return [...byKey.values()].sort((a, b) => a.localeCompare(b));
 }
 
-/** Whether a date needs a babysitter: a working shift, dated today or later, with no babysitter. */
+/**
+ * Whether a date needs a babysitter: a working shift on a weekday (Monday to Friday), dated today
+ * or later, with no babysitter. A weekend date never needs one, though it can still have one.
+ */
 export function needsBabysitter(
   shift: Pick<Shift, "code"> | null | undefined,
   babysitter: string,
   date: string,
   today: string,
 ): boolean {
-  return !!shift && isWorkingCode(shift.code) && date >= today && babysitter === "";
+  return !!shift && isWorkingCode(shift.code) && weekdayIndex(date) < 5 && date >= today && babysitter === "";
 }
 
 /**

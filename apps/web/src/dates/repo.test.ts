@@ -192,11 +192,11 @@ describe("babysitter queries", () => {
     );
   });
 
-  it("useDatesNeedingBabysitter gives working shifts from today on with no named babysitter", async () => {
+  it("useDatesNeedingBabysitter gives weekday working shifts from today on with no named babysitter", async () => {
     const { result } = renderHook(() => useDatesNeedingBabysitter(today));
+    // Not Sunday 15 November's Early: a weekend date never needs one.
     await waitFor(() =>
       expect(result.current).toEqual([
-        { date: "2026-11-15", code: "E" },
         { date: "2026-11-18", code: "SE" },
         { date: "2026-11-20", code: "N" },
       ]),
@@ -244,13 +244,19 @@ describe("confirmBabysitter", () => {
 });
 
 describe("needsBabysitter", () => {
-  const today = "2026-11-15";
-  it("is true only for a working shift dated today or later with no babysitter", () => {
+  const today = "2026-11-16"; // a Monday
+  it("is true only for a weekday working shift dated today or later with no babysitter", () => {
     expect(needsBabysitter({ code: "D" }, "", today, today)).toBe(true);
     expect(needsBabysitter({ code: "SE" }, "", "2026-11-20", today)).toBe(true);
     expect(needsBabysitter({ code: "D" }, "Mum", today, today)).toBe(false);
     expect(needsBabysitter({ code: "X" }, "", today, today)).toBe(false);
     expect(needsBabysitter(null, "", today, today)).toBe(false);
-    expect(needsBabysitter({ code: "N" }, "", "2026-11-14", today)).toBe(false);
+    expect(needsBabysitter({ code: "N" }, "", "2026-11-13", today)).toBe(false);
+  });
+
+  it("is false on a weekend date", () => {
+    expect(needsBabysitter({ code: "D" }, "", "2026-11-21", today)).toBe(false); // Saturday
+    expect(needsBabysitter({ code: "SE" }, "", "2026-11-22", today)).toBe(false); // Sunday
+    expect(needsBabysitter({ code: "N" }, "", "2026-11-23", today)).toBe(true); // Monday
   });
 });

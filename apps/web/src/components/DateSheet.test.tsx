@@ -455,12 +455,12 @@ describe("Date sheet", () => {
     await waitFor(() => expect(saveDate).toHaveBeenCalledExactlyOnceWith("2026-11-24", { code: "L", babysitter: { name: "Mum", confirmed: false } }));
   });
 
-  it("shows Needs a babysitter while a working shift from today on has none", async () => {
-    await seed({ "2026-11-15": "D", "2026-11-14": "D" });
+  it("shows Needs a babysitter while a weekday working shift from today on has none", async () => {
+    await seed({ "2026-11-17": "D", "2026-11-13": "D", "2026-11-15": "D" });
     await seedBabysitters({ "2026-11-02": "Mum" });
     const needs = (sheet: HTMLElement) => within(sheet).queryByText("Needs a babysitter");
 
-    let { sheet } = await openSheet("Sunday 15 November, Day, no babysitter, today");
+    let { sheet } = await openSheet("Tuesday 17 November, Day, no babysitter");
     expect(needs(sheet)).toBeInTheDocument();
     fireEvent.click(sitterChip(sheet, "Mum"));
     expect(needs(sheet)).not.toBeInTheDocument();
@@ -474,9 +474,18 @@ describe("Date sheet", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 
     // A past date never needs one.
-    fireEvent.click(screen.getByRole("button", { name: "Saturday 14 November, Day" }));
+    fireEvent.click(screen.getByRole("button", { name: "Friday 13 November, Day" }));
     sheet = await screen.findByRole("dialog");
     expect(needs(sheet)).not.toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    // Nor does a weekend date, though it can still have one.
+    fireEvent.click(screen.getByRole("button", { name: "Sunday 15 November, Day, today" }));
+    sheet = await screen.findByRole("dialog");
+    expect(needs(sheet)).not.toBeInTheDocument();
+    fireEvent.click(sitterChip(sheet, "Mum"));
+    expect(sitterChip(sheet, "Mum")).toBeChecked();
     fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 
