@@ -44,7 +44,3 @@ The full list, including test-only settings, is in `docs/design.md`.
 - **HTTPS:** installing to the home screen and working offline need HTTPS, so put it behind a reverse proxy.
 - **Proxy timeout:** reading a roster can take up to 90 seconds, so set the proxy's read timeout above that.
 - **Offline:** the phone keeps its own copy of your shifts and syncs when it can reach the server.
-
-## Development
-
-Needs Go 1.26+, Node 22 (with `corepack enable`) and Docker. `make dev` runs the Go server on :8080 and Vite on :5173; `make test` runs the Go and web tests; `make e2e` runs the Playwright suite against a fake Claude. The design is in `docs/design.md`, the domain terms in `CONTEXT.md`, and the screens in `docs/ux-spec.md`.
