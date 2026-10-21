@@ -1,6 +1,13 @@
 # Roster Mate
 
-A small, self-hosted, **single-user** roster app for one shift worker's phone. Photograph a printed roster, Claude reads your shifts from it, you review them and save. It also tracks events and who's babysitting, and keeps working offline.
+A small, self-hosted roster app for a shift worker's phone.
+
+- Import shifts from a photo of your printed roster, reviewed before they're saved
+- See every shift on a calendar, and change any date in a couple of taps
+- Track who's babysitting each shift, and which dates still need someone
+- Add notes and events, like appointments, to any date
+- See a history of every change to your shifts
+- Install it to your home screen and use it offline
 
 <table>
   <tr>
