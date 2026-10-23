@@ -9,7 +9,7 @@ ignore (
 )
 
 require (
-	github.com/anthropics/anthropic-sdk-go v1.81.0
+	github.com/anthropics/anthropic-sdk-go v1.82.0
 	modernc.org/sqlite v1.60.1
 )
 
