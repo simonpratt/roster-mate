@@ -4,7 +4,7 @@
 # for TARGETPLATFORM, so a multi-arch build needs no emulation.
 
 # 1. Build the web app. Its output is the same on every platform.
-FROM --platform=$BUILDPLATFORM node:22-alpine AS web
+FROM --platform=$BUILDPLATFORM node:25-alpine AS web
 WORKDIR /src
 # corepack runs the pnpm version pinned by packageManager in the root package.json.
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
