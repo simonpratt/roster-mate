@@ -35,7 +35,14 @@
     "Babysitters.dc.html": { "x": 0, "y": 7340, "w": 390, "h": 1240, "title": "Babysitters", "is_interactive": true, "radius": 28 },
     "BabysittersEmpty.dc.html": { "x": 470, "y": 7340, "w": 390, "h": 1000, "title": "Babysitters — none yet", "radius": 28 },
     "History.dc.html": { "x": 0, "y": 8940, "w": 390, "h": 1300, "title": "History", "is_interactive": true, "radius": 28 },
-    "HistoryEmpty.dc.html": { "x": 470, "y": 8940, "w": 390, "h": 844, "title": "History — no changes yet", "radius": 28 }
+    "HistoryEmpty.dc.html": { "x": 470, "y": 8940, "w": 390, "h": 844, "title": "History — no changes yet", "radius": 28 },
+    "RosterEmails.dc.html": { "x": 0, "y": 10600, "w": 390, "h": 844, "title": "Roster emails", "is_interactive": true, "radius": 28 },
+    "RosterEmailsEmpty.dc.html": { "x": 470, "y": 10600, "w": 390, "h": 844, "title": "Roster emails — none yet", "radius": 28 },
+    "RosterEmailsSheet.dc.html": { "x": 940, "y": 10600, "w": 390, "h": 844, "title": "Roster emails — edit recipient", "is_interactive": true, "radius": 28 },
+    "RosterEmailsFailed.dc.html": { "x": 1410, "y": 10600, "w": 390, "h": 844, "title": "Roster emails — last email failed", "radius": 28 },
+    "RosterEmailsOffline.dc.html": { "x": 1880, "y": 10600, "w": 390, "h": 844, "title": "Roster emails — offline", "radius": 28 },
+    "RosterEmailMessage.dc.html": { "x": 2350, "y": 10600, "w": 640, "h": 1500, "title": "Roster email" },
+    "RosterEmailMessageNarrow.dc.html": { "x": 3070, "y": 10600, "w": 375, "h": 1500, "title": "Roster email — phone width" }
   },
   "order": [
     "Main.dc.html",
@@ -68,7 +75,14 @@
     "Babysitters.dc.html",
     "BabysittersEmpty.dc.html",
     "History.dc.html",
-    "HistoryEmpty.dc.html"
+    "HistoryEmpty.dc.html",
+    "RosterEmails.dc.html",
+    "RosterEmailsEmpty.dc.html",
+    "RosterEmailsSheet.dc.html",
+    "RosterEmailsFailed.dc.html",
+    "RosterEmailsOffline.dc.html",
+    "RosterEmailMessage.dc.html",
+    "RosterEmailMessageNarrow.dc.html"
   ],
   "notes": {
     "rowA": { "x": 0, "y": -260, "text": "Sign in", "kind": "title1", "maxW": 2270 },
@@ -78,7 +92,8 @@
     "rowE": { "x": 0, "y": 4716, "text": "Import outcomes & errors", "kind": "title1", "maxW": 2270 },
     "rowF": { "x": 0, "y": 5960, "text": "Tokens", "kind": "title1", "maxW": 2270 },
     "rowG": { "x": 0, "y": 7100, "text": "Babysitters", "kind": "title1", "maxW": 860 },
-    "rowH": { "x": 0, "y": 8700, "text": "History", "kind": "title1", "maxW": 860 }
+    "rowH": { "x": 0, "y": 8700, "text": "History", "kind": "title1", "maxW": 860 },
+    "rowI": { "x": 0, "y": 10360, "text": "Roster emails", "kind": "title1", "maxW": 3445 }
   },
   "designSystems": []
 }

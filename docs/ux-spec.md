@@ -38,6 +38,7 @@ published schedule, and the image uploaded is a **Roster photo**.
                          ├── Import ───► /import ──(save)──► / (month of first saved date)
                          └── ⋯ menu ──┬► Babysitters ──► /babysitters ── tap date ─► Date sheet
                                       ├► History ─────► /history ────── tap date ─► Date sheet
+                                      ├► Roster emails ► /emails ───── tap recipient ─► Recipient sheet
                                       └► Sign out ──► /login
 ```
 
@@ -49,6 +50,7 @@ published schedule, and the image uploaded is a **Roster photo**.
 | `/import` | Import | Header Import button | No — shows "Import needs a connection" |
 | `/babysitters` | Babysitters | ⋯ menu | Yes |
 | `/history` | History | ⋯ menu | Yes |
+| `/emails` | Roster emails | ⋯ menu, only when email is set up | No — shows "Roster emails need a connection" |
 
 There is no tab bar. The Calendar is the hub; Import, Babysitters, History and Login are leaf screens
 with a back control. Browser/OS back closes the date sheet first, then leaves Import, Babysitters or
@@ -159,8 +161,10 @@ The month grid (§5.3) follows directly; there is no next-shift block (removed i
 - **Import** button: camera icon with visible label "Import". When offline it stays visible;
   the Import screen explains why it cannot proceed.
 - **Menu (⋮)**: a small popover with "Babysitters" (users icon, goes to `/babysitters`, §6.5),
-  "History" (history icon: a counter-clockwise arrow round a clock hand, goes to `/history`, §6.6)
-  and "Sign out", in that order (`docs/designs/CalendarMenu.dc.html`). With an
+  "History" (history icon: a counter-clockwise arrow round a clock hand, goes to `/history`, §6.6),
+  "Roster emails" (mail icon: an envelope, goes to `/emails`, §6.7) and "Sign out", in that order
+  (`docs/designs/CalendarMenu.dc.html`). Roster emails shows only when the server has email set up
+  (`RESEND_API_KEY`); without it the menu is as before. With an
   empty outbox, Sign out goes straight to `/login`. Otherwise it opens a centred dialog
   (`docs/designs/CalendarSignOut.dc.html`): "Sign out?" / "You have N pending edits. Signing out
   keeps them on this phone, but they won't sync until you sign in again." [Cancel] [Sign out].
@@ -624,6 +628,89 @@ The list updates live.
 
 Drawn in `docs/designs/History.dc.html` and `HistoryEmpty.dc.html`.
 
+### 6.7 Roster emails (`/emails`)
+
+Who gets a roster email (§6.8) after each import (SIM-51). Reached from the ⋯ menu, which shows it
+only when email is set up. Header: back arrow (to `/`) and title "Roster emails". The recipients
+live on the server, so the screen needs a connection: on opening it loads them with
+`GET /api/recipients`, and shows the offline state when the phone is offline or the call fails, as
+Import does (§6.4). There is no loading copy; the list appears when the call answers.
+
+```
+  ←  Roster emails
+  When you import a roster, its shifts are emailed to everyone
+  here. Babysitters and notes are left out.
+  ● Last sent Fri 2 Oct, 6:03 pm to 2 people   ← last-send line
+  ┌──────────────────────────────────────┐
+  │ nan.pop@example.com                 › │
+  │ Babysitter: Nan                       │
+  ├──────────────────────────────────────┤
+  │ aunty.bec@example.com               › │
+  │ No babysitter                         │
+  └──────────────────────────────────────┘
+  [        +  Add recipient        ]        ← secondary
+```
+
+- **Intro**: "When you import a roster, its shifts are emailed to everyone here. Babysitters and
+  notes are left out." in `text-muted`.
+- **Last-send line** (`role="status"`, 13 px): an 8 px dot then the text. Sent: `ok` dot, "Last sent
+  {short date}, {time} to {n} people" ("to 1 person") in `text-muted`. Failed: `danger` dot and text,
+  "Last email failed {short date}, {time}. Check the server log." Hidden before the first roster
+  email. Date and time as History's headings (§6.6), with "Today" and "Yesterday".
+- **Rows**: one per recipient in the order added, a 64 px-minimum button on `cell` with a
+  `cell-line` border: the address (15 px, medium, truncated with an ellipsis) over "Babysitter:
+  {name}" or "No babysitter" in `text-muted`, and a chevron. Accessible name "{address}, babysitter
+  {name}" or "{address}, no babysitter". Tapping opens the recipient sheet.
+- **Empty**: with no recipients, "No one gets your roster yet. Add an email address to send each new
+  roster to." in `text-muted` above the button.
+- **Add recipient**: secondary button with a plus icon, below the list; opens the recipient sheet
+  empty. Hidden at 10 recipients, the server's limit.
+- **Offline**: cloud-off icon, heading "Roster emails need a connection", text "Reconnect to your
+  home network to change who gets your roster." and "Back to calendar", laid out as Import's.
+
+**Recipient sheet** (bottom sheet, §5.5): title "Add recipient" or "Edit recipient".
+
+- "Email address" input (`type="email"`, `autocapitalize="none"`, placeholder "nan@example.com").
+- "Babysitter": the babysitter picker's chips (§5.8) without the Confirmed switch: None, every
+  babysitter name used before, + Someone else with its Name input. Under it in `text-faint`: "Who
+  this address belongs to. Their babysitting dates aren’t emailed."
+- [Cancel] [Save]; editing adds a "Remove recipient" text button in `danger` below them, which
+  removes at once, with no confirmation.
+- Save checks the address and shows, under the input in `danger`, "Enter an email address like
+  nan@example.com." or "That address is already on the list." (ignoring case). Save and Remove
+  write the whole list with `PUT /api/recipients`; the sheet closes once the server answers, and
+  on failure stays open with "Couldn’t save. Check your connection and try again." above the
+  buttons.
+
+Drawn in `docs/designs/RosterEmails.dc.html` (list; Play adds, edits and removes),
+`RosterEmailsEmpty`, `RosterEmailsSheet`, `RosterEmailsFailed` and `RosterEmailsOffline`.
+
+### 6.8 The roster email
+
+What a recipient receives (`docs/designs/RosterEmailMessage.dc.html`, 600 px and wider;
+`RosterEmailMessageNarrow.dc.html`, a phone). It is light only, so it reads the same in light and
+dark mail clients: every colour is set explicitly and the message declares `color-scheme: light`
+(`<meta name="color-scheme" content="light">` and `supported-color-schemes`). Fonts are the
+client's system sans-serif and monospace.
+
+- **Subject**: "New roster: {first date} – {last date}", short dates without weekdays ("New
+  roster: 26 Oct – 22 Nov"), the year after the last date only when it isn't the current year.
+  The sender's name comes from `EMAIL_FROM`.
+- **Preheader** (hidden preview text): "{n} working shifts, {first date} – {last date}".
+- **Card**: white, 560 px max width, on a `#F3F4F6` page. "NEW ROSTER" eyebrow (13 px, uppercase,
+  `#5B6270`), the range as the heading ("Mon 26 Oct – Sun 22 Nov 2026", 24 px bold), then "{n}
+  working shifts over {w} weeks." ("1 working shift", "one week" … "four weeks", digits past ten).
+- **Weeks**: one block per Monday-to-Sunday week, headed "Week of Mon 26 Oct". Each date is a row:
+  the date ("Mon 26 Oct"), a 34 × 26 px chip with the code, then the label ("Night"; an Other code
+  shows its letters; Day off and its date in the muted colour). An unrostered date shows "–" in an
+  outlined chip and "Not rostered". Saturday and Sunday rows have a `#F8F9FA` fill.
+- **Chip colours** (light, the same families as §4.2): D `#FEF3C7`/`#8A4B00`, E `#E0F2FE`/`#075985`,
+  L `#EDE9FE`/`#5B21B6`, N `#E0E7FF`/`#3730A3`, Other `#ECFCCB`/`#3F6212`; Day off is white with a 1 px
+  `#D0D4DA` outline and `#6B7280` text. Every shift shows its letters, so colour is a second cue.
+- **Footer**: "A Night shift is listed on the date it starts. Shifts can still change after a
+  roster comes out." then, over a rule, "Sent by Roster Mate when a new roster was imported."
+- A plain-text part carries the same: subject line, then one line per date ("Mon 26 Oct  N  Night").
+
 ## 7. Cross-cutting behaviour
 
 ### 7.1 Offline and sync
@@ -686,6 +773,8 @@ Drawn in `docs/designs/History.dc.html` and `HistoryEmpty.dc.html`.
 | Calendar cell | swapped from {code label} (accessible name only) · +{n} (more events) |
 | Events | Notes and events (the date sheet's heading) · Add a note or event · Remove event: {text} |
 | History | History · Every change to a shift, newest first. · Not synced yet · {n} changes / 1 change · Today · Yesterday · Date sheet · Import · Edit · {n} shifts · No shift changes yet. Shifts you change or import show here. |
+| Roster emails | Roster emails · When you import a roster, its shifts are emailed to everyone here. Babysitters and notes are left out. · Last sent {date}, {time} to {n} people / 1 person · Last email failed {date}, {time}. Check the server log. · Babysitter: {name} · No babysitter · No one gets your roster yet. Add an email address to send each new roster to. · Add recipient · Edit recipient · Email address · Who this address belongs to. Their babysitting dates aren’t emailed. · Remove recipient · Enter an email address like nan@example.com. · That address is already on the list. · Couldn’t save. Check your connection and try again. · Roster emails need a connection / Reconnect to your home network to change who gets your roster. |
+| Roster email | New roster: {first} – {last} · NEW ROSTER · {n} working shifts over {w} weeks. · Week of {Mon date} · Not rostered · A Night shift is listed on the date it starts. Shifts can still change after a roster comes out. · Sent by Roster Mate when a new roster was imported. |
 | Sign out with pending | You have {n} pending edits. Signing out keeps them on this phone, but they won't sync until you sign in again. |
 
 Tone: short, plain, second person, no exclamation marks, no technical terms ("sync" is the one
@@ -706,6 +795,7 @@ exception, already used in the indicator).
 | SIM-43 Babysitter share | §6.5 share card, §8 |
 | SIM-44 Scrollable calendar | §4.6, §5.1, §5.3, §6.2 |
 | SIM-45 Shift history | §3, §5.1 menu, §6.3 Notes and events, §6.6, §8 |
+| SIM-51 Roster emails | §3, §5.1 menu, §6.7, §6.8, §8 |
 
 ## 10. Additions beyond the tickets
 
@@ -734,3 +824,7 @@ doesn't want, and the ticket specs still stand on their own.
   events" and its empty line "Add a note or event" (`Main.dc.html`).
 - SIM-47: the month grid's cells show a swap badge on a swapped shift's chip (§5.11) and the first
   event's text in place of the event dots (§5.3); CONTEXT.md gains **Swapped** (`Main.dc.html`).
+- SIM-51: Roster emails in the ⋯ menu between History and Sign out, shown only when email is set up
+  (`Main.dc.html`), the new Roster emails screen and recipient sheet (`RosterEmails*.dc.html`, §6.7)
+  and the roster email itself (`RosterEmailMessage*.dc.html`, §6.8); CONTEXT.md gains **Roster
+  email** and **Recipient**.

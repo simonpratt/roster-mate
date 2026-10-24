@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roster Mate — Roster email</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<!-- The email a recipient gets, as an email client shows it. Light only: every colour is set
+     explicitly and the message declares color-scheme: light, so a dark client leaves it light.
+     Fonts are the client's system sans-serif and monospace; email clients can't load web fonts reliably. -->
+<div style="width: {{boardWidth}}; min-height: 900px; box-sizing: border-box; padding: {{pagePad}}; background: #F3F4F6; color: #16181D; color-scheme: light; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <div style="max-width: 560px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E3E6EA; border-radius: 12px; padding: {{cardPad}}; box-sizing: border-box">
+
+    <p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #5B6270">New roster</p>
+    <h1 style="margin: 6px 0 0; font-size: 24px; line-height: 1.25; font-weight: 700; color: #16181D">{{range}}</h1>
+    <p style="margin: 8px 0 0; font-size: 15px; line-height: 1.5; color: #5B6270">{{summary}}</p>
+
+    <sc-for list="{{weeks}}" as="w" hint-placeholder-count="4">
+      <div style="margin-top: 24px">
+        <h2 style="margin: 0 0 8px; font-size: 15px; font-weight: 700; color: #16181D">{{w.title}}</h2>
+        <div style="border: 1px solid #E3E6EA; border-radius: 10px; overflow: hidden">
+          <sc-for list="{{w.rows}}" as="r" hint-placeholder-count="7">
+            <div style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 6px 12px; box-sizing: border-box; background: {{r.rowBg}}; border-top: {{r.rowLine}}">
+              <span style="width: 96px; flex: none; font-size: 15px; color: {{r.dateFg}}">{{r.date}}</span>
+              <span style="width: 34px; height: 26px; flex: none; box-sizing: border-box; border-radius: 6px; border: 1px solid {{r.chipLine}}; background: {{r.chipBg}}; color: {{r.chipFg}}; display: flex; align-items: center; justify-content: center; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; font-weight: 700">{{r.code}}</span>
+              <span style="font-size: 15px; font-weight: {{r.labelWeight}}; color: {{r.labelFg}}">{{r.label}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+
+    <p style="margin: 24px 0 0; font-size: 13px; line-height: 1.5; color: #5B6270">A Night shift is listed on the date it starts. Shifts can still change after a roster comes out.</p>
+    <p style="margin: 12px 0 0; padding-top: 12px; border-top: 1px solid #E3E6EA; font-size: 12px; line-height: 1.5; color: #6B7280">Sent by Roster Mate when a new roster was imported.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"narrow":{"editor":"boolean","default":false},"$preview":{"width":640,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const MS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    // Light chip colours: a pale fill and a dark text colour of each code's family (ux-spec §4.2
+    // keeps the families; these are the email's own values). Day off is outlined.
+    const CODES = {
+      D: { label: 'Day', bg: '#FEF3C7', fg: '#8A4B00', line: '#FEF3C7' },
+      E: { label: 'Early', bg: '#E0F2FE', fg: '#075985', line: '#E0F2FE' },
+      L: { label: 'Late', bg: '#EDE9FE', fg: '#5B21B6', line: '#EDE9FE' },
+      N: { label: 'Night', bg: '#E0E7FF', fg: '#3730A3', line: '#E0E7FF' },
+      X: { label: 'Day off', bg: '#FFFFFF', fg: '#6B7280', line: '#D0D4DA' }
+    };
+    const OTHER = { bg: '#ECFCCB', fg: '#3F6212', line: '#ECFCCB' };
+
+    // The import saved 26 Oct – 22 Nov 2026 (four whole weeks, Monday first). '' is an unrostered date.
+    const CODES_BY_WEEK = [
+      'N N X X D D E',
+      'E L L X X N N',
+      'N X X SE D D X',
+      'L L E X  D X'
+    ].map((w) => w.split(' '));
+    const start = new Date(2026, 9, 26);
+    const p = this.props || {};
+    const narrow = p.narrow === true || p.narrow === 'true';
+
+    let working = 0;
+    const weeks = CODES_BY_WEEK.map((codes, wi) => {
+      const rows = codes.map((k, di) => {
+        const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + wi * 7 + di);
+        const weekend = di >= 5;
+        const base = { date: WD[d.getDay()] + ' ' + d.getDate() + ' ' + MS[d.getMonth()], rowBg: weekend ? '#F8F9FA' : '#FFFFFF', rowLine: di === 0 ? '0' : '1px solid #EEF0F2' };
+        if (!k) return Object.assign(base, { code: '–', label: 'Not rostered', chipBg: '#FFFFFF', chipFg: '#9CA3AF', chipLine: '#E3E6EA', labelFg: '#9CA3AF', labelWeight: 400, dateFg: '#5B6270' });
+        const c = CODES[k] || OTHER;
+        if (k !== 'X') working++;
+        return Object.assign(base, {
+          code: k, label: CODES[k] ? c.label : k, chipBg: c.bg, chipFg: c.fg, chipLine: c.line,
+          labelFg: k === 'X' ? '#6B7280' : '#16181D', labelWeight: k === 'X' ? 400 : 600, dateFg: k === 'X' ? '#5B6270' : '#16181D'
+        });
+      });
+      const m = new Date(start.getFullYear(), start.getMonth(), start.getDate() + wi * 7);
+      return { title: 'Week of Mon ' + m.getDate() + ' ' + MS[m.getMonth()], rows };
+    });
+
+    return {
+      boardWidth: narrow ? '375px' : '640px',
+      pagePad: narrow ? '0' : '32px 40px',
+      cardPad: narrow ? '20px 16px' : '28px 28px',
+      range: 'Mon 26 Oct – Sun 22 Nov 2026',
+      summary: working + ' working shifts over four weeks.',
+      weeks
+    };
+  }
+}
+</script>
+</body>
+</html>

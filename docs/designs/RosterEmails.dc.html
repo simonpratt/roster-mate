@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roster Mate — Roster emails</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; min-height: 844px; box-sizing: border-box; padding-bottom: 32px; background: #0E1014; color: #ECEEF2; color-scheme: dark; font-family: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="display: flex; align-items: center; gap: 4px; padding: 8px 16px 8px 4px; height: 60px; box-sizing: border-box; flex: none">
+    <a href="Main.dc.html" aria-label="Back to calendar" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #C9CDD4">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <h1 style="margin: 0; font-size: 17px; font-weight: 600">Roster emails</h1>
+  </header>
+
+  <sc-if value="{{offline}}" hint-placeholder-val="{{ false }}">
+    <div style="margin: 96px 24px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9AA1AD" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"></path><path d="M8.5 8.6A5 5 0 0 0 6 17h11"></path><path d="M11 6.1A5.5 5.5 0 0 1 17.5 10a3.5 3.5 0 0 1 2.3 6"></path></svg>
+      <h2 style="margin: 4px 0 0; font-size: 21px; font-weight: 600; letter-spacing: -0.01em">Roster emails need a connection</h2>
+      <p style="margin: 0; font-size: 15px; line-height: 1.45; color: #9AA1AD">Reconnect to your home network to change who gets your roster.</p>
+      <a href="Main.dc.html" style="margin-top: 12px; height: 52px; padding: 0 24px; border-radius: 14px; border: 1px solid #2E333C; color: #ECEEF2; display: flex; align-items: center; font-size: 16px; font-weight: 600; text-decoration: none">Back to calendar</a>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{online}}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; flex-direction: column">
+      <p style="margin: 4px 16px 0; font-size: 15px; line-height: 1.45; color: #9AA1AD">When you import a roster, its shifts are emailed to everyone here. Babysitters and notes are left out.</p>
+
+      <sc-if value="{{hasStatus}}" hint-placeholder-val="{{ true }}">
+        <p role="status" style="margin: 12px 16px 0; display: flex; align-items: center; gap: 8px; font-size: 13px; color: {{statusColor}}">
+          <span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 4px; background: {{statusDot}}"></span>
+          <span>{{statusText}}</span>
+        </p>
+      </sc-if>
+
+      <sc-if value="{{hasRecipients}}" hint-placeholder-val="{{ true }}">
+        <section aria-label="Recipients" style="margin: 20px 16px 0; display: flex; flex-direction: column; gap: 8px">
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="2">
+            <button type="button" onClick="{{r.open}}" aria-label="{{r.aria}}" style="min-height: 64px; box-sizing: border-box; padding: 10px 14px; border-radius: 12px; border: 1px solid #1C2027; background: #121418; color: #ECEEF2; font: inherit; display: grid; grid-template-columns: minmax(0, 1fr) 16px; align-items: center; gap: 10px; text-align: left; cursor: pointer">
+              <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+                <span style="font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.email}}</span>
+                <span style="font-size: 13px; color: #9AA1AD">{{r.sub}}</span>
+              </span>
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8C93A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+            </button>
+          </sc-for>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 28px 16px 0; font-size: 15px; line-height: 1.45; color: #9AA1AD">No one gets your roster yet. Add an email address to send each new roster to.</p>
+      </sc-if>
+
+      <button type="button" onClick="{{add}}" style="margin: 16px 16px 0; height: 52px; border-radius: 14px; border: 1px solid #2E333C; background: transparent; color: #ECEEF2; font: inherit; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        Add recipient
+      </button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{sheetOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(4, 5, 7, 0.66)">
+      <button type="button" aria-label="Close" onClick="{{cancel}}" style="position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; cursor: default"></button>
+      <section role="dialog" aria-modal="true" aria-labelledby="sheet-title" style="position: absolute; left: 0; right: 0; bottom: 0; background: #161920; border-top: 1px solid #2A2F38; border-radius: 22px 22px 0 0; padding: 10px 16px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px">
+        <span aria-hidden="true" style="align-self: center; width: 36px; height: 4px; border-radius: 2px; background: #3A404B"></span>
+        <h2 id="sheet-title" style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em">{{sheetTitle}}</h2>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="recipient-email" style="font-size: 14px; font-weight: 500; color: #C9CDD4">Email address</label>
+          <input id="recipient-email" type="email" inputmode="email" autocapitalize="none" autocomplete="email" spellcheck="false" maxlength="254" value="{{draftEmail}}" onChange="{{onEmail}}" placeholder="nan@example.com" aria-invalid="{{emailInvalid}}" aria-describedby="email-error" style="height: 48px; box-sizing: border-box; border-radius: 12px; border: 1.5px solid {{emailLine}}; background: #0E1014; color: #ECEEF2; padding: 0 14px; font: inherit; font-size: 16px">
+          <sc-if value="{{hasEmailError}}" hint-placeholder-val="{{ false }}">
+            <span id="email-error" style="font-size: 13px; color: #FB7185">{{emailError}}</span>
+          </sc-if>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <span id="sitter-label" style="font-size: 14px; font-weight: 500; color: #C9CDD4">Babysitter</span>
+          <div role="radiogroup" aria-labelledby="sitter-label" style="display: flex; flex-wrap: wrap; gap: 6px">
+            <sc-for list="{{sitterChips}}" as="c" hint-placeholder-count="4">
+              <button type="button" role="radio" aria-checked="{{c.on}}" onClick="{{c.pick}}" style="height: 44px; box-sizing: border-box; padding: 0 16px; border-radius: 22px; border: 1.5px {{c.lineStyle}} {{c.line}}; background: {{c.bg}}; color: {{c.fg}}; font: inherit; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 6px; cursor: pointer">
+                <sc-if value="{{c.on}}" hint-placeholder-val="{{ false }}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                </sc-if>
+                <span>{{c.label}}</span>
+              </button>
+            </sc-for>
+          </div>
+          <sc-if value="{{showSitterInput}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 2px">
+              <label for="sitter-name" style="font-size: 13px; color: #9AA1AD">Name</label>
+              <input id="sitter-name" type="text" maxlength="40" autocapitalize="words" autocomplete="off" value="{{otherSitter}}" onChange="{{onOtherSitter}}" placeholder="e.g. Aunty Bec" style="height: 48px; box-sizing: border-box; border-radius: 12px; border: 1.5px solid #7DD3FC; background: #0E1014; color: #ECEEF2; padding: 0 14px; font: inherit; font-size: 16px">
+            </div>
+          </sc-if>
+          <span style="font-size: 13px; line-height: 1.4; color: #8C93A0">Who this address belongs to. Their babysitting dates aren’t emailed.</span>
+        </div>
+        <sc-if value="{{saveFailed}}" hint-placeholder-val="{{ false }}">
+          <p role="alert" style="margin: 0; font-size: 14px; color: #FB7185">Couldn’t save. Check your connection and try again.</p>
+        </sc-if>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+          <button type="button" onClick="{{cancel}}" style="height: 52px; border-radius: 14px; border: 1px solid #2E333C; background: transparent; color: #ECEEF2; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer">Cancel</button>
+          <button type="button" onClick="{{save}}" style="height: 52px; border-radius: 14px; border: 0; background: #ECEEF2; color: #0E1014; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer">Save</button>
+        </div>
+        <sc-if value="{{canRemove}}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{remove}}" style="height: 44px; border: 0; background: transparent; color: #FB7185; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer">Remove recipient</button>
+        </sc-if>
+      </section>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"stage":{"editor":"enum","options":["list","empty","offline","sheet","failed"],"default":"list"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    // The same sample as the Calendar (Main.dc.html): today is Thursday 15 October 2026, and the
+    // babysitters used so far are Mum, Nan and Pop.
+    const KNOWN = ['Mum', 'Nan', 'Pop'];
+    const SAMPLE = [
+      { email: 'nan.pop@example.com', sitter: 'Nan' },
+      { email: 'mum@example.com', sitter: 'Mum' },
+      { email: 'aunty.bec@example.com', sitter: '' }
+    ];
+    const p = this.props || {};
+    const s = this.state || {};
+    const stage = ['list', 'empty', 'offline', 'sheet', 'failed'].indexOf(p.stage) >= 0 ? p.stage : 'list';
+    const offline = stage === 'offline';
+    const list = s.list || (stage === 'empty' ? [] : SAMPLE);
+    // editing: null (closed), 'new', or an index into list. The sheet stage opens the first row.
+    const editing = s.editing !== undefined ? s.editing : (stage === 'sheet' ? 0 : null);
+    const sheetOpen = editing !== null && !offline;
+    const cur = typeof editing === 'number' ? list[editing] : { email: '', sitter: '' };
+
+    const draftEmail = s.draftEmail !== undefined ? s.draftEmail : cur.email;
+    const sitterPick = s.sitterPick !== undefined ? s.sitterPick : cur.sitter;
+    const otherSitter = s.otherSitter || '';
+    const showSitterInput = sitterPick === '__other';
+    const finalSitter = sitterPick === '__other' ? otherSitter.trim() : sitterPick;
+    const sitterChips = [{ label: 'None', value: '' }]
+      .concat(KNOWN.map((n) => ({ label: n, value: n })))
+      .concat([{ label: 'Someone else', value: '__other' }])
+      .map((o) => {
+        const on = sitterPick === o.value;
+        const add = o.value === '__other';
+        return {
+          label: add && !on ? '+ Someone else' : o.label, on,
+          line: on ? '#ECEEF2' : '#2A2F38', lineStyle: add && !on ? 'dashed' : 'solid',
+          bg: on ? '#1E222A' : '#1A1D24', fg: on ? '#ECEEF2' : (add ? '#9AA1AD' : '#C9CDD4'),
+          pick: () => this.setState({ sitterPick: o.value })
+        };
+      });
+
+    const email = draftEmail.trim().toLowerCase();
+    const dupe = list.some((r, i) => i !== editing && r.email.toLowerCase() === email);
+    const emailError = s.tried ? (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 'Enter an email address like nan@example.com.' : (dupe ? 'That address is already on the list.' : '')) : '';
+    const close = { editing: null, draftEmail: undefined, sitterPick: undefined, otherSitter: undefined, tried: false };
+
+    const rows = list.map((r, i) => ({
+      email: r.email,
+      sub: r.sitter ? 'Babysitter: ' + r.sitter : 'No babysitter',
+      aria: r.email + ', ' + (r.sitter ? 'babysitter ' + r.sitter : 'no babysitter'),
+      open: () => this.setState(Object.assign({}, close, { editing: i }))
+    }));
+
+    // The last roster email: sent, failed, or none yet.
+    const failed = stage === 'failed';
+    const statusText = list.length === 0 && stage === 'empty' ? '' :
+      (failed ? 'Last email failed Fri 2 Oct, 6:03 pm. Check the server log.' : 'Last sent Fri 2 Oct, 6:03 pm to 2 people');
+
+    return {
+      offline, online: !offline,
+      hasStatus: !!statusText, statusText,
+      statusColor: failed ? '#FB7185' : '#9AA1AD',
+      statusDot: failed ? '#FB7185' : '#34D399',
+      hasRecipients: list.length > 0,
+      isEmpty: list.length === 0,
+      rows,
+      add: () => this.setState(Object.assign({}, close, { editing: 'new' })),
+      sheetOpen,
+      sheetTitle: editing === 'new' ? 'Add recipient' : 'Edit recipient',
+      draftEmail,
+      onEmail: (e) => this.setState({ draftEmail: e.target.value }),
+      hasEmailError: !!emailError, emailError, emailInvalid: !!emailError,
+      emailLine: emailError ? '#FB7185' : '#2E333C',
+      sitterChips, showSitterInput, otherSitter,
+      onOtherSitter: (e) => this.setState({ otherSitter: e.target.value }),
+      saveFailed: false,
+      canRemove: typeof editing === 'number',
+      cancel: () => this.setState(close),
+      save: () => {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || dupe) { this.setState({ tried: true }); return; }
+        const next = list.slice();
+        const row = { email, sitter: finalSitter };
+        if (editing === 'new') next.push(row); else next[editing] = row;
+        this.setState(Object.assign({}, close, { list: next }));
+      },
+      remove: () => this.setState(Object.assign({}, close, { list: list.filter((_, i) => i !== editing) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

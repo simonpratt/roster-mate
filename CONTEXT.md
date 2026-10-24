@@ -143,6 +143,18 @@ _Avoid_: unknown code, raw code, invalid code
 The step where the user compares proposed shifts with their saved shifts and chooses which to save.
 _Avoid_: confirm, approve
 
+### Roster emails
+
+**Roster email**:
+An email of the shifts an import saved, sent by the server to every recipient once the import's
+shift edits have synced. It covers whole weeks, Monday to Sunday, from the first date to the last
+the import changed, and shows each date's shift code only: no babysitters, events or swap marks.
+_Avoid_: cc, copy, notification, newsletter
+
+**Recipient**:
+An email address that gets every roster email, optionally belonging to a babysitter.
+_Avoid_: cc, subscriber, contact
+
 ### Sync
 
 **Pending edit**:
