@@ -4,6 +4,7 @@ package config
 
 import (
 	"fmt"
+	"net/mail"
 	"net/url"
 	"strconv"
 	"strings"
@@ -12,6 +13,9 @@ import (
 
 // DefaultModel is the extraction model used when ANTHROPIC_MODEL is unset.
 const DefaultModel = "claude-sonnet-5-5"
+
+// DefaultResendBaseURL is the Resend API address used when RESEND_BASE_URL is unset.
+const DefaultResendBaseURL = "https://api.resend.com"
 
 // Config holds every setting the server reads from the environment.
 type Config struct {
@@ -31,7 +35,17 @@ type Config struct {
 	AnthropicBaseURL string
 	// TestMode (APP_TEST_MODE=1) mounts the test-only routes such as POST /api/test/reset.
 	TestMode bool
+	// ResendAPIKey turns roster emails on when set. Empty means email is off.
+	ResendAPIKey string
+	// EmailFrom is the roster email's From address, display name allowed. Set whenever
+	// ResendAPIKey is; empty otherwise.
+	EmailFrom string
+	// ResendBaseURL is the Resend API address (a fake in tests).
+	ResendBaseURL string
 }
+
+// EmailEnabled reports whether roster emails are on, which is whenever RESEND_API_KEY is set.
+func (c Config) EmailEnabled() bool { return c.ResendAPIKey != "" }
 
 // Load reads the configuration through getenv (os.Getenv in production).
 // It returns an error naming every required variable that is missing and any value that is invalid.
@@ -49,6 +63,8 @@ func Load(getenv func(string) string) (Config, error) {
 		TZ:               get("TZ"),
 		AnthropicBaseURL: get("ANTHROPIC_BASE_URL"),
 		TestMode:         get("APP_TEST_MODE") == "1",
+		ResendAPIKey:     get("RESEND_API_KEY"),
+		ResendBaseURL:    get("RESEND_BASE_URL"),
 	}
 
 	var missing []string
@@ -90,12 +106,31 @@ func Load(getenv func(string) string) (Config, error) {
 		}
 	}
 
-	if cfg.AnthropicBaseURL != "" {
-		u, err := url.Parse(cfg.AnthropicBaseURL)
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-			return Config{}, fmt.Errorf("ANTHROPIC_BASE_URL must be an absolute http or https URL, got %q", cfg.AnthropicBaseURL)
+	if cfg.AnthropicBaseURL != "" && !absoluteHTTPURL(cfg.AnthropicBaseURL) {
+		return Config{}, fmt.Errorf("ANTHROPIC_BASE_URL must be an absolute http or https URL, got %q", cfg.AnthropicBaseURL)
+	}
+
+	if cfg.ResendBaseURL == "" {
+		cfg.ResendBaseURL = DefaultResendBaseURL
+	} else if !absoluteHTTPURL(cfg.ResendBaseURL) {
+		return Config{}, fmt.Errorf("RESEND_BASE_URL must be an absolute http or https URL, got %q", cfg.ResendBaseURL)
+	}
+
+	if cfg.EmailEnabled() {
+		from := get("EMAIL_FROM")
+		if from == "" {
+			return Config{}, fmt.Errorf("EMAIL_FROM is required when RESEND_API_KEY is set")
 		}
+		if _, err := mail.ParseAddress(from); err != nil {
+			return Config{}, fmt.Errorf("EMAIL_FROM must be an email address, got %q", from)
+		}
+		cfg.EmailFrom = from
 	}
 
 	return cfg, nil
+}
+
+func absoluteHTTPURL(s string) bool {
+	u, err := url.Parse(s)
+	return err == nil && (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
 }

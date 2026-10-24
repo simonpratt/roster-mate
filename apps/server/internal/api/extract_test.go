@@ -35,7 +35,7 @@ func (f *fakeExtractor) Extract(ctx context.Context, img []byte, mediaType strin
 func newExtractServer(t *testing.T, ex extract.Extractor) string {
 	t.Helper()
 	a := auth.New("simon", "secret", []byte("0123456789abcdef0123456789abcdef"))
-	srv := httptest.NewServer(NewRouter(http.NotFoundHandler(), a, newStore(t), ex))
+	srv := httptest.NewServer(NewRouter(http.NotFoundHandler(), a, newStore(t), ex, Options{}))
 	t.Cleanup(srv.Close)
 	return srv.URL
 }

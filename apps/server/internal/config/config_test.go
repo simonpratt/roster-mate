@@ -109,3 +109,61 @@ func TestLoadAcceptsHTTPSBaseURL(t *testing.T) {
 		t.Errorf("Load = %q, %v", cfg.AnthropicBaseURL, err)
 	}
 }
+
+// Without RESEND_API_KEY email is off and EMAIL_FROM is ignored, even when it is not an address.
+func TestLoadEmailOffWithoutKey(t *testing.T) {
+	cfg, err := Load(env(map[string]string{"EMAIL_FROM": "not an address"}))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.EmailEnabled() || cfg.EmailFrom != "" || cfg.ResendBaseURL != DefaultResendBaseURL {
+		t.Errorf("email = %v, from %q, base URL %q; want off, empty, the default",
+			cfg.EmailEnabled(), cfg.EmailFrom, cfg.ResendBaseURL)
+	}
+}
+
+func TestLoadEmailOn(t *testing.T) {
+	cfg, err := Load(env(map[string]string{
+		"RESEND_API_KEY":  "re_test",
+		"EMAIL_FROM":      "Simon's roster <roster@mail.example.com>",
+		"RESEND_BASE_URL": "http://127.0.0.1:18082",
+	}))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if !cfg.EmailEnabled() || cfg.ResendAPIKey != "re_test" ||
+		cfg.EmailFrom != "Simon's roster <roster@mail.example.com>" || cfg.ResendBaseURL != "http://127.0.0.1:18082" {
+		t.Errorf("email config = %+v", cfg)
+	}
+}
+
+func TestLoadEmailErrors(t *testing.T) {
+	for name, tc := range map[string]struct {
+		over map[string]string
+		want string
+	}{
+		"key without from": {
+			map[string]string{"RESEND_API_KEY": "re_test"},
+			"EMAIL_FROM is required when RESEND_API_KEY is set",
+		},
+		"bad from": {
+			map[string]string{"RESEND_API_KEY": "re_test", "EMAIL_FROM": "roster at example"},
+			`EMAIL_FROM must be an email address, got "roster at example"`,
+		},
+		"relative base URL": {
+			map[string]string{"RESEND_BASE_URL": "/emails"},
+			`RESEND_BASE_URL must be an absolute http or https URL, got "/emails"`,
+		},
+		"ftp base URL": {
+			map[string]string{"RESEND_BASE_URL": "ftp://example.com"},
+			`RESEND_BASE_URL must be an absolute http or https URL, got "ftp://example.com"`,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := Load(env(tc.over))
+			if err == nil || err.Error() != tc.want {
+				t.Errorf("Load: err = %v; want %q", err, tc.want)
+			}
+		})
+	}
+}

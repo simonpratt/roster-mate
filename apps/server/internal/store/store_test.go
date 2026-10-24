@@ -25,8 +25,8 @@ func TestOpenCreatesDBInWALModeWithMeta(t *testing.T) {
 		t.Errorf("journal_mode = %q, %v; want wal", mode, err)
 	}
 	v, err := s.SchemaVersion()
-	if err != nil || v != 5 {
-		t.Errorf("SchemaVersion = %d, %v; want 5", v, err)
+	if err != nil || v != 6 {
+		t.Errorf("SchemaVersion = %d, %v; want 6", v, err)
 	}
 }
 
@@ -240,8 +240,8 @@ func TestBadMigrationNames(t *testing.T) {
 	}
 }
 
-// Reset empties shifts, shift changes, events and babysitters and keeps meta: the session secret, the
-// database id and the rev counter.
+// Reset empties shifts, shift changes, events, babysitters, recipients and roster email sends
+// and keeps meta: the session secret, the database id and the rev counter.
 func TestResetClearsRowsAndKeepsMeta(t *testing.T) {
 	s := openTemp(t)
 	ctx := context.Background()
@@ -258,6 +258,12 @@ func TestResetClearsRowsAndKeepsMeta(t *testing.T) {
 		Events:      []Event{{ID: eventA, Date: "2026-12-08", Text: "Dentist", CreatedAt: 100, EditedAt: 1000}},
 		Babysitters: []Babysitter{{Date: "2026-12-08", Name: "Nan", EditedAt: 1000}},
 	})
+	if err := s.ReplaceRecipients(ctx, []Recipient{{Email: "nan@example.com", Babysitter: "Nan"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.RecordRosterEmail(ctx, RosterEmailSend{SentAt: 1000, FirstDate: "2026-12-07", LastDate: "2026-12-13", Recipients: 1, OK: true}); err != nil {
+		t.Fatal(err)
+	}
 	if pull.Rev != 3 {
 		t.Fatalf("rev before reset = %d; want 3", pull.Rev)
 	}
@@ -266,7 +272,7 @@ func TestResetClearsRowsAndKeepsMeta(t *testing.T) {
 		t.Fatalf("Reset: %v", err)
 	}
 
-	for _, table := range []string{"shifts", "shift_changes", "events", "babysitters"} {
+	for _, table := range []string{"shifts", "shift_changes", "events", "babysitters", "recipients", "roster_email_sends"} {
 		var n int
 		if err := s.DB.QueryRow("SELECT count(*) FROM " + table).Scan(&n); err != nil || n != 0 {
 			t.Errorf("%s rows after reset = %d, %v; want 0", table, n, err)

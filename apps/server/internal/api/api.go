@@ -11,15 +11,25 @@ import (
 	"github.com/simonpratt/roster-mate/apps/server/internal/store"
 )
 
+// Options holds the router's switches from the configuration.
+type Options struct {
+	// Email turns roster emails on: it mounts /api/recipients and is reported by /api/session.
+	Email bool
+}
+
 // NewRouter returns the server's handler. app serves the web app for every path outside /api/;
 // it and /api/health, /api/login need no session, and every other /api/ route does. ex reads
 // shifts from roster photos for /api/extract.
-func NewRouter(app http.Handler, a *auth.Auth, st *store.Store, ex extract.Extractor) http.Handler {
+func NewRouter(app http.Handler, a *auth.Auth, st *store.Store, ex extract.Extractor, opts Options) http.Handler {
 	private := http.NewServeMux()
 	private.HandleFunc("POST /api/logout", logout(a))
-	private.HandleFunc("GET /api/session", sessionInfo)
+	private.HandleFunc("GET /api/session", sessionInfo(opts.Email))
 	private.HandleFunc("POST /api/sync", sync(st))
 	private.HandleFunc("POST /api/extract", extractShifts(ex))
+	if opts.Email {
+		private.HandleFunc("GET /api/recipients", getRecipients(st))
+		private.HandleFunc("PUT /api/recipients", putRecipients(st))
+	}
 	// Any other /api/ path is a 404, never the web app's index.html.
 	private.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
@@ -75,8 +85,16 @@ func logout(a *auth.Auth) http.HandlerFunc {
 	}
 }
 
-func sessionInfo(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"username": auth.Username(r.Context())})
+type session struct {
+	Username string `json:"username"`
+	Email    bool   `json:"email"`
+}
+
+// sessionInfo answers GET /api/session with the signed-in user and whether roster emails are on.
+func sessionInfo(email bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, session{Username: auth.Username(r.Context()), Email: email})
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

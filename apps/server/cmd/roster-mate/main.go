@@ -62,9 +62,9 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer, onLi
 		opts = append(opts, option.WithBaseURL(cfg.AnthropicBaseURL))
 	}
 	ex := extract.NewClaude(cfg.AnthropicAPIKey, cfg.AnthropicModel, cfg.RosterName, log, opts...)
-	handler := api.NewRouter(web.Handler(client.Dist()), a, st, ex)
+	handler := api.NewRouter(web.Handler(client.Dist()), a, st, ex, api.Options{Email: cfg.EmailEnabled()})
 	if cfg.TestMode {
-		log.Warn("test mode is on: POST /api/test/reset deletes every shift, shift change, event and babysitter without a session; never set APP_TEST_MODE in production")
+		log.Warn("test mode is on: POST /api/test/reset deletes every shift, shift change, event, babysitter, recipient and roster email send without a session; never set APP_TEST_MODE in production")
 		handler = api.WithTestRoutes(handler, st)
 	}
 	srv := &http.Server{
@@ -77,7 +77,11 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer, onLi
 		fmt.Fprintf(stderr, "roster-mate: listening on %s: %v\n", addr, err)
 		return 1
 	}
-	log.Info("listening", "addr", ln.Addr().String(), "dataDir", cfg.DataDir, "model", cfg.AnthropicModel)
+	email := "off"
+	if cfg.EmailEnabled() {
+		email = "on"
+	}
+	log.Info("listening", "addr", ln.Addr().String(), "dataDir", cfg.DataDir, "model", cfg.AnthropicModel, "email", email)
 	if onListen != nil {
 		onListen(ln.Addr())
 	}

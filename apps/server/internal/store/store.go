@@ -1,5 +1,5 @@
-// Package store owns the SQLite database: opening it, migrating it and the sync queries
-// for shifts, events and babysitters.
+// Package store owns the SQLite database: opening it, migrating it, the sync queries for
+// shifts, events and babysitters, and the roster email recipients and sends.
 package store
 
 import (
@@ -185,15 +185,15 @@ func schemaVersion(db *sql.DB) (int, error) {
 	return version, nil
 }
 
-// Reset deletes every shift, shift change, event and babysitter in one transaction, for the test-only reset
-// route. meta is kept, so the session secret, database id and rev counter survive.
+// Reset deletes every shift, shift change, event, babysitter, recipient and roster email send in
+// one transaction, for the test-only reset route. meta is kept, so the session secret, database id and rev counter survive.
 func (s *Store) Reset(ctx context.Context) error {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	for _, table := range []string{"shifts", "shift_changes", "events", "babysitters"} {
+	for _, table := range []string{"shifts", "shift_changes", "events", "babysitters", "recipients", "roster_email_sends"} {
 		if _, err := tx.ExecContext(ctx, "DELETE FROM "+table); err != nil {
 			return fmt.Errorf("reset %s: %w", table, err)
 		}

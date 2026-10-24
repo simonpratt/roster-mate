@@ -8,8 +8,8 @@ import (
 )
 
 // WithTestRoutes adds the test-only routes in front of next, outside the session middleware:
-// POST /api/test/reset empties shifts, shift changes, events and babysitters (meta, and so
-// every session, survives) and answers 204. The server wraps its router with it only when
+// POST /api/test/reset empties shifts, shift changes, events, babysitters, recipients and
+// roster email sends (meta, and so every session, survives) and answers 204. The server wraps its router with it only when
 // APP_TEST_MODE=1, so without it these paths are the usual /api/ 404.
 func WithTestRoutes(next http.Handler, st *store.Store) http.Handler {
 	mux := http.NewServeMux()

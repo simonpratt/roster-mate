@@ -55,7 +55,7 @@ func TestSessionSurvivesRestartWithoutSessionSecret(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		return st, api.NewRouter(app, a, st, nil)
+		return st, api.NewRouter(app, a, st, nil, api.Options{})
 	}
 
 	st, h := start()
@@ -368,5 +368,38 @@ func TestExtractThroughTheFake(t *testing.T) {
 	}
 	if strings.Contains(a.stderr.String(), "sk-ant-e2e") {
 		t.Errorf("the API key reached the log:\n%s", a.stderr.String())
+	}
+}
+
+// RESEND_API_KEY turns email on: the startup log says so without the key, the session reports
+// it and /api/recipients is mounted. Without the key the log says email=off and the route is a 404.
+func TestRunEmailSwitch(t *testing.T) {
+	on := startApp(t, map[string]string{"RESEND_API_KEY": "re_secret_key", "EMAIL_FROM": "Roster <roster@example.com>"})
+	off := startApp(t, nil)
+	for _, tc := range []struct {
+		name    string
+		a       *app
+		log     string
+		session string
+		status  int
+	}{
+		{"on", on, "email=on", `{"username":"simon","email":true}`, http.StatusOK},
+		{"off", off, "email=off", `{"username":"simon","email":false}`, http.StatusNotFound},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if !strings.Contains(tc.a.stderr.String(), tc.log) {
+				t.Errorf("startup log lacks %s:\n%s", tc.log, tc.a.stderr.String())
+			}
+			cookie := tc.a.login(t)
+			if status, b := tc.a.do(t, "GET", "/api/session", "", nil, cookie); status != http.StatusOK || strings.TrimSpace(string(b)) != tc.session {
+				t.Errorf("GET /api/session = %d %s; want %s", status, b, tc.session)
+			}
+			if status, b := tc.a.do(t, "GET", "/api/recipients", "", nil, cookie); status != tc.status {
+				t.Errorf("GET /api/recipients = %d %s; want %d", status, b, tc.status)
+			}
+		})
+	}
+	if strings.Contains(on.stderr.String(), "re_secret_key") {
+		t.Errorf("the Resend key reached the log:\n%s", on.stderr.String())
 	}
 }

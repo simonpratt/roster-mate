@@ -96,15 +96,20 @@ Dockerfile, Makefile, .env.example, README.md
 | `DATA_DIR` | no | `/data` | Holds `roster-mate.db` |
 | `TZ` | no | container default | Used only for "today" in the extraction prompt |
 | `ANTHROPIC_BASE_URL` | no | the SDK's default | Messages API address; an absolute `http`/`https` URL. Tests point it at the fake |
-| `APP_TEST_MODE` | no | off | Test only; never set in production. `1` (and only `1`) mounts `POST /api/test/reset`, which needs no session and deletes every shift, shift change, event and babysitter (204), keeping `meta` so sessions and the rev counter survive. Off, the path is the usual `/api/` 404. The server logs a warning at startup when it is on |
+| `RESEND_API_KEY` | no | unset (email off) | Resend API key. Set, it turns roster emails on (ADR 0005): `/api/recipients` is mounted and `/api/session` reports `email: true`. Unset, email is off and the recipients API is the usual `/api/` 404. Never logged |
+| `EMAIL_FROM` | when `RESEND_API_KEY` is set | — | The roster email's From address, display name allowed (`Simon's roster <roster@mail.example.com>`); must parse as an address. Ignored when email is off |
+| `RESEND_BASE_URL` | no | `https://api.resend.com` | Resend API address; an absolute `http`/`https` URL. Tests point it at a fake |
+| `APP_TEST_MODE` | no | off | Test only; never set in production. `1` (and only `1`) mounts `POST /api/test/reset`, which needs no session and deletes every shift, shift change, event, babysitter, recipient and roster email send (204), keeping `meta` so sessions and the rev counter survive. Off, the path is the usual `/api/` 404. The server logs a warning at startup when it is on |
 
 The server refuses to start, with a message naming the variable, if a required one is missing.
+The startup log line reports `email=on` or `email=off`.
 
 ## Authentication
 
 - `POST /api/login` `{username, password}` → `204` and a `rm_session` cookie, or `401`.
 - `POST /api/logout` → `204`, clears the cookie.
-- `GET /api/session` → `200 {username}` or `401`.
+- `GET /api/session` → `200 {username, email}` or `401`. `email` is `true` when roster emails are
+  on (`RESEND_API_KEY` set), so the client knows whether to offer the Roster emails screen.
 - Cookie: HMAC-SHA256-signed `{username, expiresAt}`, `HttpOnly`, `SameSite=Strict`, `Path=/`,
   90-day lifetime refreshed on authenticated requests: a valid cookie with less than 89 days
   left is reissued, so the session runs 90 days from its last use (to within a day) without a
@@ -156,6 +161,19 @@ CREATE TABLE shift_changes (            -- migration 0005, ADR 0004
   source     TEXT,                    -- 'sheet' | 'import' | NULL (unknown: an older client)
   edited_at  INTEGER NOT NULL
 );
+CREATE TABLE recipients (               -- migration 0006, ADR 0005; server-only, never synced
+  position   INTEGER PRIMARY KEY,     -- list order, 0-based
+  email      TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  babysitter TEXT NOT NULL DEFAULT '' -- '' = no babysitter
+);
+CREATE TABLE roster_email_sends (       -- migration 0006; one row per roster email
+  id         INTEGER PRIMARY KEY,
+  sent_at    INTEGER NOT NULL,        -- unix ms
+  first_date TEXT NOT NULL,           -- 'YYYY-MM-DD', the email's Monday
+  last_date  TEXT NOT NULL,           -- its Sunday
+  recipients INTEGER NOT NULL,        -- how many were sent to successfully
+  ok         INTEGER NOT NULL         -- 1 = every recipient succeeded
+);
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);  -- 'rev', 'db_id', 'session_secret', 'schema_version'
 ```
 
@@ -166,6 +184,8 @@ carried over. Events and babysitters are records of their own, not fields on a s
 `confirmed` column; existing babysitters became tentative and kept their `rev`. Migration 0005
 added `shift_changes`, the shift history (`docs/adr/0004-shift-history-recorded-by-the-server.md`);
 nothing is backfilled, so history starts with that release, and shift changes are never purged.
+Migration 0006 added `recipients` and `roster_email_sends` for roster emails
+(`docs/adr/0005-roster-emails-sent-by-the-server.md`); both live only on the server.
 
 ### Client (Dexie / IndexedDB)
 
@@ -363,6 +383,25 @@ missing field `400`.
    go through the outbox and sync like any other edit.
 5. Import requires reaching the server: on opening, the screen calls `GET /api/health` (5s
    timeout) and shows an "Import needs a connection" state if that fails or the phone is offline.
+
+## Roster email recipients
+
+Mounted only when email is on (`RESEND_API_KEY` set); otherwise both routes are the usual
+`/api/` 404. Both need a session. The client calls them directly, online only (ADR 0005).
+
+- `GET /api/recipients` → `200 {"recipients": [{"email", "babysitter"}], "lastSend": {"at", "ok",
+  "recipients"} | null}`. `recipients` is in list order; `lastSend` is the newest
+  `roster_email_sends` row (`at` in unix ms, `recipients` the number reached), `null` before the
+  first send.
+- `PUT /api/recipients` with `{"recipients": [{"email", "babysitter"}]}` replaces the whole list
+  in one transaction and answers like `GET`. Body limit 64 KiB. Each email is trimmed and
+  lowercased, each babysitter trimmed (`""` = none). The first problem is a `400 {"error"}` and
+  changes nothing:
+  - more than 10 → `at most 10 recipients`;
+  - an email over 254 characters, or one that `net/mail.ParseAddress` does not return unchanged
+    with no display name → `recipients[i]: email must be an address like nan@example.com`;
+  - an email already earlier in the list → `recipients[i]: email is already on the list`;
+  - a babysitter over 40 characters → `recipients[i]: babysitter must be at most 40 characters`.
 
 ## UI
 

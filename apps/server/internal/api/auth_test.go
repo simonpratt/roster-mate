@@ -45,7 +45,7 @@ func do(t *testing.T, method, url, body string, c *http.Cookie, headers ...strin
 // newRouterServer serves the API with a, returning its base URL.
 func newRouterServer(t *testing.T, a *auth.Auth) string {
 	t.Helper()
-	srv := httptest.NewServer(NewRouter(http.NotFoundHandler(), a, newStore(t), nil))
+	srv := httptest.NewServer(NewRouter(http.NotFoundHandler(), a, newStore(t), nil, Options{}))
 	t.Cleanup(srv.Close)
 	return srv.URL
 }
@@ -76,7 +76,7 @@ func TestLoginSetsCookieThatOpensSession(t *testing.T) {
 		t.Errorf("cookie = %+v; want HttpOnly, SameSite=Strict, Path=/, Max-Age 90 days", c)
 	}
 	res, body := do(t, "GET", srv.URL+"/api/session", "", c)
-	if res.StatusCode != 200 || strings.TrimSpace(body) != `{"username":"simon"}` {
+	if res.StatusCode != 200 || strings.TrimSpace(body) != `{"username":"simon","email":false}` {
 		t.Errorf("GET /api/session = %d %q", res.StatusCode, body)
 	}
 }
