@@ -5,7 +5,7 @@ DEV_DATA_DIR ?= $(or $(TMPDIR),/tmp)/roster-mate-dev
 .PHONY: dev test build e2e e2e-smoke
 
 # pnpm comes from corepack (`corepack enable`), at the version pinned in the root package.json.
-node_modules: package.json pnpm-lock.yaml pnpm-workspace.yaml apps/web/package.json test/e2e/package.json
+node_modules: package.json pnpm-lock.yaml pnpm-workspace.yaml apps/web/package.json apps/email/package.json test/e2e/package.json
 	pnpm install --frozen-lockfile
 	@touch $@
 
@@ -21,10 +21,12 @@ dev: node_modules
 	API_PORT="$${PORT:-8080}" pnpm --filter ./apps/web dev & \
 	wait
 
-# Go vet and tests, then the web type-check and Vitest, then the e2e specs' type-check.
+# Go vet and tests, then the web type-check and Vitest, the email package's type-check and
+# template freshness test, then the e2e specs' type-check.
 test: node_modules
 	go vet ./... && go test ./...
 	pnpm --filter ./apps/web typecheck && pnpm --filter ./apps/web test
+	pnpm --filter ./apps/email typecheck && pnpm --filter ./apps/email test
 	pnpm --filter ./test/e2e typecheck
 
 # The Playwright suite on a phone viewport. It builds the web app and bin/roster-mate first, then

@@ -1,3 +1,7 @@
 packages:
   - apps/web
+  - apps/email
   - test/e2e
+
+allowBuilds:
+  esbuild: false

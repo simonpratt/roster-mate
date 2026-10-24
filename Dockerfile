@@ -11,7 +11,9 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/
-RUN pnpm install --frozen-lockfile
+# Only the web app's dependencies: apps/email (React Email) renders a committed Go template and
+# never runs in the image.
+RUN pnpm install --frozen-lockfile --filter ./apps/web...
 COPY apps/web/ apps/web/
 RUN pnpm --filter ./apps/web build
 

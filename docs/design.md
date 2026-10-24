@@ -67,6 +67,7 @@ package.json, pnpm-workspace.yaml, pnpm-lock.yaml   the pnpm workspace
   internal/api          HTTP handlers (sync, extract, session)
   internal/extract      Anthropic client + prompt + response parsing
   internal/extract/fakeanthropic   the one shared fake Messages API (fixture: roster.json)
+  internal/mail         the roster email: view model, embedded templates (templates/)
   internal/web          serves the built frontend + SPA fallback
 /apps/web               Vite + React + TypeScript + Tailwind app
   embed.go              package web: embeds dist/ (dist/.gitkeep committed)
@@ -74,6 +75,10 @@ package.json, pnpm-workspace.yaml, pnpm-lock.yaml   the pnpm workspace
   src/sync              sync engine
   src/shifts            shift codes, labels, colours (mirrors server)
   src/routes            Login, Calendar, Import, Babysitters
+/apps/email             React Email source of the roster email (own workspace package,
+                        roster-mate-email; dev only, never in the image)
+  src/RosterEmail.tsx   the email, with Go template actions as text
+  src/write.ts          `render` script: writes internal/mail/templates/roster.html.tmpl
 /test/e2e               Playwright suite (own workspace package, roster-mate-e2e)
   playwright.config.ts  phone project, webServer for the binary and the fake Claude
   fixtures/             test (reset + clock), env, files/roster.jpg
@@ -402,6 +407,41 @@ Mounted only when email is on (`RESEND_API_KEY` set); otherwise both routes are 
     with no display name → `recipients[i]: email must be an address like nan@example.com`;
   - an email already earlier in the list → `recipients[i]: email is already on the list`;
   - a babysitter over 40 characters → `recipients[i]: babysitter must be at most 40 characters`.
+
+## Roster email
+
+The email a recipient gets after an import (`docs/ux-spec.md` §6.8; ADR 0005 for why it is
+rendered at build time). Sending comes with SIM-56.
+
+**Template pipeline.** `apps/email/src/RosterEmail.tsx` builds the HTML from React Email
+components (tables, inline styles, light colours, `color-scheme: light` metas, a 560 px card,
+system fonts). Its dynamic parts are Go `html/template` actions written as literal text
+(`{{.Subject}}`, `{{range .Weeks}}`, …). `pnpm --filter ./apps/email render` renders it with
+`@react-email/render` (`pretty: false`) to `apps/server/internal/mail/templates/roster.html.tmpl`,
+which is committed and embedded with `//go:embed`; the package's Vitest fails while the committed
+file differs from a fresh render. React escapes quotes, so the actions hold no string literals:
+Go precomputes every value, colours included, and each style hole is a whole CSS property value
+so `html/template` accepts it. The plain-text part is the hand-written `text/template`
+`templates/roster.txt.tmpl`: subject, range and summary, then one line per date
+(`Mon 26 Oct  N  Night`, `Fri 20 Nov  –  Not rostered`) under each week's title. The Docker web
+stage installs only `apps/web`, so React Email never reaches the image.
+
+**View model** (`internal/mail`):
+
+- `BuildRosterEmail(first, last string, shifts map[string]string, today time.Time) RosterEmail`
+  takes a Monday and a Sunday (`YYYY-MM-DD`) and the codes by date (missing or `""` =
+  unrostered), and returns `{Subject, Preheader, Range, Summary, Weeks}`.
+  - `Subject` "New roster: 26 Oct – 22 Nov", the year after the last date only when it isn't
+    `today`'s year; `Preheader` "{n} working shifts, 26 Oct – 22 Nov" (same year rule).
+  - `Range` "Mon 26 Oct – Sun 22 Nov 2026" (always the last date's year, and the first date's
+    too when they differ).
+  - `Summary` "{n} working shifts over {w} weeks.": "1 working shift", "one week" … "ten weeks",
+    then digits.
+  - `Weeks[]` `{Title: "Week of Mon 26 Oct", Rows[]}`, each row `{Date, Code, Label, ChipBg,
+    ChipFg, ChipLine, LabelFg, LabelWeight, DateFg, RowBg, RowLine}`. Chip colours come from the
+    table in `internal/mail/build.go` keyed by `store.StandardCodes`; any other code uses the
+    Other colours and its letters as the label; an unrostered date is "–" / "Not rostered".
+- `Render(e RosterEmail) (html, text string, err error)` fills both templates.
 
 ## UI
 

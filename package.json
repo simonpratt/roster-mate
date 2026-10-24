@@ -6,6 +6,7 @@
     "dev": "pnpm --filter ./apps/web dev",
     "build": "pnpm --filter ./apps/web build",
     "typecheck": "pnpm --filter ./apps/web typecheck",
-    "test": "pnpm --filter ./apps/web test"
+    "test": "pnpm --filter ./apps/web test",
+    "email:render": "pnpm --filter ./apps/email render"
   }
 }
