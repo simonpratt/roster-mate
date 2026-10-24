@@ -52,21 +52,23 @@ export function formatTime(at: Date): string {
 }
 
 /**
+ * The local date of an instant, from the phone's date today: "Today", "Yesterday" or
+ * "Mon 12 Oct", with the year when it isn't this year. Also the Roster emails screen's last send.
+ */
+export function formatDayOf(at: Date, today: DateString): string {
+  const date = todayDate(at);
+  if (date === today) return "Today";
+  if (date === addDays(today, -1)) return "Yesterday";
+  return date.slice(0, 4) === today.slice(0, 4) ? formatShortDate(date) : `${formatShortDate(date)} ${date.slice(0, 4)}`;
+}
+
+/**
  * A group's heading from its editedAt and the phone's date today: "Today · 8:42 am",
  * "Yesterday · 9:05 pm" or "Mon 12 Oct · 7:15 pm", with the year when it isn't this year.
  */
 export function groupHeading(editedAt: number, today: DateString): string {
   const at = new Date(editedAt);
-  const date = todayDate(at);
-  const day =
-    date === today
-      ? "Today"
-      : date === addDays(today, -1)
-        ? "Yesterday"
-        : date.slice(0, 4) === today.slice(0, 4)
-          ? formatShortDate(date)
-          : `${formatShortDate(date)} ${date.slice(0, 4)}`;
-  return `${day} · ${formatTime(at)}`;
+  return `${formatDayOf(at, today)} · ${formatTime(at)}`;
 }
 
 const SOURCE_TEXT = { sheet: "Date sheet", import: "Import" } as const;

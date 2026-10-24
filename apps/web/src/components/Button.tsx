@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, Ref } from "react";
 import { SpinnerIcon } from "./icons";
 
 // Buttons, docs/ux-spec.md §5.6. Primary is the full-width 54 px action (Sign in, Save);
@@ -11,6 +11,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: Variant;
   /** Shows a spinner, disables the button and sets aria-busy while a request runs. */
   busy?: boolean;
+  ref?: Ref<HTMLButtonElement>;
 };
 
 const base =

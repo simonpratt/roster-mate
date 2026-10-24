@@ -1,11 +1,13 @@
 import { useEffect, useRef } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
-import { getSession, UnauthorizedError } from "./api";
+import { UnauthorizedError } from "./api";
+import { checkSession } from "./recipients/flag";
 import { Babysitters } from "./routes/Babysitters";
 import { Calendar } from "./routes/Calendar";
 import { History } from "./routes/History";
 import { Import } from "./routes/Import";
 import { Login } from "./routes/Login";
+import { RosterEmails } from "./routes/RosterEmails";
 import { useSyncTriggers } from "./sync/triggers";
 
 // The router itself (BrowserRouter) is in main.tsx, so tests can use a MemoryRouter.
@@ -18,6 +20,7 @@ export function App() {
       <Route path="/import" element={<Import />} />
       <Route path="/babysitters" element={<Babysitters />} />
       <Route path="/history" element={<History />} />
+      <Route path="/emails" element={<RosterEmails />} />
       <Route path="*" element={<Calendar />} />
     </Routes>
   );
@@ -25,6 +28,7 @@ export function App() {
 
 // On start, when online, asks the server whether the session is still valid and goes to /login
 // if not. Offline the app trusts its local data and stays put (docs/design.md § Authentication).
+// The answer's email flag is kept for the ⋯ menu (recipients/flag.ts).
 // Opening on /login skips the check, so a slow 401 can't follow a fresh sign-in.
 function useSessionCheck() {
   const navigate = useNavigate();
@@ -32,7 +36,7 @@ function useSessionCheck() {
   useEffect(() => {
     if (!navigator.onLine || startPath.current === "/login") return;
     let cancelled = false;
-    getSession().catch((err: unknown) => {
+    checkSession().catch((err: unknown) => {
       if (!cancelled && err instanceof UnauthorizedError) navigate("/login", { replace: true });
     });
     return () => {

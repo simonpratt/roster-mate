@@ -208,7 +208,8 @@ Migration 0006 added `recipients` and `roster_email_sends` for roster emails
 - `shiftChanges`: `{rev, date, from: code | null, to: code | null, source: 'sheet' | 'import' |
   null, editedAt}` keyed by `rev`, indexed by `editedAt`: the server's shift changes, pulled
   like any other row and written only by the sync engine.
-- `meta`: `{key: 'lastRev', value}` and `{key: 'dbId', value}`.
+- `meta`: `{key: 'lastRev', value}`, `{key: 'dbId', value}` and `{key: 'emailEnabled', value}` (the last
+  `/api/session`'s `email`, for the ⋯ menu offline; deleted on sign-out).
 
 Dexie version 2 added the four event and babysitter tables and stripped `note` from existing
 `shifts` and `outbox` rows. Dexie version 3 has no index changes; its upgrade sets
@@ -504,6 +505,16 @@ desktop.
   then every shift change, one group per save (equal `editedAt` and source), newest first, each
   row the date with the code it had and the code it got; tapping a row opens the date sheet
   (`docs/ux-spec.md` §6.6). Only shift codes have history.
+- **Roster emails** (`/emails`, from the ⋯ menu, shown only when the last `/api/session` said
+  `email: true`; the phone keeps that flag in Dexie `meta` as `emailEnabled`, so the menu is right
+  offline, and forgets it on sign-out): the recipients and the last roster email, loaded with
+  `GET /api/recipients` on opening and kept in no IndexedDB copy (ADR 0005). Offline, or when that
+  call fails, it shows "Roster emails need a connection" as Import does; a 401 goes to sign in,
+  and a 404 (email since switched off) clears the flag and goes to `/`. Tapping a row or Add
+  recipient (hidden at 10) opens the recipient sheet: the address, checked on the phone for an
+  `x@y.z` shape and a case-insensitive duplicate, and the babysitter picker without its Confirmed
+  switch. Save and Remove `PUT` the whole list and close once the server answers
+  (`docs/ux-spec.md` §6.7).
 
 ## PWA
 
@@ -535,15 +546,18 @@ desktop.
   otherwise), records each accepted email (`Emails()`) and answers 500 for addresses passed to
   `Fail`. The mail package's tests use it, and the app test in `cmd/roster-mate` boots `run()`
   with `RESEND_BASE_URL` at it and the unexported `mailDelay` shortened. The browser suite starts
-  no fake Resend, so email is off there.
+  no fake Resend: it runs with email on (`RESEND_API_KEY=re_e2e`, `EMAIL_FROM=e2e@example.com`)
+  and `RESEND_BASE_URL` at a closed port (`127.0.0.1:18082`), and no spec both adds a recipient
+  and imports, so nothing is sent.
 - Web: Vitest + Testing Library; `fake-indexeddb` for Dexie and sync-engine tests with a mocked
   `fetch`.
 - Browser (e2e): Playwright in `test/e2e`, one `ui` project on a Pixel 7 viewport in Chromium,
   run one test at a time (`workers: 1`) because they share one server. `make e2e` builds the web
   app and `bin/roster-mate`, then the config's `webServer` starts the fake Claude on
   `127.0.0.1:18081` and the binary on `127.0.0.1:18080` with `APP_TEST_MODE=1`, credentials
-  `e2e`/`e2e-password`, `ROSTER_NAME=E2E`, `ANTHROPIC_BASE_URL` at the fake, `TZ` and the
-  browsers' time zone `Australia/Sydney`, and a fresh `DATA_DIR` under the OS temp dir. An auto
+  `e2e`/`e2e-password`, `ROSTER_NAME=E2E`, `ANTHROPIC_BASE_URL` at the fake, email on (above),
+  `TZ` and the browsers' time zone `Australia/Sydney`, and a fresh `DATA_DIR` under the OS temp
+  dir. An auto
   fixture calls `POST /api/test/reset` before each test and starts the browser clock at
   2026-12-07 09:00 (not frozen), and each test has a fresh context, so empty IndexedDB. The specs
   cover the main user paths no lower layer sees: signing in (wrong password, then right) and
@@ -551,7 +565,8 @@ desktop.
   event and seeing them on a second phone (a second context, so whatever it shows came through
   the server); an offline edit kept while offline after a reload from the service worker's
   precache and sent once back online; and importing the fake's roster, unticking one row and
-  saving the rest. Left to lower layers on purpose: last-write-wins conflicts, the server-reset
+  saving the rest; and adding a roster email recipient with a new babysitter from the ⋯ menu's
+  Roster emails and still seeing it after a reload. Left to lower layers on purpose: last-write-wins conflicts, the server-reset
   re-send, extraction errors and the import error screens, session expiry, a desktop viewport,
   other browsers, and Lighthouse and PWA install checks.
 - Smoke: the sign-in, date and offline tests are tagged `@smoke`. With `APP_TEST_URL` set, the

@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { ApiError, checkHealth, extractRoster, UnauthorizedError, type Extraction } from "../api";
 import { Banner } from "../components/Banner";
 import { Button, buttonClassName } from "../components/Button";
 import {
   AlertTriangleIcon,
   CameraIcon,
-  CloudOffIcon,
   HelpCircleIcon,
   ImageIcon,
   RetryIcon,
   UserMissingIcon,
   WifiOffIcon,
 } from "../components/icons";
+import { NeedsConnection } from "../components/NeedsConnection";
 import { ReviewList } from "../components/ReviewList";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { formatShortDate, monthOf } from "../lib/dates";
@@ -136,7 +136,12 @@ export function Import() {
       {(stage.name === "checking" || stage.name === "pick") && (
         <PickStep checking={stage.name === "checking"} onPhoto={(e) => void onPhoto(e)} />
       )}
-      {stage.name === "offline" && <OfflineStep />}
+      {stage.name === "offline" && (
+        <NeedsConnection
+          title="Import needs a connection"
+          body="Reconnect to your home network to import a roster. You can still view and edit shifts while you’re away."
+        />
+      )}
       {stage.name === "review" && result && saved && (
         <ReviewStep
           result={result}
@@ -263,27 +268,6 @@ function PickStep({ checking, onPhoto }: { checking: boolean; onPhoto: (e: Chang
         )}
         <p className="m-0 mt-1.5 text-center text-footnote text-text-faint">The photo is read once and not stored.</p>
       </div>
-    </section>
-  );
-}
-
-function OfflineStep() {
-  return (
-    <section role="status" className="flex flex-1 flex-col px-6 pt-24 pb-[max(32px,env(safe-area-inset-bottom))]">
-      <div className="flex flex-col items-start gap-5">
-        <span className="flex size-16 items-center justify-center rounded-[20px] border border-border bg-surface text-text-muted">
-          <CloudOffIcon className="size-7.5" />
-        </span>
-        <div className="flex flex-col gap-2.5">
-          <h2 className="m-0 text-display font-bold">Import needs a connection</h2>
-          <p className="m-0 text-body text-pretty text-text-muted">
-            Reconnect to your home network to import a roster. You can still view and edit shifts while you’re away.
-          </p>
-        </div>
-      </div>
-      <Link to="/" className={`${buttonClassName("outline-wide")} mt-auto`}>
-        Back to calendar
-      </Link>
     </section>
   );
 }

@@ -1,6 +1,7 @@
 // A small wrapper over fetch for the server's JSON API (docs/design.md § Authentication).
-// Only the login screen, the session check, the sync engine and the Import screen (extraction
-// and its connection check) call it; the UI reads shifts from IndexedDB.
+// Only the login screen, the session check, the sync engine, the Import screen (extraction and
+// its connection check) and the Roster emails screen (the recipients, which live only on the
+// server, ADR 0005) call it; the UI reads shifts from IndexedDB.
 
 /** The server answered 401: there is no valid session. */
 export class UnauthorizedError extends Error {
@@ -13,10 +14,13 @@ export class UnauthorizedError extends Error {
 /** The server answered with an error status other than 401. */
 export class ApiError extends Error {
   readonly status: number;
-  constructor(status: number) {
+  /** The `error` text of the server's JSON answer, when it had one. */
+  readonly serverError: string | undefined;
+  constructor(status: number, serverError?: string) {
     super(`HTTP ${status}`);
     this.name = "ApiError";
     this.status = status;
+    this.serverError = serverError;
   }
 }
 
@@ -40,9 +44,19 @@ export async function request<T = unknown>(
     signal: init.signal,
   });
   if (res.status === 401) throw new UnauthorizedError();
-  if (!res.ok) throw new ApiError(res.status);
+  if (!res.ok) throw new ApiError(res.status, await errorText(res));
   if (res.status === 204) return undefined;
   return (await res.json()) as T;
+}
+
+/** The `error` field of an error answer's JSON body, if it has one. */
+async function errorText(res: Response): Promise<string | undefined> {
+  try {
+    const body = (await res.json()) as { error?: unknown } | null;
+    return typeof body?.error === "string" ? body.error : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** Signs in, setting the session cookie. */
@@ -50,11 +64,17 @@ export async function login(username: string, password: string): Promise<void> {
   await request("/api/login", { method: "POST", body: { username, password } });
 }
 
-/** Returns the signed-in username, or throws UnauthorizedError. */
-export async function getSession(): Promise<{ username: string }> {
-  const s = await request<{ username: string }>("/api/session");
+/** The signed-in user, and whether the server has roster emails set up. */
+export interface Session {
+  username: string;
+  email: boolean;
+}
+
+/** Returns the session, or throws UnauthorizedError. `email` is false from an older server. */
+export async function getSession(): Promise<Session> {
+  const s = await request<{ username: string; email?: boolean }>("/api/session");
   if (!s) throw new ApiError(204);
-  return s;
+  return { username: s.username, email: s.email === true };
 }
 
 /** How long the Import screen waits for /api/health before treating the server as unreachable. */
@@ -102,4 +122,39 @@ export async function extractRoster(image: Blob, signal?: AbortSignal): Promise<
     shifts: res?.shifts ?? [],
     warnings: res?.warnings ?? [],
   };
+}
+
+/** A recipient of every roster email; `babysitter` is "" for none. */
+export interface Recipient {
+  email: string;
+  babysitter: string;
+}
+
+/** The newest roster email: when (unix ms), whether every send succeeded, and how many it reached. */
+export interface LastSend {
+  at: number;
+  ok: boolean;
+  recipients: number;
+}
+
+/** The answer of GET and PUT /api/recipients (docs/design.md § Roster email recipients). */
+export interface Recipients {
+  recipients: Recipient[];
+  lastSend: LastSend | null;
+}
+
+function recipientsFrom(res: Partial<Recipients> | undefined): Recipients {
+  return { recipients: res?.recipients ?? [], lastSend: res?.lastSend ?? null };
+}
+
+/** Loads the recipients and the last roster email. Throws as request does; 404 is email off. */
+export async function getRecipients(signal?: AbortSignal): Promise<Recipients> {
+  return recipientsFrom(await request<Partial<Recipients>>("/api/recipients", { signal }));
+}
+
+/** Replaces the whole recipient list, answering as getRecipients. A 400 carries serverError. */
+export async function putRecipients(list: Recipient[]): Promise<Recipients> {
+  return recipientsFrom(
+    await request<Partial<Recipients>>("/api/recipients", { method: "PUT", body: { recipients: list } }),
+  );
 }

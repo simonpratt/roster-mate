@@ -2,11 +2,16 @@ import { defineConfig, devices } from "@playwright/test";
 import { baseURL, dataDir, TIMEZONE, FAKE_ANTHROPIC_KEY, FAKE_ANTHROPIC_PORT, PORT, repoRoot, target } from "./fixtures/env";
 
 // The browser suite, on a phone, against a production build: the Go binary with the web app
-// embedded (so the service worker is the real one) and the shared fake Claude. With APP_TEST_URL
-// set it starts nothing and tests that URL instead; CI's smoke job aims the @smoke tests at the
-// image that way. One server and one database, reset before each test, so tests run one at a time.
+// embedded (so the service worker is the real one) and the shared fake Claude, with roster emails
+// on. With APP_TEST_URL set it starts nothing and tests that URL instead; CI's smoke job aims the
+// @smoke tests at the image that way. One server and one database, reset before each test, so
+// tests run one at a time.
 
 const fakeURL = `http://127.0.0.1:${FAKE_ANTHROPIC_PORT}`;
+
+// Email is on, so the Roster emails screen is offered, with Resend at a port nothing listens on:
+// no spec adds a recipient and then imports, so nothing is ever sent.
+const closedResendURL = "http://127.0.0.1:18082";
 
 export default defineConfig({
   forbidOnly: !!process.env.CI,
@@ -46,6 +51,9 @@ export default defineConfig({
             ROSTER_NAME: "E2E",
             ANTHROPIC_API_KEY: FAKE_ANTHROPIC_KEY,
             ANTHROPIC_BASE_URL: fakeURL,
+            RESEND_API_KEY: "re_e2e",
+            EMAIL_FROM: "e2e@example.com",
+            RESEND_BASE_URL: closedResendURL,
             TZ: TIMEZONE,
           },
           timeout: 600_000,

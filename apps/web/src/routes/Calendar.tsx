@@ -13,6 +13,7 @@ import { useBabysittersInRange, useEventTexts, useKnownBabysitters } from "../da
 import { addMonths, monthOf, type DateString, type MonthString } from "../lib/dates";
 import { useToday } from "../lib/useToday";
 import { useHasLocalShifts, useShiftsInRange } from "../shifts/repo";
+import { clearEmailEnabled } from "../recipients/flag";
 import { useImportedCodes } from "../shifts/swapped";
 import { sync } from "../sync/engine";
 import { countPendingEdits, usePendingCount, useSyncStatus } from "../sync/status";
@@ -59,6 +60,7 @@ export function Calendar() {
     } catch {
       // Offline or unreachable: nothing more to do here.
     }
+    await clearEmailEnabled();
     sync.reset();
     navigate("/login", { replace: true });
   }

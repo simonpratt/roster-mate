@@ -74,8 +74,15 @@ export interface BabysitterRow {
 
 export type BabysitterOutboxRow = Omit<BabysitterRow, "rev">;
 
-/** Sync bookkeeping: the server's `rev` at the last sync and the server database's ID. */
-export type MetaRow = { key: "lastRev"; value: number } | { key: "dbId"; value: string };
+/**
+ * Sync bookkeeping (the server's `rev` at the last sync and the server database's ID), and
+ * whether the server last said roster emails are on (`/api/session`'s `email`), kept so the menu
+ * stays right offline.
+ */
+export type MetaRow =
+  | { key: "lastRev"; value: number }
+  | { key: "dbId"; value: string }
+  | { key: "emailEnabled"; value: boolean };
 
 export const db = new Dexie("roster-mate") as Dexie & {
   shifts: EntityTable<ShiftRow, "date">;

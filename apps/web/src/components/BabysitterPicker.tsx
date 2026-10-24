@@ -44,15 +44,28 @@ type BabysitterPickerProps = {
   /** Every name used on any date, A–Z. */
   known: readonly string[];
   /** Shows "Needs a babysitter" beside the label. */
-  needed: boolean;
-  /** The Confirmed switch's state, or null to hide it (no name picked). */
-  confirmed: boolean | null;
-  onConfirmedChange: (confirmed: boolean) => void;
+  needed?: boolean;
+  /**
+   * The Confirmed switch's state, or null to hide it (no name picked). Leave it out where the
+   * picker has no switch at all, as in the recipient sheet.
+   */
+  confirmed?: boolean | null;
+  onConfirmedChange?: (confirmed: boolean) => void;
+  /** A line under the picker in text-faint, as the recipient sheet's. */
+  hint?: string;
 };
 
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 
-export function BabysitterPicker({ value, onChange, known, needed, confirmed, onConfirmedChange }: BabysitterPickerProps) {
+export function BabysitterPicker({
+  value,
+  onChange,
+  known,
+  needed = false,
+  confirmed = null,
+  onConfirmedChange,
+  hint,
+}: BabysitterPickerProps) {
   const labelId = useId();
   const inputId = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -112,7 +125,8 @@ export function BabysitterPicker({ value, onChange, known, needed, confirmed, on
           />
         </div>
       )}
-      {confirmed !== null && <ConfirmedSwitch on={confirmed} onChange={onConfirmedChange} />}
+      {hint && <p className="m-0 text-footnote text-text-faint">{hint}</p>}
+      {confirmed !== null && onConfirmedChange && <ConfirmedSwitch on={confirmed} onChange={onConfirmedChange} />}
     </div>
   );
 }

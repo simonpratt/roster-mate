@@ -7,6 +7,7 @@ import { AlertCircleIcon, CloudOffIcon, WifiOffIcon } from "../components/icons"
 import { Logo } from "../components/Logo";
 import { TextField } from "../components/TextField";
 import { useHasLocalShifts } from "../shifts/repo";
+import { checkSession } from "../recipients/flag";
 import { sync } from "../sync/engine";
 import { useOnline } from "../useOnline";
 
@@ -29,6 +30,8 @@ export function Login() {
     try {
       await login(username, password);
       void sync.trigger();
+      // The app's start-up session check skipped /login, so learn the email flag here.
+      checkSession().catch(() => {});
       navigate("/", { replace: true });
     } catch (err) {
       if (err instanceof UnauthorizedError) {

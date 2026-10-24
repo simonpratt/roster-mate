@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { buttonClassName } from "./Button";
-import { CameraIcon, HistoryIcon, MoreVerticalIcon, SignOutIcon, UsersIcon } from "./icons";
+import { useEmailEnabled } from "../recipients/flag";
+import { CameraIcon, HistoryIcon, MailIcon, MoreVerticalIcon, SignOutIcon, UsersIcon } from "./icons";
 
 // The Calendar's app header, docs/ux-spec.md §5.1 and docs/designs/Main.dc.html: the sync
 // indicator on the left, then Import and the overflow menu (docs/designs/CalendarMenu.dc.html):
-// Babysitters, History, then Sign out.
+// Babysitters, History, Roster emails (only when the server has email set up, §5.1), then Sign out.
 type AppHeaderProps = {
   /** The sync indicator. */
   sync: ReactNode;
@@ -19,6 +20,7 @@ const menuItem = "flex h-12 w-full items-center gap-3 rounded-control px-3 text-
 
 export function AppHeader({ sync, onSignOut }: AppHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const emailEnabled = useEmailEnabled();
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -75,6 +77,12 @@ export function AppHeader({ sync, onSignOut }: AppHeaderProps) {
               <HistoryIcon className="size-4.5 text-text-muted" />
               History
             </Link>
+            {emailEnabled && (
+              <Link to="/emails" role="menuitem" className={`${menuItem} ${focus}`}>
+                <MailIcon className="size-4.5 text-text-muted" />
+                Roster emails
+              </Link>
+            )}
             <button
               type="button"
               role="menuitem"
