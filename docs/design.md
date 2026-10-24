@@ -410,8 +410,37 @@ Mounted only when email is on (`RESEND_API_KEY` set); otherwise both routes are 
 
 ## Roster email
 
-The email a recipient gets after an import (`docs/ux-spec.md` §6.8; ADR 0005 for why it is
-rendered at build time). Sending comes with SIM-56.
+The email a recipient gets after an import (`docs/ux-spec.md` §6.8; ADR 0005 for why the server
+sends it and why it is rendered at build time).
+
+**Trigger.** `store.ApplyAndPull` returns, besides the pull, `Pull.Recorded`: the shift changes
+that call recorded (never sent to the client, and unlike `shiftChanges` free of other phones'
+changes). After a successful apply the sync handler takes those whose source is `import` and, if
+there are any, calls `Mailer.ImportSynced(min date, max date)`. Sheet and restore edits, and import
+edits that keep the date's code or lose last-write-wins, record no import change and send
+nothing. The response doesn't change. With email off there is no mailer.
+
+**Delay and span.** `internal/mail.Mailer` (one per process, built in `run()` when email is on)
+keeps one pending span. Each `ImportSynced` widens it to cover its dates and restarts a 30 s timer
+(`mail.DefaultDelay`), so an import in several sync batches, or a second import within 30 s,
+joins one email. When the timer fires, the span is widened to whole weeks: the Monday on or before
+its first date and the Sunday on or after its last, by calendar-date arithmetic on `YYYY-MM-DD`.
+The mailer then reads the recipients (none: nothing is sent or recorded), the span's codes
+(`store.ShiftsBetween`, null codes left out, so those dates are unrostered), builds and renders
+the email with `today` in `TZ`, and sends one message per recipient in list order, each to that
+address alone. A pending email is lost if the server stops first: `Close()` on shutdown stops the
+timer and logs `roster email dropped at shutdown`.
+
+**Sending.** `mail.Resend` implements `Sender` with `net/http`: `POST {RESEND_BASE_URL}/emails`,
+`Authorization: Bearer <RESEND_API_KEY>`, `User-Agent: roster-mate`, JSON `{from, to: [address],
+subject, html, text}`, a 15 s timeout. A non-2xx answer is the error `resend: status <code>`,
+never the key or the body. A failed recipient is logged (`roster email send failed`, with the
+error only) and not retried; the rest are still sent.
+
+**Send record.** After the sends the mailer logs `roster email` with `first`, `last`, `sent` and
+`failed` (no addresses) and writes one `roster_email_sends` row: the Monday and Sunday,
+`recipients` = how many succeeded and `ok` = every recipient succeeded. `GET /api/recipients`
+reports the newest as `lastSend`.
 
 **Template pipeline.** `apps/email/src/RosterEmail.tsx` builds the HTML from React Email
 components (tables, inline styles, light colours, `color-scheme: light` metas, a 560 px card,
@@ -502,6 +531,11 @@ desktop.
   with `ANTHROPIC_BASE_URL`) use it, and `go run ./apps/server/cmd/fake-anthropic` serves it for
   the browser suite on `FAKE_ANTHROPIC_ADDR` (default `127.0.0.1:18081`) with key
   `FAKE_ANTHROPIC_KEY` (default `sk-ant-e2e`), plus `GET /health`.
+- Fake Resend: `internal/mail/fakeresend` answers `POST /emails` for one bearer key (401
+  otherwise), records each accepted email (`Emails()`) and answers 500 for addresses passed to
+  `Fail`. The mail package's tests use it, and the app test in `cmd/roster-mate` boots `run()`
+  with `RESEND_BASE_URL` at it and the unexported `mailDelay` shortened. The browser suite starts
+  no fake Resend, so email is off there.
 - Web: Vitest + Testing Library; `fake-indexeddb` for Dexie and sync-engine tests with a mocked
   `fetch`.
 - Browser (e2e): Playwright in `test/e2e`, one `ui` project on a Pixel 7 viewport in Chromium,

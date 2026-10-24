@@ -19,6 +19,7 @@ import (
 	"github.com/simonpratt/roster-mate/apps/server/internal/config"
 	"github.com/simonpratt/roster-mate/apps/server/internal/extract"
 	"github.com/simonpratt/roster-mate/apps/server/internal/extract/fakeanthropic"
+	"github.com/simonpratt/roster-mate/apps/server/internal/mail/fakeresend"
 	"github.com/simonpratt/roster-mate/apps/server/internal/store"
 )
 
@@ -401,5 +402,47 @@ func TestRunEmailSwitch(t *testing.T) {
 	}
 	if strings.Contains(on.stderr.String(), "re_secret_key") {
 		t.Errorf("the Resend key reached the log:\n%s", on.stderr.String())
+	}
+}
+
+// With email on and a recipient saved, syncing import edits sends that recipient one roster email
+// through RESEND_BASE_URL after the (shortened) delay, and the log never holds the Resend key.
+func TestImportSyncSendsTheRosterEmail(t *testing.T) {
+	old := mailDelay
+	mailDelay = 50 * time.Millisecond
+	t.Cleanup(func() { mailDelay = old })
+	fake := fakeresend.New("re_app_secret")
+	upstream := httptest.NewServer(fake)
+	defer upstream.Close()
+	a := startApp(t, map[string]string{
+		"RESEND_API_KEY":  "re_app_secret",
+		"EMAIL_FROM":      "Roster <roster@example.com>",
+		"RESEND_BASE_URL": upstream.URL,
+	})
+	cookie := a.login(t)
+	if status, b := a.do(t, "PUT", "/api/recipients", "application/json",
+		strings.NewReader(`{"recipients":[{"email":"nan@example.com","babysitter":"Nan"}]}`), cookie); status != http.StatusOK {
+		t.Fatalf("PUT /api/recipients = %d %s", status, b)
+	}
+	a.sync(t, cookie, `{"since":0,"changes":[
+		{"date":"2026-12-08","code":"D","editedAt":1000,"source":"import"},
+		{"date":"2026-12-10","code":"N","editedAt":1000,"source":"import"}]}`)
+
+	deadline := time.Now().Add(5 * time.Second)
+	for len(fake.Emails()) == 0 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	time.Sleep(200 * time.Millisecond) // a second email would have arrived by now
+	emails := fake.Emails()
+	if len(emails) != 1 || len(emails[0].To) != 1 || emails[0].To[0] != "nan@example.com" ||
+		!strings.HasPrefix(emails[0].Subject, "New roster: 7 Dec – 13 Dec") || !strings.Contains(emails[0].Text, "Tue 8 Dec  D  Day") {
+		t.Fatalf("fake emails = %+v; want one to nan for 7–13 Dec", emails)
+	}
+	logs := a.stderr.String()
+	if !strings.Contains(logs, `msg="roster email" first=2026-12-07 last=2026-12-13 sent=1 failed=0`) {
+		t.Errorf("log lacks the roster email line:\n%s", logs)
+	}
+	if strings.Contains(logs, "re_app_secret") {
+		t.Errorf("the Resend key reached the log:\n%s", logs)
 	}
 }

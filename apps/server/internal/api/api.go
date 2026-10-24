@@ -15,6 +15,14 @@ import (
 type Options struct {
 	// Email turns roster emails on: it mounts /api/recipients and is reported by /api/session.
 	Email bool
+	// Mailer hears about each sync that records import shift changes; nil when email is off.
+	Mailer ImportNotifier
+}
+
+// ImportNotifier is told the first and last date (YYYY-MM-DD) of the import shift changes a
+// sync recorded. *mail.Mailer implements it.
+type ImportNotifier interface {
+	ImportSynced(first, last string)
 }
 
 // NewRouter returns the server's handler. app serves the web app for every path outside /api/;
@@ -24,7 +32,7 @@ func NewRouter(app http.Handler, a *auth.Auth, st *store.Store, ex extract.Extra
 	private := http.NewServeMux()
 	private.HandleFunc("POST /api/logout", logout(a))
 	private.HandleFunc("GET /api/session", sessionInfo(opts.Email))
-	private.HandleFunc("POST /api/sync", sync(st))
+	private.HandleFunc("POST /api/sync", sync(st, opts.Mailer))
 	private.HandleFunc("POST /api/extract", extractShifts(ex))
 	if opts.Email {
 		private.HandleFunc("GET /api/recipients", getRecipients(st))

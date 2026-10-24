@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	gosync "sync"
 	"testing"
 
 	"github.com/simonpratt/roster-mate/apps/server/internal/auth"
@@ -325,5 +326,67 @@ func TestSyncRejectsInvalidSourceAndWritesNothing(t *testing.T) {
 	_, out = do(t, "POST", base+"/api/sync", body, c)
 	if got := decodeSync(t, out); got.Rev != 3 || len(got.ShiftChanges) != 2 {
 		t.Errorf("valid sources: %s; want 3 writes and 2 changes (restore records none)", out)
+	}
+}
+
+// spyMailer records each ImportSynced call.
+type spyMailer struct {
+	mu    gosync.Mutex
+	calls []string
+}
+
+func (s *spyMailer) ImportSynced(first, last string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.calls = append(s.calls, first+".."+last)
+}
+
+func (s *spyMailer) Calls() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]string(nil), s.calls...)
+}
+
+// Only import edits that change a code reach the mailer, as their min and max dates; sheet,
+// restore and same-code import edits don't, and the response is unchanged.
+func TestSyncTellsTheMailerAboutImportChanges(t *testing.T) {
+	st := newStore(t)
+	spy := &spyMailer{}
+	a := auth.New("simon", "secret", []byte("0123456789abcdef0123456789abcdef"))
+	a.FailDelay = 0
+	srv := httptest.NewServer(NewRouter(http.NotFoundHandler(), a, st, nil, Options{Email: true, Mailer: spy}))
+	t.Cleanup(srv.Close)
+	c := loginCookie(t, srv.URL)
+	post := func(body string) syncResponse {
+		t.Helper()
+		res, out := do(t, "POST", srv.URL+"/api/sync", body, c)
+		if res.StatusCode != 200 {
+			t.Fatalf("sync: %d %q", res.StatusCode, out)
+		}
+		return decodeSync(t, out)
+	}
+
+	post(syncBody(0, sourced("2026-11-03", "D", "sheet", 1), sourced("2026-11-04", "E", "restore", 1)))
+	if calls := spy.Calls(); len(calls) != 0 {
+		t.Errorf("sheet and restore edits called the mailer: %q", calls)
+	}
+
+	// An import out of date order, with one date keeping its code (the sheet's D).
+	got := post(syncBody(2,
+		sourced("2026-11-12", "N", "import", 2),
+		sourced("2026-11-03", "D", "import", 2),
+		sourced("2026-11-05", "L", "import", 2),
+		sourced("2026-11-20", "X", "import", 2)))
+	if calls := spy.Calls(); len(calls) != 1 || calls[0] != "2026-11-05..2026-11-20" {
+		t.Errorf("mailer calls = %q; want 2026-11-05..2026-11-20", calls)
+	}
+	if got.Rev != 6 || len(got.Shifts) != 4 || len(got.ShiftChanges) != 3 {
+		t.Errorf("response = %+v; want the usual pull", got)
+	}
+
+	// An import that changes nothing calls nothing.
+	post(syncBody(6, sourced("2026-11-12", "N", "import", 3)))
+	if calls := spy.Calls(); len(calls) != 1 {
+		t.Errorf("same-code import called the mailer: %q", calls)
 	}
 }

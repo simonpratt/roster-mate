@@ -22,10 +22,14 @@ import (
 	"github.com/simonpratt/roster-mate/apps/server/internal/auth"
 	"github.com/simonpratt/roster-mate/apps/server/internal/config"
 	"github.com/simonpratt/roster-mate/apps/server/internal/extract"
+	"github.com/simonpratt/roster-mate/apps/server/internal/mail"
 	"github.com/simonpratt/roster-mate/apps/server/internal/store"
 	"github.com/simonpratt/roster-mate/apps/server/internal/web"
 	client "github.com/simonpratt/roster-mate/apps/web"
 )
+
+// mailDelay is the roster email's wait after an import syncs; app tests shorten it.
+var mailDelay = mail.DefaultDelay
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -62,7 +66,14 @@ func run(ctx context.Context, getenv func(string) string, stderr io.Writer, onLi
 		opts = append(opts, option.WithBaseURL(cfg.AnthropicBaseURL))
 	}
 	ex := extract.NewClaude(cfg.AnthropicAPIKey, cfg.AnthropicModel, cfg.RosterName, log, opts...)
-	handler := api.NewRouter(web.Handler(client.Dist()), a, st, ex, api.Options{Email: cfg.EmailEnabled()})
+	routerOpts := api.Options{Email: cfg.EmailEnabled()}
+	if cfg.EmailEnabled() {
+		mailer := mail.NewMailer(st, mail.NewResend(cfg.ResendBaseURL, cfg.ResendAPIKey), cfg.EmailFrom, log)
+		mailer.Delay = mailDelay
+		defer mailer.Close() // before st.Close, which was deferred earlier
+		routerOpts.Mailer = mailer
+	}
+	handler := api.NewRouter(web.Handler(client.Dist()), a, st, ex, routerOpts)
 	if cfg.TestMode {
 		log.Warn("test mode is on: POST /api/test/reset deletes every shift, shift change, event, babysitter, recipient and roster email send without a session; never set APP_TEST_MODE in production")
 		handler = api.WithTestRoutes(handler, st)

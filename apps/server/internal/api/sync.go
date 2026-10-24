@@ -87,8 +87,10 @@ type syncResponse struct {
 }
 
 // sync applies the phone's pending edits and returns every shift, event and babysitter
-// changed since its last sync, with the shift changes recorded since then. A request with any invalid item applies none of them.
-func sync(st *store.Store) http.HandlerFunc {
+// changed since its last sync, with the shift changes recorded since then. A request with any
+// invalid item applies none of them. When the request recorded shift changes from an import,
+// mailer (nil when email is off) hears their first and last date.
+func sync(st *store.Store, mailer ImportNotifier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req syncRequest
 		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxSyncBody)).Decode(&req); err != nil {
@@ -102,6 +104,9 @@ func sync(st *store.Store) http.HandlerFunc {
 		}
 		pull, err := st.ApplyAndPull(r.Context(), req.Since, push)
 		if err == nil {
+			if first, last, ok := importSpan(pull.Recorded); ok && mailer != nil {
+				mailer.ImportSynced(first, last)
+			}
 			var dbID string
 			if dbID, err = st.DBID(r.Context()); err == nil {
 				writeJSON(w, http.StatusOK, toResponse(pull, dbID))
@@ -111,6 +116,24 @@ func sync(st *store.Store) http.HandlerFunc {
 		slog.Error("sync", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 	}
+}
+
+// importSpan is the first and last date of the import shift changes in recorded, and false when
+// there are none.
+func importSpan(recorded []store.ShiftChange) (first, last string, ok bool) {
+	for _, sc := range recorded {
+		if sc.Source == nil || *sc.Source != store.SourceImport {
+			continue
+		}
+		if !ok || sc.Date < first {
+			first = sc.Date
+		}
+		if !ok || sc.Date > last {
+			last = sc.Date
+		}
+		ok = true
+	}
+	return first, last, ok
 }
 
 func toResponse(pull store.Pull, dbID string) syncResponse {

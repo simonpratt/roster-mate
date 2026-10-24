@@ -59,6 +59,9 @@ type Pull struct {
 	Babysitters []Babysitter
 	// ShiftChanges are the shift changes recorded after since, in rev order.
 	ShiftChanges []ShiftChange
+	// Recorded are the shift changes this call recorded, in rev order. Unlike ShiftChanges it
+	// leaves out other phones' changes; it is not sent to the client.
+	Recorded []ShiftChange
 }
 
 // ApplyAndPull applies the pushed edits and returns the current rev with every shift, event
@@ -66,7 +69,7 @@ type Pull struct {
 // key (a shift's or babysitter's date, an event's id) has no row or its EditedAt is at least
 // the row's (last-write-wins); each write takes rev = ++meta.rev, one counter shared by all
 // three kinds. A shift write that changes the date's code also records a shift change under
-// its rev, unless its source is restore. When since is ahead of meta.rev the database was wiped or restored, so every
+// its rev, unless its source is restore; those are also returned in Pull.Recorded. When since is ahead of meta.rev the database was wiped or restored, so every
 // row is returned. Callers validate the edits first.
 func (s *Store) ApplyAndPull(ctx context.Context, since int64, push Push) (pull Pull, err error) {
 	tx, err := s.DB.BeginTx(ctx, nil)
@@ -84,9 +87,14 @@ func (s *Store) ApplyAndPull(ctx context.Context, since int64, push Push) (pull 
 		return Pull{}, err
 	}
 	start := rev
+	var recorded []ShiftChange
 	for _, c := range push.Shifts {
-		if err := applyShift(ctx, tx, &rev, c); err != nil {
+		sc, err := applyShift(ctx, tx, &rev, c)
+		if err != nil {
 			return Pull{}, err
+		}
+		if sc != nil {
+			recorded = append(recorded, *sc)
 		}
 	}
 	if err := applyEvents(ctx, tx, &rev, push.Events); err != nil {
@@ -105,7 +113,7 @@ func (s *Store) ApplyAndPull(ctx context.Context, since int64, push Push) (pull 
 	if since > rev {
 		from = 0
 	}
-	pull = Pull{Rev: rev}
+	pull = Pull{Rev: rev, Recorded: recorded}
 	if pull.Shifts, err = shiftsAfter(ctx, tx, from); err != nil {
 		return Pull{}, err
 	}
@@ -125,8 +133,9 @@ func (s *Store) ApplyAndPull(ctx context.Context, since int64, push Push) (pull 
 }
 
 // applyShift writes one shift edit under last-write-wins, as applyLWW does, and records a
-// shift change when the write changes the date's code and isn't a restore.
-func applyShift(ctx context.Context, tx *sql.Tx, rev *int64, c Change) error {
+// shift change when the write changes the date's code and isn't a restore. It returns the
+// recorded change, or nil when it recorded none.
+func applyShift(ctx context.Context, tx *sql.Tx, rev *int64, c Change) (*ShiftChange, error) {
 	var stored int64
 	var storedCode sql.NullString
 	hadRow := true
@@ -136,9 +145,9 @@ func applyShift(ctx context.Context, tx *sql.Tx, rev *int64, c Change) error {
 	case err == sql.ErrNoRows:
 		hadRow = false
 	case err != nil:
-		return fmt.Errorf("read shift %s: %w", c.Date, err)
+		return nil, fmt.Errorf("read shift %s: %w", c.Date, err)
 	case c.EditedAt < stored:
-		return nil // an older edit loses to the stored one
+		return nil, nil // an older edit loses to the stored one
 	}
 	*rev++
 	if _, err := tx.ExecContext(ctx,
@@ -146,23 +155,25 @@ func applyShift(ctx context.Context, tx *sql.Tx, rev *int64, c Change) error {
 		 ON CONFLICT (date) DO UPDATE SET code = excluded.code,
 		   edited_at = excluded.edited_at, rev = excluded.rev`,
 		c.Date, c.Code, c.EditedAt, *rev); err != nil {
-		return fmt.Errorf("write shift %s: %w", c.Date, err)
+		return nil, fmt.Errorf("write shift %s: %w", c.Date, err)
 	}
 	sameCode := storedCode.Valid == (c.Code != nil) && (c.Code == nil || storedCode.String == *c.Code)
 	if c.Source == SourceRestore || (hadRow && sameCode) {
-		return nil
+		return nil, nil
 	}
 	var source any
+	sc := &ShiftChange{Rev: *rev, Date: c.Date, From: nullable(storedCode), To: c.Code, EditedAt: c.EditedAt}
 	if c.Source != "" {
 		source = c.Source
+		sc.Source = &c.Source
 	}
 	if _, err := tx.ExecContext(ctx,
 		`INSERT INTO shift_changes (rev, date, from_code, to_code, source, edited_at)
 		 VALUES (?, ?, ?, ?, ?, ?)`,
 		*rev, c.Date, storedCode, c.Code, source, c.EditedAt); err != nil {
-		return fmt.Errorf("record shift change %s: %w", c.Date, err)
+		return nil, fmt.Errorf("record shift change %s: %w", c.Date, err)
 	}
-	return nil
+	return sc, nil
 }
 
 func shiftChangesAfter(ctx context.Context, tx *sql.Tx, rev int64) ([]ShiftChange, error) {
@@ -249,6 +260,29 @@ func shiftsAfter(ctx context.Context, tx *sql.Tx, rev int64) ([]Shift, error) {
 		return nil, fmt.Errorf("read shifts: %w", err)
 	}
 	return shifts, nil
+}
+
+// ShiftsBetween returns the code of each date from first to last (YYYY-MM-DD, inclusive) that
+// has one; dates with no row or the reserved null code are left out.
+func (s *Store) ShiftsBetween(ctx context.Context, first, last string) (map[string]string, error) {
+	rows, err := s.DB.QueryContext(ctx,
+		`SELECT date, code FROM shifts WHERE date BETWEEN ? AND ? AND code IS NOT NULL`, first, last)
+	if err != nil {
+		return nil, fmt.Errorf("read shifts between: %w", err)
+	}
+	defer rows.Close()
+	codes := map[string]string{}
+	for rows.Next() {
+		var date, code string
+		if err := rows.Scan(&date, &code); err != nil {
+			return nil, fmt.Errorf("read shifts between: %w", err)
+		}
+		codes[date] = code
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read shifts between: %w", err)
+	}
+	return codes, nil
 }
 
 func readRev(ctx context.Context, tx *sql.Tx) (int64, error) {

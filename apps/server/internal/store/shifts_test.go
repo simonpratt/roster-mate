@@ -214,3 +214,49 @@ func TestShiftWritesThatRecordNoChange(t *testing.T) {
 		t.Errorf("shift_changes rows = %d, %v; want only the first save's", n, err)
 	}
 }
+
+// Pull.Recorded holds only the shift changes this call recorded, not other phones' earlier ones,
+// and none for a same-code save, a losing edit or a restore.
+func TestRecordedHoldsOnlyThisCallsChanges(t *testing.T) {
+	s := openTemp(t)
+	first := syncPush(t, s, 0, Push{Shifts: []Change{{Date: "2026-11-03", Code: code("L"), EditedAt: 1000, Source: SourceSheet}}})
+	if len(first.Recorded) != 1 || first.Recorded[0].Rev != 1 || strOf(first.Recorded[0].Source) != "sheet" {
+		t.Fatalf("first Recorded = %+v; want the one sheet change", first.Recorded)
+	}
+	pull := syncPush(t, s, 0, Push{Shifts: []Change{
+		{Date: "2026-11-03", Code: code("L"), EditedAt: 2000, Source: SourceImport},  // same code
+		{Date: "2026-11-04", Code: code("N"), EditedAt: 2000, Source: SourceImport},  // new
+		{Date: "2026-11-05", Code: code("D"), EditedAt: 2000, Source: SourceRestore}, // restore
+	}})
+	if len(pull.ShiftChanges) != 2 {
+		t.Errorf("ShiftChanges from 0 = %+v; want both recorded changes", pull.ShiftChanges)
+	}
+	if len(pull.Recorded) != 1 {
+		t.Fatalf("Recorded = %+v; want only the new import change", pull.Recorded)
+	}
+	if c := pull.Recorded[0]; c.Rev != 3 || c.Date != "2026-11-04" || c.From != nil || strOf(c.To) != "N" ||
+		strOf(c.Source) != "import" || c.EditedAt != 2000 {
+		t.Errorf("recorded = %+v", c)
+	}
+	if again := syncPush(t, s, 0, Push{}); len(again.Recorded) != 0 {
+		t.Errorf("pull with no edits Recorded = %+v; want none", again.Recorded)
+	}
+}
+
+func TestShiftsBetween(t *testing.T) {
+	s := openTemp(t)
+	syncPush(t, s, 0, Push{Shifts: []Change{
+		{Date: "2026-10-25", Code: code("D"), EditedAt: 1},  // before
+		{Date: "2026-10-26", Code: code("N"), EditedAt: 1},  // first
+		{Date: "2026-10-28", Code: nil, EditedAt: 1},        // tombstone
+		{Date: "2026-11-01", Code: code("SE"), EditedAt: 1}, // last
+		{Date: "2026-11-02", Code: code("E"), EditedAt: 1},  // after
+	}})
+	got, err := s.ShiftsBetween(context.Background(), "2026-10-26", "2026-11-01")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || got["2026-10-26"] != "N" || got["2026-11-01"] != "SE" {
+		t.Errorf("ShiftsBetween = %v; want 26 Oct N and 1 Nov SE", got)
+	}
+}
