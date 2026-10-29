@@ -3,7 +3,7 @@
   "createdOnFiles": { "v": 1, "at": "2026-10-15T07:19:00Z" },
   "title": "Roster Mate",
   "launch": { "view": "canvas" },
-  "pages": [],
+  "pages": [{ "id": "app", "name": "App" }, { "id": "light", "name": "Light mode" }],
   "boards": {
     "Main.dc.html": { "x": 0, "y": 1244, "w": 390, "h": 844, "title": "Calendar", "is_interactive": true, "radius": 28 },
     "Login.dc.html": { "x": 0, "y": 0, "w": 390, "h": 844, "title": "Sign in", "is_interactive": true, "radius": 28 },
@@ -42,7 +42,10 @@
     "RosterEmailsFailed.dc.html": { "x": 1410, "y": 10600, "w": 390, "h": 844, "title": "Roster emails — last email failed", "radius": 28 },
     "RosterEmailsOffline.dc.html": { "x": 1880, "y": 10600, "w": 390, "h": 844, "title": "Roster emails — offline", "radius": 28 },
     "RosterEmailMessage.dc.html": { "x": 2350, "y": 10600, "w": 640, "h": 1500, "title": "Roster email" },
-    "RosterEmailMessageNarrow.dc.html": { "x": 3070, "y": 10600, "w": 375, "h": 1500, "title": "Roster email — phone width" }
+    "RosterEmailMessageNarrow.dc.html": { "x": 3070, "y": 10600, "w": 375, "h": 1500, "title": "Roster email — phone width" },
+    "LightCalendar.dc.html": { "x": 0, "y": 0, "w": 390, "h": 844, "title": "Calendar — light", "is_interactive": true, "radius": 28, "page": "light" },
+    "LightDateSheet.dc.html": { "x": 470, "y": 0, "w": 390, "h": 844, "title": "Date sheet — light", "is_interactive": true, "radius": 28, "page": "light" },
+    "LightTokens.dc.html": { "x": 940, "y": 0, "w": 1200, "h": 1240, "title": "Light tokens", "page": "light" }
   },
   "order": [
     "Main.dc.html",
@@ -82,7 +85,10 @@
     "RosterEmailsFailed.dc.html",
     "RosterEmailsOffline.dc.html",
     "RosterEmailMessage.dc.html",
-    "RosterEmailMessageNarrow.dc.html"
+    "RosterEmailMessageNarrow.dc.html",
+    "LightCalendar.dc.html",
+    "LightDateSheet.dc.html",
+    "LightTokens.dc.html"
   ],
   "notes": {
     "rowA": { "x": 0, "y": -260, "text": "Sign in", "kind": "title1", "maxW": 2270 },
@@ -93,7 +99,9 @@
     "rowF": { "x": 0, "y": 5960, "text": "Tokens", "kind": "title1", "maxW": 2270 },
     "rowG": { "x": 0, "y": 7100, "text": "Babysitters", "kind": "title1", "maxW": 860 },
     "rowH": { "x": 0, "y": 8700, "text": "History", "kind": "title1", "maxW": 860 },
-    "rowI": { "x": 0, "y": 10360, "text": "Roster emails", "kind": "title1", "maxW": 3445 }
+    "rowI": { "x": 0, "y": 10360, "text": "Roster emails", "kind": "title1", "maxW": 3445 },
+    "lightTitle": { "x": 0, "y": -260, "text": "Light mode — plum & rose gold", "kind": "title1", "maxW": 2140, "page": "light" },
+    "lightHow": { "x": 2220, "y": 0, "w": 360, "text": "Light mode is a token swap. Every other screen keeps the layout on the App page; only the values in Light tokens change. Three tokens are new: today, today-surface and accent. The calendar's Tweaks show the sync states and the menu.", "fill": "pink", "page": "light" }
   },
   "designSystems": []
 }

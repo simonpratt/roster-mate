@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roster Mate — Calendar, light theme</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.text}}; color-scheme: light; font-family: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 8px 8px 16px">
+    <sc-if value="{{pillIsButton}}" hint-placeholder-val="{{ false }}">
+      <button type="button" onClick="{{retry}}" aria-label="Sync failed. Retry" style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 18px; background: {{t.failedSurface}}; border: 1px solid {{t.failedLine}}; font: inherit; font-size: 13px; font-weight: 600; color: {{t.failedSoft}}; box-sizing: border-box; cursor: pointer">
+        <span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 4px; background: {{t.failed}}"></span>
+        <span>Sync failed</span>
+        <span aria-hidden="true" style="display: inline-flex; align-items: center; gap: 4px; color: {{t.failedAction}}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"></path><path d="M20 4v5h-5"></path></svg>
+          Retry
+        </span>
+      </button>
+    </sc-if>
+    <sc-if value="{{pillIsStatus}}" hint-placeholder-val="{{ true }}">
+      <p aria-label="Sync status: {{syncLabel}}" style="margin: 0; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 16px; background: {{t.surface}}; border: 1px solid {{t.borderSubtle}}; font-size: 13px; font-weight: 500; color: {{t.textSoft}}; box-sizing: border-box">
+        <span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 4px; background: {{syncDot}}; box-shadow: inset 0 0 0 1.5px {{syncRing}}"></span>
+        <span>{{syncLabel}}</span>
+      </p>
+    </sc-if>
+    <div style="display: flex; align-items: center; gap: 4px">
+      <a href="Import.dc.html" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px 0 12px; border-radius: 12px; background: {{t.primary}}; color: {{t.onPrimary}}; font-weight: 600; font-size: 15px; text-decoration: none; box-sizing: border-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+        Import
+      </a>
+      <button type="button" onClick="{{toggleMenu}}" aria-label="More" aria-haspopup="menu" aria-expanded="{{menuOpen}}" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: {{menuBtnBg}}; color: {{t.textSoft}}; display: flex; align-items: center; justify-content: center; cursor: pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5.5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="18.5" r="1.8"></circle></svg>
+      </button>
+    </div>
+  </header>
+
+  <sc-if value="{{showBanner}}" hint-placeholder-val="{{ false }}">
+    <div style="margin: 4px 16px 4px; padding: 10px 10px 10px 14px; border-radius: 14px; background: {{t.dangerSurface}}; border: 1px solid {{t.dangerLine}}; display: flex; align-items: center; gap: 12px">
+      <p style="margin: 0; flex: 1; font-size: 14px; line-height: 1.4; color: {{t.dangerSoft}}">Sign in to sync. Your edits are kept on this phone until then.</p>
+      <a href="Login.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 10px; background: {{t.danger}}; color: {{t.onDanger}}; font-weight: 600; font-size: 15px; text-decoration: none; box-sizing: border-box">Sign in</a>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+    <div style="margin: 12px 16px 4px; padding: 18px; border-radius: 16px; background: {{t.surface}}; border: 1px solid {{t.borderSubtle}}; display: flex; flex-direction: column; gap: 14px; flex: none">
+      <p style="margin: 0; font-size: 16px; line-height: 1.45; color: {{t.text}}">Import a photo of your roster to get started.</p>
+      <a href="Import.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px 0 16px; border-radius: 12px; background: {{t.primary}}; color: {{t.onPrimary}}; font-weight: 600; font-size: 15px; text-decoration: none; box-sizing: border-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+        Import roster
+      </a>
+    </div>
+  </sc-if>
+
+  <div style="flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 16px; height: 52px">
+    <h1 aria-live="polite" style="margin: 0; font-size: 18px; font-weight: 600; color: {{t.text}}">{{topTitle}}</h1>
+    <button type="button" onClick="{{goToday}}" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid {{t.border}}; background: {{t.surface}}; color: {{t.text}}; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer">Today</button>
+  </div>
+
+  <div aria-hidden="true" style="flex: none; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding: 0 12px 6px; border-bottom: 1px solid {{t.cellLine}}; font-size: 12px; font-weight: 500; color: {{t.textFaint}}; text-align: center">
+    <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+  </div>
+
+  <div ref="{{setScroller}}" onScroll="{{onScroll}}" style="flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; padding: 0 12px 24px">
+    <sc-for list="{{months}}" as="mo" hint-placeholder-count="3">
+      <section aria-label="{{mo.title}}" style="padding-bottom: 12px">
+        <h2 style="margin: 0; height: 44px; box-sizing: border-box; padding: 16px 4px 0; font-size: 15px; font-weight: 600; color: {{t.accent}}">{{mo.title}}</h2>
+        <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px">
+          <sc-for list="{{mo.days}}" as="d" hint-placeholder-count="35">
+            <sc-if value="{{d.blank}}" hint-placeholder-val="{{ false }}">
+              <span aria-hidden="true" style="height: {{d.h}}"></span>
+            </sc-if>
+            <sc-if value="{{d.real}}" hint-placeholder-val="{{ true }}">
+              <button type="button" onClick="{{d.pick}}" aria-label="{{d.aria}}" style="height: {{d.h}}; box-sizing: border-box; border-radius: 12px; border: 1px solid {{d.border}}; box-shadow: inset 0 0 0 1px {{d.ring}}; background: {{d.cellBg}}; padding: 7px 0 8px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; color: {{d.numColor}}; font: inherit; cursor: pointer">
+                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; font-weight: {{d.numWeight}}">{{d.num}}</span>
+                <span style="position: relative; display: flex">
+                  <span style="width: 34px; height: 32px; box-sizing: border-box; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: {{d.chipBg}}; color: {{d.chipFg}}; box-shadow: inset 0 0 0 1px {{d.chipLine}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 14px">{{d.code}}</span>
+                  <sc-if value="{{d.showAvatar}}" hint-placeholder-val="{{ false }}">
+                    <span aria-hidden="true" style="position: absolute; top: {{d.avatarTop}}; right: {{d.avatarRight}}; width: {{d.avatarSize}}; height: {{d.avatarSize}}; box-sizing: border-box; border-radius: 50%; border: 1px {{d.badgeLineStyle}} {{d.badgeLine}}; background: {{d.badgeBg}}; color: {{d.badgeFg}}; box-shadow: 0 0 0 2px {{d.cellBg}}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 8px; font-weight: 700">{{d.avatarText}}</span>
+                  </sc-if>
+                  <sc-if value="{{d.swapped}}" hint-placeholder-val="{{ false }}">
+                    <span aria-hidden="true" style="position: absolute; left: -5px; bottom: -5px; width: 15px; height: 15px; box-sizing: border-box; border-radius: 50%; border: 1px solid {{t.markChangedLine}}; background: {{t.cautionSurface}}; color: {{t.caution}}; box-shadow: 0 0 0 2px {{d.cellBg}}; display: flex; align-items: center; justify-content: center">
+                      <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 3.2h6.5M6.2 1.2l2 2-2 2M8.5 6.8H2M3.8 4.8l-2 2 2 2"></path></svg>
+                    </span>
+                  </sc-if>
+                </span>
+                <span style="align-self: stretch; box-sizing: border-box; height: 11px; padding: 0 3px; display: flex; justify-content: center; font-size: 9px; line-height: 11px; white-space: nowrap">
+                  <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: {{t.textSoft}}">{{d.cap}}</span>
+                  <span style="flex: none; font-weight: 500; color: {{t.textMuted}}">{{d.capMore}}</span>
+                </span>
+              </button>
+            </sc-if>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0">
+      <button type="button" aria-label="Close menu" onClick="{{closeOverlay}}" style="position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; cursor: default"></button>
+      <div role="menu" aria-label="More" style="position: absolute; top: 62px; right: 12px; width: 208px; padding: 6px; box-sizing: border-box; border-radius: 16px; background: {{t.surfaceRaised}}; border: 1px solid {{t.borderInput}}; box-shadow: {{t.shadowPopover}}">
+        <a href="Babysitters.dc.html" role="menuitem" style="height: 48px; padding: 0 12px; border-radius: 10px; color: {{t.text}}; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 12px; text-decoration: none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{t.textMuted}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"></path><path d="M18.5 14.2a6.5 6.5 0 0 1 3 5.8"></path></svg>
+          Babysitters
+        </a>
+        <a href="History.dc.html" role="menuitem" style="height: 48px; padding: 0 12px; border-radius: 10px; color: {{t.text}}; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 12px; text-decoration: none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{t.textMuted}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36"></path><path d="M3 4v5h5"></path><path d="M12 7.5V12l3 2"></path></svg>
+          History
+        </a>
+        <a href="RosterEmails.dc.html" role="menuitem" style="height: 48px; padding: 0 12px; border-radius: 10px; color: {{t.text}}; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 12px; text-decoration: none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{t.textMuted}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3.5 6.5l8.5 6.5 8.5-6.5"></path></svg>
+          Roster emails
+        </a>
+        <a href="Login.dc.html" role="menuitem" style="height: 48px; padding: 0 12px; border-radius: 10px; color: {{t.text}}; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 12px; text-decoration: none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{t.textMuted}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 16l-4-4 4-4"></path><path d="M6 12h10"></path></svg>
+          Sign out
+        </a>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{sheetOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: {{t.scrimSheet}}">
+      <button type="button" aria-label="Close" onClick="{{cancel}}" style="position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; cursor: default"></button>
+      <section role="dialog" aria-modal="true" aria-labelledby="sheet-title" style="position: absolute; left: 0; right: 0; bottom: 0; background: {{t.surface}}; border-top: 1px solid {{t.border}}; border-radius: 22px 22px 0 0; padding: 10px 16px 28px; max-height: 90%; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px; box-shadow: {{t.shadowPopover}}">
+        <span aria-hidden="true" style="align-self: center; width: 36px; height: 4px; border-radius: 2px; background: {{t.borderStrong}}"></span>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <h2 id="sheet-title" style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em">{{sheetTitle}}</h2>
+          <p style="margin: 0; font-size: 14px; color: {{t.textMuted}}">{{sheetSub}}</p>
+        </div>
+        <div role="group" aria-label="Shift" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px">
+          <sc-for list="{{codeButtons}}" as="b" hint-placeholder-count="6">
+            <button type="button" onClick="{{b.pick}}" aria-pressed="{{b.pressed}}" aria-label="{{b.aria}}" style="position: relative; height: 72px; box-sizing: border-box; border-radius: 14px; border: 1.5px solid {{b.line}}; background: {{b.bg}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: inherit; cursor: pointer; padding: 0">
+              <sc-if value="{{b.pressed}}" hint-placeholder-val="{{ false }}">
+                <span aria-hidden="true" style="position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 8px; background: {{b.fg}}; color: {{t.bg}}; display: flex; align-items: center; justify-content: center">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                </span>
+              </sc-if>
+              <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 20px; color: {{b.fg}}">{{b.key}}</span>
+              <span style="font-size: 12px; font-weight: 500; color: {{b.labelColor}}">{{b.label}}</span>
+            </button>
+          </sc-for>
+        </div>
+        <sc-if value="{{showOther}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; align-items: center; gap: 14px">
+            <input id="shift-code" type="text" maxlength="2" autocapitalize="characters" autocomplete="off" spellcheck="false" value="{{otherDraft}}" onChange="{{onOther}}" placeholder="SE" style="flex: none; width: 76px; height: 52px; box-sizing: border-box; border-radius: 12px; border: 1.5px solid {{t.limeLine}}; background: {{t.limeSurface}}; color: {{t.lime}}; padding: 0; text-align: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 22px; font-weight: 700; letter-spacing: 0.04em">
+            <label for="shift-code" style="display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 14px; font-weight: 500; color: {{t.textSoft}}">Code</span>
+              <span style="font-size: 13px; color: {{t.textMuted}}">1–2 letters, as on your roster</span>
+            </label>
+          </div>
+        </sc-if>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+            <span id="sitter-label" style="font-size: 14px; font-weight: 500; color: {{t.textSoft}}">Babysitter</span>
+            <sc-if value="{{needsSitter}}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: 13px; font-weight: 500; color: {{t.warn}}">Needs a babysitter</span>
+            </sc-if>
+          </div>
+          <div role="radiogroup" aria-labelledby="sitter-label" style="display: flex; flex-wrap: wrap; gap: 6px">
+            <sc-for list="{{sitterChips}}" as="c" hint-placeholder-count="5">
+              <button type="button" role="radio" aria-checked="{{c.on}}" onClick="{{c.pick}}" style="height: 44px; box-sizing: border-box; padding: 0 16px; border-radius: 22px; border: 1.5px {{c.lineStyle}} {{c.line}}; background: {{c.bg}}; color: {{c.fg}}; font: inherit; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 6px; cursor: pointer">
+                <sc-if value="{{c.on}}" hint-placeholder-val="{{ false }}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                </sc-if>
+                <span>{{c.label}}</span>
+              </button>
+            </sc-for>
+          </div>
+          <sc-if value="{{showSitterInput}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 2px">
+              <label for="sitter-name" style="font-size: 13px; color: {{t.textMuted}}">Name</label>
+              <input id="sitter-name" type="text" maxlength="40" autocapitalize="words" autocomplete="off" value="{{otherSitter}}" onChange="{{onOtherSitter}}" placeholder="e.g. Aunty Bec" style="height: 48px; box-sizing: border-box; border-radius: 12px; border: 1.5px solid {{t.focus}}; background: {{t.bg}}; color: {{t.text}}; padding: 0 14px; font: inherit; font-size: 16px">
+            </div>
+          </sc-if>
+          <sc-if value="{{showConfirmed}}" hint-placeholder-val="{{ false }}">
+            <button type="button" role="switch" aria-checked="{{confirmedOn}}" onClick="{{toggleConfirmed}}" style="height: 44px; width: 100%; padding: 0; border: 0; background: transparent; color: {{t.textSoft}}; font: inherit; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; cursor: pointer">
+              <span>Confirmed</span>
+              <span aria-hidden="true" style="width: 44px; height: 26px; box-sizing: border-box; border-radius: 13px; background: {{switchTrack}}; padding: 3px; display: flex; justify-content: {{switchJustify}}">
+                <span style="width: 20px; height: 20px; border-radius: 10px; background: {{switchKnob}}; display: flex; align-items: center; justify-content: center; color: {{t.text}}">
+                  <sc-if value="{{confirmedOn}}" hint-placeholder-val="{{ false }}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                  </sc-if>
+                </span>
+              </span>
+            </button>
+          </sc-if>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 14px; font-weight: 500; color: {{t.textSoft}}">Notes and events</span>
+          <sc-for list="{{eventRows}}" as="e" hint-placeholder-count="2">
+            <div style="display: flex; align-items: center; gap: 6px">
+              <input type="text" maxlength="200" aria-label="Event" value="{{e.text}}" onChange="{{e.onText}}" style="flex: 1; min-width: 0; height: 48px; box-sizing: border-box; border-radius: 12px; border: 1px solid {{t.borderInput}}; background: {{t.bg}}; color: {{t.text}}; padding: 0 14px; font: inherit; font-size: 16px">
+              <button type="button" aria-label="{{e.removeLabel}}" onClick="{{e.remove}}" style="flex: none; width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; color: {{t.textMuted}}; display: flex; align-items: center; justify-content: center; cursor: pointer">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+              </button>
+            </div>
+          </sc-for>
+          <div style="display: flex; align-items: center; gap: 6px">
+            <input id="event-new" type="text" maxlength="200" aria-label="Add a note or event" placeholder="Add a note or event" value="{{newEvent}}" onChange="{{onNewEvent}}" onKeyDown="{{onNewEventKey}}" style="flex: 1; min-width: 0; height: 48px; box-sizing: border-box; border-radius: 12px; border: 1px solid {{t.borderInput}}; background: {{t.bg}}; color: {{t.text}}; padding: 0 14px; font: inherit; font-size: 16px">
+            <span aria-hidden="true" style="flex: none; width: 44px"></span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+          <button type="button" onClick="{{cancel}}" style="height: 52px; border-radius: 14px; border: 1px solid {{t.borderStrong}}; background: transparent; color: {{t.text}}; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer">Cancel</button>
+          <button type="button" onClick="{{save}}" disabled="{{saveDisabled}}" style="height: 52px; border-radius: 14px; border: 0; background: {{saveBg}}; color: {{saveFg}}; font: inherit; font-size: 16px; font-weight: 600; cursor: {{saveCursor}}">Save</button>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"sync":{"editor":"enum","options":["synced","pending","offline","signin","failed"],"default":"synced"},"overlay":{"editor":"enum","options":["none","menu"],"default":"none"},"openDate":{"editor":null},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._r); }
+  renderVals() {
+    // The light theme: every token in apps/web/src/index.css with its light value, under the
+    // same name (camelCased). today, todaySurface and accent are new; see the Light tokens board.
+    const T = {
+      bg: '#FAF6F4', cell: '#FFFFFF', surface: '#FFFFFF', surfaceRaised: '#FFFFFF', picker: '#F6F0EE',
+      border: '#E9DEDA', borderInput: '#E1D4CF', borderStrong: '#C9B5AE', borderSubtle: '#EEE5E1', cellLine: '#EFE6E2',
+      text: '#261A24', textSoft: '#4A3946', textMuted: '#6C5966', textFaint: '#6F5D69', textDisabled: '#7E6C77', textDim: '#A8969F',
+      primary: '#4E2A5E', onPrimary: '#FFFFFF', surfaceDisabled: '#F0E8E5', focus: '#8E4F5A',
+      today: '#B0707A', todaySurface: '#FBF0EE', accent: '#8E4F5A',
+      ok: '#059669', warn: '#B45309', babysitterNeed: '#B7700F',
+      danger: '#BE123C', onDanger: '#FFFFFF', dangerSurface: '#FFF0F3', dangerLine: '#F8C9D3', dangerSoft: '#881337',
+      failed: '#DC2626', failedSurface: '#FDF0F0', failedLine: '#F5C2C2', failedSoft: '#9B1C1C', failedAction: '#7F1D1D',
+      caution: '#9A4A00', cautionSurface: '#FFF1E2', markChangedLine: '#EFC08A',
+      amber: '#7A4E00', amberSurface: '#FCEFD2', sky: '#0B5A84', skySurface: '#DDF0FB',
+      violet: '#5634A8', violetSurface: '#ECE6FD', indigo: '#343A9E', indigoSurface: '#E2E5FD',
+      lime: '#44610C', limeSurface: '#EAF4D3', limeLine: '#B9D27A',
+      scrimSheet: 'rgb(38 26 36 / 0.34)', shadowPopover: '0 14px 36px rgb(78 42 94 / 0.13)'
+    };
+    const p = this.props || {};
+
+    const WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const WDL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthName = (m) => MONTH_NAMES[(m - 1) % 12];
+    const monthTitle = (m) => monthName(m) + ' ' + (2026 + Math.floor((m - 1) / 12));
+    // Monday = 0.
+    const weekday = (m, d) => (new Date(2026, m - 1, d).getDay() + 6) % 7;
+    const daysIn = (m) => new Date(2026, m, 0).getDate();
+    const FIRST_MONTH = 6, LAST_MONTH = 15;
+    const CODES = {
+      D: { label: 'Day', bg: T.amberSurface, fg: T.amber, line: T.amberSurface },
+      E: { label: 'Early', bg: T.skySurface, fg: T.sky, line: T.skySurface },
+      L: { label: 'Late', bg: T.violetSurface, fg: T.violet, line: T.violetSurface },
+      N: { label: 'Night', bg: T.indigoSurface, fg: T.indigo, line: T.indigoSurface },
+      X: { label: 'Day off', bg: 'transparent', fg: T.textFaint, line: T.borderStrong }
+    };
+    const OTHER = { label: 'Other', bg: T.limeSurface, fg: T.lime, line: T.limeSurface };
+    const info = (k) => CODES[k] || OTHER;
+    const labelOf = (k) => (CODES[k] ? CODES[k].label : 'Other · ' + k);
+    const OCT = ['D', 'D', 'X', 'X', 'E', 'E', 'L', 'L', 'X', 'N', 'N', 'N', 'X', 'X', 'X', 'L', 'L', 'X', 'E', 'E', 'D', 'D', 'SE', 'N', 'N', 'N', 'X', 'X'];
+    const INITIAL = { '9-28': 'E', '9-29': 'E', '9-30': 'L' };
+    OCT.forEach((k, i) => { INITIAL['10-' + (i + 1)] = k; });
+    const PATTERN = ['D', 'D', 'X', 'X', 'E', 'E', 'L', 'L', 'X', 'N', 'N', 'N', 'X', 'X'];
+    const PAST_SITTERS = ['Mum', 'Dad', 'Mum', 'Jo'];
+    let n = 0;
+    for (let m = FIRST_MONTH; m <= 11; m++) {
+      for (let d = 1; d <= daysIn(m); d++) {
+        const key = m + '-' + d;
+        n++;
+        if (m === 11 && d > 22) break;
+        if (m === 10 || INITIAL[key]) continue;
+        INITIAL[key] = PATTERN[n % PATTERN.length];
+      }
+    }
+    const IMPORTED = Object.assign({}, INITIAL);
+    Object.assign(INITIAL, { '10-8': 'E', '10-17': 'X', '10-21': 'N' });
+    const EVENTS = {
+      '10-3': ['School photos'], '10-9': ['Gym', 'Call the bank'], '10-15': ['Bin night'],
+      '10-18': ['Lunch with Sam', 'Footy', 'Haircut'], '10-22': ['Dentist 3pm', 'Pick up dry cleaning'],
+      '10-24': ['Footy final'], '10-31': ['Halloween'], '11-3': ['Melbourne Cup', 'Parent–teacher night']
+    };
+    const SITTERS = {
+      '9-29': 'Mum', '9-30': 'Dad', '10-1': 'Mum', '10-2': 'Dad', '10-5': 'Mum', '10-6': 'Jo',
+      '10-7': 'Dad', '10-8': 'Mum', '10-10': 'Dad', '10-11': 'Dad', '10-12': 'Mum',
+      '10-15': 'Mum', '10-16': 'Mum', '10-17': 'Dad', '10-19': 'Jo', '10-20': 'Jo',
+      '10-21': 'Mum', '10-22': 'Mum', '10-23': 'Dad'
+    };
+    const CONFIRMED = {
+      '9-29': true, '9-30': true, '10-1': true, '10-2': true, '10-5': true, '10-6': true, '10-7': true,
+      '10-8': true, '10-10': true, '10-11': true, '10-12': true,
+      '10-15': true, '10-16': true, '10-17': true, '10-21': true
+    };
+    Object.keys(INITIAL).forEach((key, i) => {
+      if (Number(key.split('-')[0]) >= 9 || INITIAL[key] === 'X') return;
+      SITTERS[key] = PAST_SITTERS[i % PAST_SITTERS.length];
+      CONFIRMED[key] = true;
+    });
+    const RESET = { draftCode: undefined, otherDraft: undefined, sitterPick: undefined, otherSitter: undefined, otherOpen: undefined, eventDrafts: undefined, newEvent: undefined, confirmedDraft: undefined, confirmedFor: undefined };
+    const SYNC = {
+      synced: { label: 'Synced', dot: T.ok, ring: T.ok },
+      pending: { label: '2 pending', dot: T.warn, ring: T.warn },
+      offline: { label: 'Offline', dot: 'transparent', ring: T.textFaint },
+      signin: { label: 'Sign in needed', dot: T.danger, ring: T.danger },
+      syncing: { label: 'Syncing…', dot: 'transparent', ring: T.focus }
+    };
+    const TODAY = '10-15';
+    const ord = (key) => { const a = key.split('-'); return Number(a[0]) * 100 + Number(a[1]); };
+
+    const s = this.state || {};
+    const shifts = s.shifts || INITIAL;
+    const events = s.events || EVENTS;
+    const sitters = s.sitters || SITTERS;
+    const confirmed = s.confirmed || CONFIRMED;
+    const knownNames = [];
+    Object.keys(sitters).forEach((d) => {
+      const nm = sitters[d];
+      if (nm && !knownNames.some((x) => x.toLowerCase() === nm.toLowerCase())) knownNames.push(nm);
+    });
+    const initialsOf = (nm) => {
+      const first = nm.charAt(0).toLowerCase();
+      const clash = knownNames.some((x) => x.toLowerCase() !== nm.toLowerCase() && x.charAt(0).toLowerCase() === first);
+      return clash ? nm.charAt(0).toUpperCase() + nm.charAt(1).toLowerCase() : nm.charAt(0).toUpperCase();
+    };
+    const openKey = p.openDate ? (String(p.openDate).indexOf('-') > 0 ? String(p.openDate) : '10-' + p.openDate) : null;
+    const editing = s.editing !== undefined ? s.editing : openKey;
+    const pendingCount = s.pendingCount || 0;
+    const baseSync = s.syncOverride || (['synced', 'pending', 'offline', 'signin', 'failed'].indexOf(p.sync) >= 0 ? p.sync : 'synced');
+    let sync = SYNC[baseSync] || SYNC.synced;
+    if (baseSync === 'synced' && pendingCount > 0) sync = { label: pendingCount + ' pending', dot: T.warn, ring: T.warn };
+    const overlay = s.overlay !== undefined ? s.overlay : (p.overlay === 'menu' ? 'menu' : 'none');
+
+    // The babysitter avatar: an amber dot when the date needs one, else initials, dashed while
+    // tentative and filled once confirmed.
+    const AVATAR = {
+      need: [T.babysitterNeed, T.bg, T.babysitterNeed, 'solid'],
+      tent: [T.cell, T.textMuted, T.textDisabled, 'dashed'],
+      conf: [T.borderStrong, T.text, T.borderStrong, 'solid']
+    };
+
+    const cellH = 84;
+    const cellOf = (cell) => {
+      const key = cell.m + '-' + cell.d;
+      const k = shifts[key];
+      const c = k ? info(k) : null;
+      const isToday = key === TODAY;
+      const isEditing = key === editing;
+      const evs = events[key] || [];
+      const sitter = sitters[key] || '';
+      const needs = !!k && k !== 'X' && ord(key) >= ord(TODAY) && !sitter;
+      const isConfirmed = !!sitter && !!confirmed[key];
+      const was = IMPORTED[key];
+      const swapped = !!k && !!was && k !== was;
+      const st = needs ? 'need' : (sitter ? (isConfirmed ? 'conf' : 'tent') : null);
+      const a = st ? AVATAR[st] : null;
+      return {
+        real: true, h: cellH + 'px',
+        num: cell.d,
+        aria: WD[weekday(cell.m, cell.d)] + ' ' + cell.d + ' ' + monthName(cell.m) + ', ' + (c ? labelOf(k) : 'no shift') + (swapped ? ', swapped from ' + labelOf(was) : '') + (sitter ? ', babysitter ' + sitter + (isConfirmed ? ', confirmed' : ', tentative') : (needs ? ', no babysitter' : '')) + evs.map((e) => ', ' + e).join('') + (isToday ? ', today' : ''),
+        showAvatar: !!st,
+        badgeBg: a ? a[0] : 'transparent', badgeFg: a ? a[1] : 'transparent', badgeLine: a ? a[2] : 'transparent', badgeLineStyle: a ? a[3] : 'solid',
+        avatarSize: st === 'need' ? '8px' : '16px',
+        avatarTop: st === 'need' ? '-3px' : (k ? '-7px' : '8px'),
+        avatarRight: st === 'need' ? '-3px' : (k ? '-7px' : '9px'),
+        avatarText: st === 'need' || !sitter ? '' : initialsOf(sitter),
+        border: isToday ? T.today : (isEditing ? T.text : T.cellLine),
+        pick: () => this.setState(Object.assign({ editing: key }, RESET)),
+        cellBg: isToday ? T.todaySurface : T.cell,
+        ring: isToday ? T.today : 'transparent',
+        numColor: isToday ? T.text : (ord(key) < ord(TODAY) ? T.textDisabled : T.textSoft),
+        numWeight: isToday ? 700 : 500,
+        chipBg: c ? c.bg : 'transparent',
+        chipFg: c ? c.fg : 'transparent',
+        chipLine: c ? c.line : 'transparent',
+        code: k || '',
+        swapped,
+        cap: evs[0] || '',
+        capMore: evs.length > 1 ? ' +' + (evs.length - 1) : ''
+      };
+    };
+
+    const TITLE_H = 44, GAP = 4, MONTH_PAD = 12;
+    const monthList = [];
+    let top = 0;
+    for (let m = FIRST_MONTH; m <= LAST_MONTH; m++) {
+      const lead = weekday(m, 1);
+      const rows = Math.ceil((lead + daysIn(m)) / 7);
+      const days = [];
+      for (let b = 0; b < lead; b++) days.push({ blank: true, real: false, h: cellH + 'px' });
+      for (let d = 1; d <= daysIn(m); d++) days.push(cellOf({ m, d }));
+      monthList.push({ m, title: monthTitle(m), days, top, gridTop: top + TITLE_H });
+      top += TITLE_H + rows * cellH + (rows - 1) * GAP + MONTH_PAD;
+    }
+    const todayMonth = Number(TODAY.split('-')[0]);
+    const gridTopOf = (m) => monthList.find((x) => x.m === m).gridTop;
+    const topMonth = s.topMonth || todayMonth;
+
+    const sheetOpen = !!editing;
+    const cur = sheetOpen ? shifts[editing] : undefined;
+    const draftCode = s.draftCode !== undefined ? s.draftCode : (cur ? (CODES[cur] ? cur : 'O') : undefined);
+    const otherDraft = s.otherDraft !== undefined ? s.otherDraft : (cur && !CODES[cur] ? cur : '');
+    const finalCode = draftCode === 'O' ? otherDraft : draftCode;
+
+    const known = knownNames.slice().sort((x, y) => x.localeCompare(y));
+    const curSitter = sheetOpen ? (sitters[editing] || '') : '';
+    const otherSitter = s.otherSitter !== undefined ? s.otherSitter : '';
+    const sitterPick = s.sitterPick !== undefined ? s.sitterPick : curSitter;
+    const showSitterInput = sitterPick === '__other' || s.otherOpen === true;
+    const finalSitter = sitterPick === '__other' ? otherSitter.trim() : sitterPick;
+    const sitterOk = sitterPick !== '__other' || otherSitter.trim() !== '';
+    const sitterChips = [{ label: 'None', value: '' }]
+      .concat(known.map((nm) => ({ label: nm, value: nm })))
+      .concat([{ label: 'Someone else', value: '__other' }])
+      .map((o) => {
+        const on = sitterPick === o.value;
+        const add = o.value === '__other';
+        return {
+          label: add && !on ? '+ Someone else' : o.label, on,
+          line: on ? T.primary : T.border, lineStyle: add && !on ? 'dashed' : 'solid',
+          bg: on ? T.surfaceRaised : T.picker, fg: on ? T.text : (add ? T.textMuted : T.textSoft),
+          pick: () => this.setState({ sitterPick: o.value, otherOpen: add })
+        };
+      });
+    const sitterKey = finalSitter.toLowerCase();
+    const curConfirmed = !!curSitter && !!confirmed[editing];
+    const confirmedOn = !!finalSitter && (s.confirmedFor === sitterKey ? !!s.confirmedDraft : (sitterKey === curSitter.toLowerCase() ? curConfirmed : false));
+    const pickedCode = finalCode || cur;
+    const needsSitter = sheetOpen && !!pickedCode && pickedCode !== 'X' && ord(editing) >= ord(TODAY) && sitterPick === '';
+
+    const curEvents = sheetOpen ? (events[editing] || []) : [];
+    const drafts = s.eventDrafts || curEvents;
+    const newEvent = s.newEvent || '';
+    const eventRows = drafts.map((tx, i) => ({
+      text: tx,
+      removeLabel: 'Remove event: ' + tx,
+      onText: (e) => { const next = drafts.slice(); next[i] = e.target.value; this.setState({ eventDrafts: next }); },
+      remove: () => this.setState({ eventDrafts: drafts.filter((_, j) => j !== i) })
+    }));
+    const finalEvents = drafts.concat([newEvent]).map((tx) => tx.trim()).filter(Boolean);
+    const eventsChanged = finalEvents.join('\n') !== curEvents.join('\n');
+
+    const codeOk = !draftCode || !!finalCode;
+    const changed = codeOk && sitterOk && ((!!finalCode && finalCode !== cur) || finalSitter !== curSitter || confirmedOn !== curConfirmed || eventsChanged);
+    const codeButtons = ['D', 'E', 'L', 'N', 'X', 'O'].map((k) => {
+      const c = k === 'O' ? OTHER : CODES[k];
+      const on = draftCode === k;
+      return {
+        key: k === 'O' ? (otherDraft || '··') : k, label: c.label, pressed: on, fg: c.fg,
+        aria: k === 'O' ? 'Other' + (otherDraft ? ', ' + otherDraft : '') : k + ', ' + c.label,
+        bg: on ? (k === 'X' ? T.surfaceDisabled : c.bg) : T.picker,
+        line: on ? c.fg : T.border,
+        labelColor: on ? T.text : T.textMuted,
+        pick: () => this.setState({ draftCode: k })
+      };
+    });
+    const editCell = sheetOpen ? editing.split('-') : null;
+
+    return {
+      t: T,
+      pillIsButton: baseSync === 'failed',
+      pillIsStatus: baseSync !== 'failed',
+      syncLabel: sync.label, syncDot: sync.dot, syncRing: sync.ring,
+      retry: () => {
+        this.setState({ syncOverride: 'syncing' });
+        clearTimeout(this._r);
+        this._r = setTimeout(() => this.setState({ syncOverride: 'synced' }), 1400);
+      },
+      showBanner: baseSync === 'signin',
+      menuOpen: overlay === 'menu',
+      menuBtnBg: overlay === 'menu' ? T.surfaceRaised : 'transparent',
+      toggleMenu: () => this.setState({ overlay: overlay === 'menu' ? 'none' : 'menu' }),
+      closeOverlay: () => this.setState({ overlay: 'none' }),
+      isEmpty: Object.keys(shifts).length === 0,
+      months: monthList,
+      topTitle: monthTitle(topMonth),
+      setScroller: (el) => {
+        if (!el || el === this._el) return;
+        this._el = el;
+        el.scrollTop = gridTopOf(todayMonth);
+        if (topMonth !== todayMonth) this.setState({ topMonth: todayMonth });
+      },
+      onScroll: (e) => {
+        const y = e.currentTarget.scrollTop + 1;
+        let m = monthList[0].m;
+        monthList.forEach((x) => { if (x.gridTop - TITLE_H / 2 <= y) m = x.m; });
+        if (m !== (this.state || {}).topMonth) this.setState({ topMonth: m });
+      },
+      goToday: () => { if (this._el) this._el.scrollTo({ top: gridTopOf(todayMonth), behavior: 'smooth' }); },
+      sheetOpen,
+      sheetTitle: sheetOpen ? WDL[weekday(Number(editCell[0]), Number(editCell[1]))] + ' ' + editCell[1] + ' ' + monthName(Number(editCell[0])) : '',
+      sheetSub: sheetOpen ? (cur ? 'Currently ' + labelOf(cur) : 'Not rostered yet') : '',
+      codeButtons,
+      sitterChips,
+      needsSitter,
+      showConfirmed: !!finalSitter,
+      confirmedOn,
+      toggleConfirmed: () => this.setState({ confirmedFor: sitterKey, confirmedDraft: !confirmedOn }),
+      switchTrack: confirmedOn ? T.textMuted : T.borderStrong,
+      switchKnob: confirmedOn ? T.bg : T.textSoft,
+      switchJustify: confirmedOn ? 'flex-end' : 'flex-start',
+      showSitterInput,
+      otherSitter,
+      onOtherSitter: (e) => {
+        const v = String(e.target.value).slice(0, 40);
+        const match = known.find((nm) => nm.toLowerCase() === v.trim().toLowerCase());
+        this.setState({ otherSitter: v, sitterPick: match || '__other', otherOpen: true });
+      },
+      eventRows,
+      newEvent,
+      onNewEvent: (e) => this.setState({ newEvent: String(e.target.value).slice(0, 200) }),
+      onNewEventKey: (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        if (newEvent.trim()) this.setState({ eventDrafts: drafts.concat([newEvent]), newEvent: '' });
+      },
+      showOther: draftCode === 'O',
+      otherDraft,
+      onOther: (e) => this.setState({ otherDraft: String(e.target.value).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2) }),
+      saveDisabled: !changed,
+      saveBg: changed ? T.primary : T.surfaceDisabled,
+      saveFg: changed ? T.onPrimary : T.textDisabled,
+      saveCursor: changed ? 'pointer' : 'not-allowed',
+      cancel: () => this.setState(Object.assign({ editing: null }, RESET)),
+      save: () => {
+        if (!changed) return;
+        const ns = Object.assign({}, shifts);
+        if (finalCode) ns[editing] = finalCode;
+        const nb = Object.assign({}, sitters);
+        if (finalSitter) nb[editing] = finalSitter; else delete nb[editing];
+        const nconf = Object.assign({}, confirmed);
+        if (finalSitter && confirmedOn) nconf[editing] = true; else delete nconf[editing];
+        const ne = Object.assign({}, events);
+        if (finalEvents.length) ne[editing] = finalEvents; else delete ne[editing];
+        this.setState(Object.assign({ shifts: ns, sitters: nb, confirmed: nconf, events: ne, editing: null, pendingCount: pendingCount + 1 }, RESET));
+        if (baseSync === 'synced') {
+          clearTimeout(this._t);
+          this._t = setTimeout(() => this.setState({ pendingCount: 0 }), 1600);
+        }
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

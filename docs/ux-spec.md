@@ -828,3 +828,6 @@ doesn't want, and the ticket specs still stand on their own.
   (`Main.dc.html`), the new Roster emails screen and recipient sheet (`RosterEmails*.dc.html`, §6.7)
   and the roster email itself (`RosterEmailMessage*.dc.html`, §6.8); CONTEXT.md gains **Roster
   email** and **Recipient**.
+- SIM-58: a Light mode canvas page with the calendar and date sheet in the light theme
+  (`LightCalendar.dc.html`, `LightDateSheet.dc.html`) and every token's light value, including the
+  new `today`, `today-surface` and `accent` (`LightTokens.dc.html`).

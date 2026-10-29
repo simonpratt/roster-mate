@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roster Mate — Light theme tokens</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1200px; height: 1240px; box-sizing: border-box; padding: 56px; background: #FAF6F4; color: #261A24; color-scheme: light; font-family: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif; display: flex; flex-direction: column; gap: 36px">
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <h1 style="margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -0.02em">Light theme tokens</h1>
+    <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #6C5966">Plum &amp; rose gold · color-scheme: light · theme-color #FAF6F4. Same token names as apps/web/src/index.css; only the values change. Each row: dark value, light value. Tokens marked new don’t exist yet; their dark value is what the dark theme uses there today.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; align-items: start">
+    <sc-for list="{{columns}}" as="col" hint-placeholder-count="3">
+      <div style="display: flex; flex-direction: column; gap: 28px">
+        <sc-for list="{{col.groups}}" as="g" hint-placeholder-count="3">
+          <section style="display: flex; flex-direction: column; gap: 8px">
+            <h2 style="margin: 0 0 4px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8E4F5A">{{g.title}}</h2>
+            <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="6">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span aria-hidden="true" style="flex: none; width: 22px; height: 22px; border-radius: 6px; background: {{r.dark}}; box-shadow: inset 0 0 0 1px #3A404B"></span>
+                <span aria-hidden="true" style="flex: none; width: 22px; height: 22px; border-radius: 6px; background: {{r.light}}; box-shadow: inset 0 0 0 1px #C9B5AE"></span>
+                <span style="flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 6px">
+                  <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; font-weight: 500; color: #261A24">{{r.name}}</span>
+                  <sc-if value="{{r.isNew}}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size: 11px; font-weight: 600; color: #8E4F5A">new</span>
+                  </sc-if>
+                </span>
+                <span style="flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #6C5966">{{r.light}}</span>
+              </div>
+            </sc-for>
+          </section>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+
+  <section style="display: flex; flex-direction: column; gap: 12px">
+    <h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8E4F5A">Shift codes on light</h2>
+    <div style="display: flex; gap: 12px">
+      <sc-for list="{{chips}}" as="c" hint-placeholder-count="6">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px 10px 10px; border-radius: 14px; background: #FFFFFF; border: 1px solid #EFE6E2">
+          <span style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: {{c.bg}}; color: {{c.fg}}; box-shadow: inset 0 0 0 1px {{c.line}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px; font-weight: 700">{{c.code}}</span>
+          <span style="font-size: 14px; font-weight: 600">{{c.label}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    // [token, dark (index.css today), light, new?]
+    const G = (title, rows) => ({ title, rows: rows.map((r) => ({ name: r[0], dark: r[1], light: r[2], isNew: !!r[3] })) });
+    return {
+      columns: [
+        { groups: [
+          G('Surfaces', [
+            ['bg', '#0E1014', '#FAF6F4'], ['cell', '#121418', '#FFFFFF'], ['surface', '#161920', '#FFFFFF'],
+            ['surface-raised', '#1E222A', '#FFFFFF'], ['picker', '#1A1D24', '#F6F0EE'], ['surface-disabled', '#22262E', '#F0E8E5']
+          ]),
+          G('Lines', [
+            ['border', '#2A2F38', '#E9DEDA'], ['border-input', '#2E333C', '#E1D4CF'], ['border-strong', '#3A404B', '#C9B5AE'],
+            ['border-subtle', '#23272F', '#EEE5E1'], ['cell-line', '#1C2027', '#EFE6E2']
+          ]),
+          G('Text', [
+            ['text', '#ECEEF2', '#261A24'], ['text-soft', '#C9CDD4', '#4A3946'], ['text-muted', '#9AA1AD', '#6C5966'],
+            ['text-faint', '#8C93A0', '#6F5D69'], ['text-disabled', '#737B88', '#7E6C77'], ['text-dim', '#5A616D', '#A8969F']
+          ]),
+          G('Actions and today', [
+            ['primary', '#ECEEF2', '#4E2A5E'], ['on-primary', '#0E1014', '#FFFFFF'], ['focus', '#7DD3FC', '#8E4F5A'],
+            ['today', '#ECEEF2', '#B0707A', true], ['today-surface', '#161920', '#FBF0EE', true], ['accent', '#C9CDD4', '#8E4F5A', true]
+          ])
+        ] },
+        { groups: [
+          G('Status', [
+            ['ok', '#34D399', '#059669'], ['warn', '#F5A524', '#B45309'], ['babysitter-need', '#C98A2A', '#B7700F'],
+            ['failed', '#EF4444', '#DC2626'], ['failed-surface', '#2A1416', '#FDF0F0'], ['failed-line', '#5A2228', '#F5C2C2'],
+            ['failed-soft', '#FECACA', '#9B1C1C'], ['failed-action', '#FFFFFF', '#7F1D1D'], ['failed-icon', '#FCA5A5', '#DC2626']
+          ]),
+          G('Danger', [
+            ['danger', '#FB7185', '#BE123C'], ['on-danger', '#1A0A0D', '#FFFFFF'], ['danger-surface', '#2A1418', '#FFF0F3'],
+            ['danger-line', '#4A1F27', '#F8C9D3'], ['danger-soft', '#FBD5DB', '#881337']
+          ]),
+          G('Caution', [
+            ['caution', '#FDBA74', '#9A4A00'], ['caution-surface', '#2A1E10', '#FFF1E2'], ['caution-line', '#4A3317', '#EFC08A'],
+            ['caution-soft', '#FCE3C8', '#7C2D12']
+          ]),
+          G('Overlays', [
+            ['scrim', 'rgb(4 5 7 / 0.72)', 'rgb(38 26 36 / 0.40)'], ['scrim-sheet', 'rgb(4 5 7 / 0.66)', 'rgb(38 26 36 / 0.34)'],
+            ['row-unticked', 'rgb(255 255 255 / 0.015)', 'rgb(38 26 36 / 0.025)'], ['scan', 'rgb(125 211 252 / 0.14)', 'rgb(176 112 122 / 0.16)']
+          ])
+        ] },
+        { groups: [
+          G('Shift codes', [
+            ['amber', '#FCC35A', '#7A4E00'], ['amber-surface', '#3B2A0A', '#FCEFD2'], ['amber-line', '#5A4214', '#EBCB85'],
+            ['sky', '#7DD3FC', '#0B5A84'], ['sky-surface', '#0A2C3D', '#DDF0FB'], ['sky-line', '#11435C', '#9CCDEA'],
+            ['violet', '#C9B6FD', '#5634A8'], ['violet-surface', '#2A1C47', '#ECE6FD'], ['violet-line', '#402B6B', '#C6B6F5'],
+            ['indigo', '#A5B1FF', '#343A9E'], ['indigo-surface', '#1B2050', '#E2E5FD'], ['indigo-line', '#2B3275', '#B3BAF2'],
+            ['lime', '#C8EC72', '#44610C'], ['lime-surface', '#232E0C', '#EAF4D3'], ['lime-line', '#4A5E22', '#B9D27A']
+          ]),
+          G('Review markers', [
+            ['mark-new', '#86EFAC', '#15803D'], ['mark-new-surface', '#0F2418', '#ECFDF3'], ['mark-new-line', '#1D4A30', '#A7E3BF'],
+            ['mark-changed-line', '#5A3A1C', '#EFC08A'], ['mark-unsure', '#F9A8D4', '#A21A6B'], ['mark-unsure-line', '#5B2546', '#F2B8D8'],
+            ['mark-needs', '#FDA4AF', '#9F1239']
+          ])
+        ] }
+      ],
+      chips: [
+        { code: 'D', label: 'Day', bg: '#FCEFD2', fg: '#7A4E00', line: '#FCEFD2' },
+        { code: 'E', label: 'Early', bg: '#DDF0FB', fg: '#0B5A84', line: '#DDF0FB' },
+        { code: 'L', label: 'Late', bg: '#ECE6FD', fg: '#5634A8', line: '#ECE6FD' },
+        { code: 'N', label: 'Night', bg: '#E2E5FD', fg: '#343A9E', line: '#E2E5FD' },
+        { code: 'X', label: 'Day off', bg: 'transparent', fg: '#6F5D69', line: '#C9B5AE' },
+        { code: 'SE', label: 'Other', bg: '#EAF4D3', fg: '#44610C', line: '#EAF4D3' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
