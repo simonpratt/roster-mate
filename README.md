@@ -14,7 +14,7 @@ A small, self-hosted roster app for a shift worker's phone.
     <td><img src="docs/screenshots/calendar.png" width="200" alt="Calendar: each date's shift code, babysitter and events, month by month"></td>
     <td><img src="docs/screenshots/date.png" width="200" alt="Date sheet: set a date's shift, babysitter and notes"></td>
     <td><img src="docs/screenshots/import.png" width="200" alt="Import review: the shifts Claude read from a roster photo, compared with the saved ones"></td>
-    <td><img src="docs/screenshots/babysitters.png" width="200" alt="Babysitters: each sitter's share of dates and the dates that still need one"></td>
+    <td><img src="docs/screenshots/babysitters.png" width="200" alt="Babysitters: the dates that still need a babysitter, then each babysitter's upcoming dates to confirm"></td>
   </tr>
   <tr>
     <td align="center">Calendar</td>

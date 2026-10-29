@@ -25,7 +25,6 @@ async function open() {
 }
 
 const section = (name: string) => screen.findByRole("region", { name });
-const shareRows = (el: HTMLElement) => within(el).queryAllByRole("listitem").map((li) => li.textContent);
 const rowNames = (el: HTMLElement) =>
   within(el)
     .getAllByRole("button")
@@ -62,7 +61,6 @@ describe("Babysitters screen", () => {
     await section("Mum");
     const regions = screen.getAllByRole("region");
     expect(regions.map((r) => within(r).getByRole("heading", { level: 2 }).textContent)).toEqual([
-      "Share",
       "Dad",
       "Mel",
       "Mum",
@@ -149,8 +147,6 @@ describe("Babysitters screen", () => {
     const sheet = await screen.findByRole("dialog");
     expect(within(sheet).getByRole("heading", { name: "Tuesday 17 November" })).toBeInTheDocument();
     await waitFor(() => expect(sheet).toHaveFocus());
-    const shareBefore = await section("Share");
-    await waitFor(() => expect(shareRows(shareBefore)).toEqual(["Mum1 date · 100%"]));
     fireEvent.click(within(within(sheet).getByRole("radiogroup", { name: "Babysitter" })).getByRole("radio", { name: "Mum" }));
     fireEvent.click(within(sheet).getByRole("button", { name: "Save" }));
 
@@ -163,66 +159,6 @@ describe("Babysitters screen", () => {
       ]),
     );
     await waitFor(() => expect(screen.queryByRole("region", { name: "Needs a babysitter" })).not.toBeInTheDocument());
-    // The share counts the new date too.
-    const share = await section("Share");
-    await waitFor(() => expect(shareRows(share)).toEqual(["Mum2 dates · 100%"]));
-  });
-
-  it("shows each babysitter's share of the eight weeks ending on the last working shift", async () => {
-    // The last working shift is Mon 30 Nov (the Day off after it doesn't count), so the window
-    // runs from Tue 6 Oct.
-    await seed({ "2026-11-16": "D", "2026-11-30": "N", "2026-12-02": "X" });
-    const rows: Record<string, string | [string, boolean]> = {
-      "2026-10-05": "Mel", // the date before the window
-      "2026-12-02": "Mel", // after it
-      "2026-10-06": ["Mel", true],
-    };
-    for (let d = 1; d <= 9; d++) rows[`2026-10-${String(10 + d)}`] = d % 2 ? "Mum" : ["mum", true];
-    for (let d = 1; d <= 7; d++) rows[`2026-11-${String(15 + d)}`] = "Dad";
-    await seedBabysitters(rows);
-    await open();
-
-    const share = await section("Share");
-    expect(within(share).getByText("6 Oct – 30 Nov")).toBeInTheDocument();
-    await waitFor(() =>
-      expect(shareRows(share)).toEqual(["Mum9 dates · 53%", "Dad7 dates · 41%", "Mel1 date · 6%"]),
-    );
-    const bar = within(share).getByTestId("share-bar");
-    expect(bar).toHaveAttribute("aria-hidden", "true");
-    expect([...bar.children].map((c) => [(c as HTMLElement).style.flex, c.className.match(/bg-[\w-]+/)?.[0]])).toEqual([
-      ["9 1 0px", "bg-text"],
-      ["7 1 0px", "bg-text-muted"],
-      ["1 1 0px", "bg-text-dim"],
-    ]);
-    // Each row's swatch matches its segment.
-    expect(within(share).getAllByRole("listitem").map((li) => li.firstElementChild?.className.match(/bg-[\w-]+/)?.[0])).toEqual([
-      "bg-text",
-      "bg-text-muted",
-      "bg-text-dim",
-    ]);
-  });
-
-  it("shows 9 dates · 56% with two babysitters", async () => {
-    await seedBabysitters(
-      Object.fromEntries([
-        ...Array.from({ length: 9 }, (_, i) => [`2026-10-${String(20 + i)}`, "Mum"]),
-        ...Array.from({ length: 7 }, (_, i) => [`2026-11-0${i + 1}`, "Dad"]),
-      ]),
-    );
-    await open();
-    const share = await section("Share");
-    expect(within(share).getByText("21 Sep – 15 Nov")).toBeInTheDocument();
-    await waitFor(() => expect(shareRows(share)).toEqual(["Mum9 dates · 56%", "Dad7 dates · 44%"]));
-  });
-
-  it("shows the share card's empty line with no babysitter in the window", async () => {
-    await seedBabysitters({ "2026-09-01": "Mum" });
-    await open();
-    const share = await section("Share");
-    expect(within(share).getByText("21 Sep – 15 Nov")).toBeInTheDocument();
-    expect(within(share).getByText("No babysitters in these eight weeks.")).toBeInTheDocument();
-    expect(within(share).queryByTestId("share-bar")).not.toBeInTheDocument();
-    expect(within(share).queryByRole("listitem")).not.toBeInTheDocument();
   });
 
   it("shows the empty text with no babysitter from today on, and the needs list still", async () => {
@@ -233,6 +169,9 @@ describe("Babysitters screen", () => {
     expect(await screen.findByText("No upcoming babysitters. Choose one for a date in the calendar.")).toBeInTheDocument();
     expect(await section("Needs a babysitter")).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Mum" })).not.toBeInTheDocument();
+    // No Share card, and so no line for a past babysitter.
+    expect(screen.queryByRole("region", { name: "Share" })).not.toBeInTheDocument();
+    expect(screen.queryByText("No babysitters in these eight weeks.")).not.toBeInTheDocument();
   });
 
   it("goes back to the Calendar", async () => {

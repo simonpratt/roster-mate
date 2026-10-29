@@ -116,18 +116,6 @@ export function formatHeadingDate(date: DateString, today: DateString): string {
   return year === parts(today)[0] ? formatLongDate(date) : `${formatLongDate(date)} ${year}`;
 }
 
-/** "24 Aug", with the year added when it isn't today's year: "4 Jan 2027". */
-export function formatDayMonth(date: DateString, today: DateString): string {
-  const [y, m, d] = parts(date);
-  const text = `${d} ${monthName(m).slice(0, 3)}`;
-  return y === parts(today)[0] ? text : `${text} ${y}`;
-}
-
-/** "24 Aug – 18 Oct", with the year on either end that isn't today's year. */
-export function formatDateRange(start: DateString, end: DateString, today: DateString): string {
-  return `${formatDayMonth(start, today)} – ${formatDayMonth(end, today)}`;
-}
-
 /** "November 2026". */
 export function formatMonth(month: MonthString): string {
   const [y, m] = parts(`${month}-01`);

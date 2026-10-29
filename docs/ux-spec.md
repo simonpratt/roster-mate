@@ -535,12 +535,6 @@ lands.
 
 ```
   ←  Babysitters
-  ┌ Share ──────────────────────────────┐
-  │ Share                1 Sep – 26 Oct  │  ← the share window
-  │ [■■■■■■■■■■■■■■■■■■■■|▒▒▒▒▒▒▒▒▒▒▒▒▒] │  ← split bar, one grey per name
-  │ ■ Mum               9 dates · 56%    │
-  │ ▒ Dad               7 dates · 44%    │
-  └──────────────────────────────────────┘
   (•) Needs a babysitter                  ← only while some upcoming date does
       2 dates
   Fri 23 Oct            [L•]  No babysitter
@@ -554,16 +548,6 @@ lands.
   Mon 26 Oct            [Eᴰ]  ✓ Confirmed
 ```
 
-**Share card** (`surface`, rounded, §4.4 gutters): the caption "Share" and the share window's dates
-("24 Aug – 18 Oct", with the year on either end that isn't the current year); a 12 px split bar
-with one segment per babysitter, widths proportional to their counts, filled `text`, `text-muted`
-and `text-dim` in turn (then repeating), with a 2 px gap between segments; then one row per
-babysitter with any date in the window, most dates first then A–Z: a 10 px square swatch in its
-segment's grey, name, "{n} dates · {p}%" (`1 date`; percentages rounded to whole numbers). A date counts once for its babysitter whatever its
-status and whether or not it has a shift; names group ignoring case, as in the picker. With no
-babysitter in the window the card shows "No babysitters in these eight weeks." in place of the bar
-and rows.
-
 **Needs a babysitter**: shown only while at least one date needs a babysitter. The same header as a
 babysitter's section, with a 28 px dashed `text-dim` circle holding a 10 px `babysitter-need` dot,
 the title "Needs a babysitter" and "{n} dates" ("1 date") in `text-muted`. Then one row per such
@@ -576,15 +560,15 @@ button (with a check icon) while any of its upcoming dates is tentative. Rows: e
 today on with that babysitter, earliest first: date, shift chip with the avatar (§5.10; on an
 unrostered date the avatar alone), and a status label "Tentative" (in `text-muted`) or
 "Confirmed" (in `text`), with a check icon before "Confirmed" so the status doesn't rest on
-colour. Past dates are not listed here; they count only towards the share.
+colour. Past dates are not listed.
 
 **Confirm all** marks every upcoming tentative date of that babysitter confirmed in one save (one
 edit time, one transaction, one sync), with no dialog: a slip is undone in the date sheet.
 Afterwards the summary reads "All confirmed" and the button goes.
 
-**Empty**: with no babysitter on any date, the share card shows its empty line and, below it, "No
-upcoming babysitters. Choose one for a date in the calendar." in `text-muted`; the Needs a
-babysitter list still shows when it has dates.
+**Empty**: with no babysitter from today on, the screen shows "No upcoming babysitters. Choose one
+for a date in the calendar." in `text-muted`; the Needs a babysitter list still shows when it
+has dates.
 
 Rows are 52 px buttons on `cell` with a `cell-line` border (`docs/designs/Babysitters.dc.html`,
 `BabysittersEmpty.dc.html`). Each row is a button whose accessible name reads like a calendar cell's: "Friday 30
@@ -778,7 +762,7 @@ client's system sans-serif and monospace.
 | Save import | Save {n} shifts / Save 1 shift / Nothing selected |
 | Discard import | Discard this import? |
 | Babysitter | Babysitter · None · + Someone else · Name · Needs a babysitter · Confirmed |
-| Babysitters screen | Babysitters · Share · {n} dates / 1 date · {p}% · No babysitters in these eight weeks. · Needs a babysitter · {n} to confirm · All confirmed · Confirm all · Tentative · Confirmed · No upcoming babysitters. Choose one for a date in the calendar. |
+| Babysitters screen | Babysitters · Needs a babysitter · {n} dates / 1 date · {n} to confirm · All confirmed · Confirm all · Tentative · Confirmed · No upcoming babysitters. Choose one for a date in the calendar. |
 | Calendar cell | swapped from {code label} (accessible name only) · +{n} (more events) |
 | Events | Notes and events (the date sheet's heading) · Add a note or event · Remove event: {text} |
 | History | History · Every change to a shift, newest first. · Not synced yet · {n} changes / 1 change · Today · Yesterday · Date sheet · Import · Edit · {n} shifts · No shift changes yet. Shifts you change or import show here. |
@@ -800,8 +784,8 @@ exception, already used in the indicator).
 | SIM-16 Import | §6.4, §5.4, §5.7 |
 | SIM-24 / SIM-35 Events and babysitters | §5.3, §5.8, §5.9, §6.3, §8 |
 | SIM-41 Confirmed babysitters | §5.8 Confirmed switch, §6.3, §8 |
-| SIM-42 Babysitter visibility | §3, §4.1, §5.1 menu, §5.3, §5.10, §6.5 (without the share card), §8 |
-| SIM-43 Babysitter share | §6.5 share card, §8 |
+| SIM-42 Babysitter visibility | §3, §4.1, §5.1 menu, §5.3, §5.10, §6.5, §8 |
+| SIM-43 Babysitter share | Removed by SIM-59 |
 | SIM-44 Scrollable calendar | §4.6, §5.1, §5.3, §6.2 |
 | SIM-45 Shift history | §3, §5.1 menu, §6.3 Notes and events, §6.6, §8 |
 | SIM-51 Roster emails | §3, §5.1 menu, §6.7, §6.8, §8 |

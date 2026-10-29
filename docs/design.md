@@ -500,9 +500,8 @@ desktop.
     Save/Cancel. There is no
     note field and no "Clear"; choosing Day off (`X`) is how a shift is removed.
 - **Import**: as described above.
-- **Babysitters** (`/babysitters`, from the header's ⋯ menu): the Share card over the share
-  window, the dates that need a babysitter, then one section per babysitter with its upcoming
-  dates and Confirm all; tapping a date opens the date sheet (`docs/ux-spec.md` §6.5).
+- **Babysitters** (`/babysitters`, from the header's ⋯ menu): the dates that need a
+  babysitter, then one section per babysitter with its upcoming dates and Confirm all; tapping a date opens the date sheet (`docs/ux-spec.md` §6.5).
 - **History** (`/history`, from the ⋯ menu): the pending shift edits under "Not synced yet",
   then every shift change, one group per save (equal `editedAt` and source), newest first, each
   row the date with the code it had and the code it got; tapping a row opens the date sheet
