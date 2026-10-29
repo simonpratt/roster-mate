@@ -22,32 +22,6 @@ body{margin:0}
     <h1 style="margin: 0; font-size: 17px; font-weight: 600">Babysitters</h1>
   </header>
 
-  <section aria-labelledby="share-title" style="margin: 8px 16px 0; padding: 16px; border-radius: 16px; background: #161920; border: 1px solid #23272F; display: flex; flex-direction: column; gap: 14px">
-    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
-      <h2 id="share-title" style="margin: 0; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #9AA1AD">Share</h2>
-      <p style="margin: 0; font-size: 13px; font-weight: 500; color: #9AA1AD; font-variant-numeric: tabular-nums">{{windowText}}</p>
-    </div>
-    <sc-if value="{{hasShare}}" hint-placeholder-val="{{ true }}">
-      <div aria-hidden="true" style="display: flex; gap: 2px; height: 12px">
-        <sc-for list="{{share}}" as="e" hint-placeholder-count="3">
-          <span style="flex: {{e.count}} 1 0; min-width: 4px; border-radius: 3px; background: {{e.color}}"></span>
-        </sc-for>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 2px">
-        <sc-for list="{{share}}" as="e" hint-placeholder-count="3">
-          <p style="margin: 0; min-height: 32px; display: flex; align-items: center; gap: 10px; font-size: 15px">
-            <span aria-hidden="true" style="flex: none; width: 10px; height: 10px; border-radius: 3px; background: {{e.color}}"></span>
-            <span style="flex: 1; min-width: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{e.name}}</span>
-            <span style="color: #C9CDD4; font-variant-numeric: tabular-nums">{{e.text}}</span>
-          </p>
-        </sc-for>
-      </div>
-    </sc-if>
-    <sc-if value="{{noShare}}" hint-placeholder-val="{{ false }}">
-      <p style="margin: 0; font-size: 15px; line-height: 1.45; color: #9AA1AD">No babysitters in these eight weeks.</p>
-    </sc-if>
-  </section>
-
   <sc-if value="{{hasNeeds}}" hint-placeholder-val="{{ true }}">
     <section aria-labelledby="needs-title" style="margin: 28px 16px 0; display: flex; flex-direction: column; gap: 8px">
       <div style="display: flex; align-items: center; gap: 12px; min-height: 44px">
@@ -113,7 +87,7 @@ body{margin:0}
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"empty":{"editor":"boolean","default":false},"$preview":{"width":390,"height":1240}}'>
+<script type="text/x-dc" data-dc-script data-props='{"empty":{"editor":"boolean","default":false},"$preview":{"width":390,"height":1040}}'>
 class Component extends DCLogic {
   renderVals() {
     const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -149,7 +123,6 @@ class Component extends DCLogic {
     const TODAY = '10-15';
     const ord = (key) => { const a = key.split('-'); return Number(a[0]) * 100 + Number(a[1]); };
     const dateOf = (key) => { const a = key.split('-'); return new Date(2026, Number(a[0]) - 1, Number(a[1])); };
-    const keyOf = (d) => (d.getMonth() + 1) + '-' + d.getDate();
     const shortDate = (key) => { const d = dateOf(key); return WD[d.getDay()] + ' ' + d.getDate() + ' ' + MS[d.getMonth()]; };
     const longDate = (key) => { const d = dateOf(key); return WDL[d.getDay()] + ' ' + d.getDate() + ' ' + ML[d.getMonth()]; };
     const byDate = (a, b) => ord(a) - ord(b);
@@ -159,25 +132,6 @@ class Component extends DCLogic {
     const isEmpty = p.empty === true || p.empty === 'true';
     const sitters = isEmpty ? {} : SITTERS;
     const confirmed = s.confirmed || (isEmpty ? {} : CONFIRMED);
-
-    // Share window: eight weeks ending on the last working shift, or today if later.
-    let endKey = TODAY;
-    Object.keys(SHIFTS).forEach((k) => { if (SHIFTS[k] !== 'X' && ord(k) > ord(endKey)) endKey = k; });
-    const end = dateOf(endKey);
-    const start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 55);
-    const startKey = keyOf(start);
-    const inWindow = (k) => ord(k) >= ord(startKey) && ord(k) <= ord(endKey);
-    const counts = {};
-    Object.keys(sitters).forEach((k) => { if (inWindow(k)) counts[sitters[k]] = (counts[sitters[k]] || 0) + 1; });
-    const total = Object.keys(counts).reduce((n, name) => n + counts[name], 0);
-    const GREYS = ['#ECEEF2', '#9AA1AD', '#5A616D'];
-    const share = Object.keys(counts)
-      .sort((a, b) => counts[b] - counts[a] || a.localeCompare(b))
-      .map((name, i) => ({
-        name, count: counts[name], color: GREYS[i % GREYS.length],
-        text: counts[name] + (counts[name] === 1 ? ' date' : ' dates') + ' · ' + Math.round((100 * counts[name]) / total) + '%'
-      }));
-    const fmt = (d) => d.getDate() + ' ' + MS[d.getMonth()];
 
     // Needs a babysitter: working shifts from today on with none.
     const needs = Object.keys(SHIFTS)
@@ -234,10 +188,6 @@ class Component extends DCLogic {
     });
 
     return {
-      windowText: fmt(start) + ' – ' + fmt(end),
-      hasShare: share.length > 0,
-      noShare: share.length === 0,
-      share,
       hasNeeds: needs.length > 0,
       needsSummary: needs.length + (needs.length === 1 ? ' date' : ' dates'),
       needs,
