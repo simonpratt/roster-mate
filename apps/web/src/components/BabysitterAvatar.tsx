@@ -11,7 +11,7 @@ import { SwapIcon } from "./icons";
 export type AvatarStatus = "needs" | "tentative" | "confirmed";
 
 /** The colour behind the avatar, which its 2 px ring matches. */
-export type AvatarRing = "cell" | "surface";
+export type AvatarRing = "cell" | "today";
 
 type BabysitterAvatarProps = {
   status: AvatarStatus;
@@ -24,7 +24,7 @@ type BabysitterAvatarProps = {
 
 const rings: Record<AvatarRing, string> = {
   cell: "ring-2 ring-cell",
-  surface: "ring-2 ring-surface",
+  today: "ring-2 ring-today-surface",
 };
 
 const looks: Record<"small" | "large", Record<AvatarStatus, string>> = {

@@ -66,6 +66,7 @@ describe("Calendar month grid", () => {
     expect(months.map((m) => m.getAttribute("aria-label"))).toEqual(["October 2026", "November 2026", "December 2026"]);
     const november = screen.getByRole("region", { name: "November 2026" });
     expect(within(november).getByRole("heading", { level: 2 })).toHaveTextContent("November 2026");
+    expect(within(november).getByRole("heading", { level: 2 })).toHaveClass("text-accent");
     // Only November's dates: 1 November is a Sunday, after six blanks.
     const cells = within(november).getAllByRole("button");
     expect(cells).toHaveLength(30);
@@ -123,7 +124,7 @@ describe("Calendar month grid", () => {
 
     // Today is a Sunday: a weekend date never needs a babysitter.
     const today = await cell("Sunday 15 November, Early, today");
-    expect(today).toHaveClass("border-text", "bg-surface", "ring-text");
+    expect(today).toHaveClass("border-today", "bg-today-surface", "ring-today");
     expect(avatar(today)).toBeNull();
     const needs = await cell("Monday 16 November, Day, no babysitter");
     expect(needs).toHaveClass("border-cell-line", "bg-cell");
@@ -223,7 +224,7 @@ describe("Calendar month grid", () => {
     const past = await cell("Thursday 12 November, Night, swapped from Day");
     expect(badge(past)).toHaveClass("-bottom-1.25", "-left-1.25", "size-3.75", "bg-caution-surface", "text-caution");
     expect(badge(past)).toHaveClass("border-mark-changed-line", "ring-cell");
-    expect(badge(await cell("Sunday 15 November, Early, swapped from Late, today"))).toHaveClass("ring-surface");
+    expect(badge(await cell("Sunday 15 November, Early, swapped from Late, today"))).toHaveClass("ring-today-surface");
     const dayOff = await cell("Monday 16 November, Day off, swapped from Day, babysitter Mum, confirmed");
     expect(badge(dayOff)).toBeInTheDocument();
     expect(within(dayOff).getByTestId("babysitter-avatar")).toHaveClass("-top-1.75", "-right-1.75");

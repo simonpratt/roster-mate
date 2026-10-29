@@ -1,11 +1,10 @@
 @import "tailwindcss";
 
-/* Dark only: the `dark:` variant follows <html class="dark">, not the OS setting. */
-@custom-variant dark (&:where(.dark, .dark *));
-
 /*
  * Theme tokens from docs/ux-spec.md §4.1 (values from docs/designs/Tokens.dc.html).
  * Tailwind's default palette is cleared so components use these names, never raw palette classes.
+ * These are the dark values; the light theme below swaps the values under the same names when the
+ * phone's theme is light (prefers-color-scheme). There is no toggle in the app.
  */
 @theme {
   --color-*: initial;
@@ -25,6 +24,9 @@
   --color-warn: #f5a524;
   --color-babysitter-need: #c98a2a; /* the needs-a-babysitter dot, "No babysitter" (§5.10, §6.5) */
   --color-focus: #7dd3fc;
+  --color-today: #eceef2; /* the ring and border on today's date */
+  --color-today-surface: #161920; /* today's cell fill */
+  --color-accent: #c9cdd4; /* month titles */
 
   /* Further values from docs/designs/ (Login, Tokens) that the §4.1 table doesn't name. */
   --color-border-input: #2e333c; /* input and banner borders */
@@ -162,6 +164,7 @@
   --radius-dialog: 22px;
 
   --shadow-popover: 0 16px 40px rgb(0 0 0 / 0.55);
+  --shadow-sheet: none; /* the bottom sheet: only the light theme lifts it off the scrim */
 
   /* Bottom sheet motion, §4.6: slides up in 200 ms; the scrim fades in. */
   --animate-sheet-in: sheet-in 200ms ease-out;
@@ -181,9 +184,92 @@
   --container-app: 480px;
 }
 
+/*
+ * The light theme, plum and rose gold, from docs/designs/LightTokens.dc.html (shadows from
+ * LightCalendar.dc.html): every token above keeps its name and takes its light value.
+ */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg: #faf6f4;
+    --color-cell: #ffffff;
+    --color-surface: #ffffff;
+    --color-surface-raised: #ffffff;
+    --color-border: #e9deda;
+    --color-text: #261a24;
+    --color-text-muted: #6c5966;
+    --color-text-faint: #6f5d69;
+    --color-primary: #4e2a5e;
+    --color-on-primary: #ffffff;
+    --color-danger: #be123c;
+    --color-failed: #dc2626;
+    --color-ok: #059669;
+    --color-warn: #b45309;
+    --color-babysitter-need: #b7700f;
+    --color-focus: #8e4f5a;
+    --color-today: #b0707a;
+    --color-today-surface: #fbf0ee;
+    --color-accent: #8e4f5a;
+
+    --color-border-input: #e1d4cf;
+    --color-border-strong: #c9b5ae;
+    --color-text-soft: #4a3946;
+    --color-surface-disabled: #f0e8e5;
+    --color-text-disabled: #7e6c77;
+    --color-danger-surface: #fff0f3;
+    --color-danger-line: #f8c9d3;
+    --color-danger-soft: #881337;
+    --color-caution: #9a4a00;
+    --color-caution-surface: #fff1e2;
+    --color-caution-line: #efc08a;
+    --color-caution-soft: #7c2d12;
+
+    --color-border-subtle: #eee5e1;
+    --color-cell-line: #efe6e2;
+    --color-text-dim: #a8969f;
+    --color-on-danger: #ffffff;
+    --color-failed-surface: #fdf0f0;
+    --color-failed-line: #f5c2c2;
+    --color-failed-soft: #9b1c1c;
+    --color-failed-action: #7f1d1d;
+    --color-scrim: rgb(38 26 36 / 0.4);
+    --color-scrim-sheet: rgb(38 26 36 / 0.34);
+    --color-picker: #f6f0ee;
+
+    --color-mark-new: #15803d;
+    --color-mark-new-surface: #ecfdf3;
+    --color-mark-new-line: #a7e3bf;
+    --color-mark-changed-line: #efc08a;
+    --color-mark-unsure: #a21a6b;
+    --color-mark-unsure-line: #f2b8d8;
+    --color-mark-needs: #9f1239;
+    --color-row-unticked: rgb(38 26 36 / 0.025);
+    --color-failed-icon: #dc2626;
+    --color-scan: rgb(176 112 122 / 0.16);
+
+    --color-amber: #7a4e00;
+    --color-amber-surface: #fcefd2;
+    --color-sky: #0b5a84;
+    --color-sky-surface: #ddf0fb;
+    --color-violet: #5634a8;
+    --color-violet-surface: #ece6fd;
+    --color-indigo: #343a9e;
+    --color-indigo-surface: #e2e5fd;
+    --color-lime: #44610c;
+    --color-lime-surface: #eaf4d3;
+    --color-lime-line: #b9d27a;
+    --color-amber-line: #ebcb85;
+    --color-sky-line: #9ccdea;
+    --color-violet-line: #c6b6f5;
+    --color-indigo-line: #b3baf2;
+
+    --shadow-popover: 0 14px 36px rgb(78 42 94 / 0.13);
+    --shadow-sheet: 0 14px 36px rgb(78 42 94 / 0.13);
+  }
+}
+
 @layer base {
   html {
-    color-scheme: dark;
+    color-scheme: light dark;
     background-color: var(--color-bg);
   }
 

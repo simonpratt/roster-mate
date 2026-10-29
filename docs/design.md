@@ -12,7 +12,7 @@ Source: Linear SIM-8 ("Initial scope").
 ## Goals
 
 - Upload a roster photo; Claude extracts the user's shifts; the user reviews and saves them.
-- View shifts on a phone in a simple, dark-mode-only UI.
+- View shifts on a phone in a simple UI that follows the phone's dark or light theme.
 - Edit a single shift (e.g. after a swap). Setting a date to Day off is how a shift is removed.
 - View and edit while away from the home network; edits sync when the phone reconnects.
 
@@ -20,7 +20,7 @@ Source: Linear SIM-8 ("Initial scope").
 
 - Multiple users, sharing, or roles.
 - Importing or extracting rosters while offline.
-- Light mode, desktop-optimised layouts, native apps.
+- An in-app theme toggle, desktop-optimised layouts, native apps.
 - Push notifications, calendar (ICS) export, pay calculation.
 - Exposing the app to the internet. Network isolation is a deployment concern.
 
@@ -477,8 +477,10 @@ stage installs only `apps/web`, so React Email never reaches the image.
 
 Screen layouts, states, visual tokens and copy are specified in `docs/ux-spec.md`.
 
-Dark mode only (`<html class="dark">`, dark palette baked into Tailwind theme, `color-scheme: dark`,
-`theme-color` matching). Designed for a 360–430 px wide portrait phone; usable but not tuned on
+Dark and light themes, chosen only by the phone's theme (`prefers-color-scheme`; no toggle in the
+app). The dark palette is the Tailwind theme, the light theme swaps every colour token's value
+under the same name, and the page declares `color-scheme: light dark` with a `theme-color` per
+scheme. Designed for a 360–430 px wide portrait phone; usable but not tuned on
 desktop.
 
 - **Login**: username, password, submit, error message.
@@ -525,7 +527,9 @@ desktop.
   `registerSW.js`, `manifest.webmanifest`, icons) so a new build is picked up, and a year,
   `immutable`, for the content-hashed files under `assets/`.
 - Manifest: name "Roster Mate", `display: standalone`, `orientation: portrait`, dark
-  `background_color`/`theme_color`, 192/512 px and maskable icons.
+  `background_color`/`theme_color`, 192/512 px and maskable icons. The manifest takes only one of
+  each, so the splash screen is dark in either theme; `index.html` has a `theme-color` meta per
+  scheme (with `media`), so Android's status bar follows the phone's theme.
 - Service workers need a secure context. The app must be reached over HTTPS (e.g. the user's
   existing reverse proxy with a certificate the phone trusts) for install and offline to work.
   Over plain HTTP the app still works online.

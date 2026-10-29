@@ -124,7 +124,7 @@ export function BottomSheet({ labelledBy, onClose, returnFocus, children }: Bott
         style={{ bottom: keyboardInset, transform: drag > 0 && !closing ? `translateY(${drag}px)` : undefined }}
         className={
           "absolute inset-x-0 mx-auto flex max-h-[90dvh] max-w-app flex-col gap-4.5 overflow-y-auto overscroll-contain " +
-          "rounded-t-dialog border-t border-border bg-surface px-4 pt-2.5 pb-[calc(28px+env(safe-area-inset-bottom))] " +
+          "rounded-t-dialog border-t border-border bg-surface shadow-sheet px-4 pt-2.5 pb-[calc(28px+env(safe-area-inset-bottom))] " +
           `outline-none ${motion}`
         }
       >

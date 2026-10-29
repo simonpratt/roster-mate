@@ -20,7 +20,8 @@ published schedule, and the image uploaded is a **Roster photo**.
 3. **Nothing changes without review.** Imports always show a review list; edits always need Save.
 4. **Colour helps, letters decide.** Every shift shows its letter code. Colour is a second cue,
    never the only one.
-5. **One hand, portrait, dark.** Primary actions sit in thumb reach; there is no light mode.
+5. **One hand, portrait, the phone's theme.** Primary actions sit in thumb reach; the app is dark
+   or light as the phone is, with no toggle of its own.
 
 ## 2. Users and context
 
@@ -60,9 +61,14 @@ History.
 
 ### 4.1 Theme
 
-Dark only: `<html class="dark">`, `color-scheme: dark`, manifest and `<meta name="theme-color">`
-set to the page background. Define these as custom Tailwind theme tokens (values from
-`docs/designs/Tokens.dc.html`) so components use names, not raw palette classes.
+Dark and light, following the phone's theme (`prefers-color-scheme`); there is no toggle. Define
+these as custom Tailwind theme tokens (values from `docs/designs/Tokens.dc.html`) so components use
+names, not raw palette classes. The table gives the dark values. The light theme, plum and rose
+gold, is a token swap: every token keeps its name and takes the light value from
+`docs/designs/LightTokens.dc.html`, so components never branch on the theme. The page declares
+`color-scheme: light dark` and a `<meta name="theme-color">` per scheme set to that theme's page
+background (#0E1014 dark, #FAF6F4 light). The manifest's `theme_color` and `background_color` take
+one value each, so they stay dark.
 
 | Token | Value | Use |
 |---|---|---|
@@ -81,6 +87,9 @@ set to the page background. Define these as custom Tailwind theme tokens (values
 | `warn` | #F5A524 | Pending dot, "Needs a babysitter" label in the date sheet |
 | `babysitter-need` | #C98A2A | The needs-a-babysitter dot on a shift chip, "No babysitter" on the Babysitters screen |
 | `focus` | #7DD3FC | Focus rings (2 px, offset 2 px) |
+| `today` | #ECEEF2 | Ring and border on today's date |
+| `today-surface` | #161920 | Today's cell fill |
+| `accent` | #C9CDD4 | Month titles |
 
 The primary button is near-white rather than a hue so it never competes with or mimics a shift
 colour.

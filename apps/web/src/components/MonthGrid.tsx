@@ -188,7 +188,7 @@ function MonthSection({
   const title = formatMonth(month);
   return (
     <section aria-label={title} data-month={month} className="pb-3">
-      <h2 className="m-0 h-11 px-1 pt-4 text-callout font-semibold text-text-soft">{title}</h2>
+      <h2 className="m-0 h-11 px-1 pt-4 text-callout font-semibold text-accent">{title}</h2>
       <div data-grid className="grid grid-cols-7 gap-0.75">
         {Array.from({ length: weekdayIndex(dates[0]!) }, (_, i) => (
           <span key={i} aria-hidden="true" className="h-21" />
@@ -241,7 +241,7 @@ function DayCell({ date, shift, events, swappedFrom, babysitter, known, needsBab
   const code = shift?.code ?? null;
   const name = dateLabel({ date, code, babysitter, needsBabysitter, swappedFrom, events, today });
 
-  const cell = isToday ? "border border-text bg-surface ring-1 ring-inset ring-text" : "border border-cell-line bg-cell";
+  const cell = isToday ? "border border-today bg-today-surface ring-1 ring-inset ring-today" : "border border-cell-line bg-cell";
   const number = isToday ? "font-bold text-text" : date < today ? "text-text-disabled" : "text-text-soft";
   const status: AvatarStatus | null = babysitter.name
     ? babysitter.confirmed
@@ -267,7 +267,7 @@ function DayCell({ date, shift, events, swappedFrom, babysitter, known, needsBab
           size="grid"
           avatar={status && { status, initials: babysitterInitials(babysitter.name, known) }}
           swapped={swappedFrom !== null}
-          ring={isToday ? "surface" : "cell"}
+          ring={isToday ? "today" : "cell"}
         />
       ) : (
         <span className="h-8" />

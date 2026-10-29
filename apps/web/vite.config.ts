@@ -9,7 +9,9 @@ import type { Plugin } from "vite";
 // The Go server listens on API_PORT (default 8080) during `make dev`; Vite proxies /api to it.
 const apiPort = process.env.API_PORT ?? "8080";
 
-// Page background (docs/ux-spec.md §4.1), also the manifest's theme and background colour.
+// The dark theme's page background (docs/ux-spec.md §4.1), also the manifest's theme and background
+// colour. The manifest takes one of each, so the splash screen is dark in either theme; index.html
+// gives each theme its own theme-color.
 const BG = "#0E1014";
 
 // embed.go embeds dist/, so a fresh clone needs the committed dist/.gitkeep to compile. The build
