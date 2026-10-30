@@ -230,7 +230,7 @@ dot) until that run finishes.
   with one month before it and one after, reaching today's month too. Nothing is added
   above. Scrolling within a screen of the bottom adds three more months, as does a view
   taller than that.
-- **Cell**: 84 px tall. Day number at the top (Caption, mono), shift chip centred with the
+- **Cell**: 84 px tall. Day number in the top-left corner, 6 px in (Caption, mono), shift chip centred with the
   babysitter avatar (§5.10) on its top-right corner and the swap badge (§5.11) on its
   bottom-left, and the event caption at the bottom. The cell's border and fill never change with
   the babysitter or a swap (`docs/designs/Main.dc.html`).
@@ -314,21 +314,24 @@ tentative. Picking None hides it, and None saves as tentative. Toggling it alone
 
 ### 5.10 Babysitter avatar
 
-A small circle on the top-right corner of a shift chip, offset 7 px past the corner and ringed
-2 px in the background colour behind it so it reads as sitting on the chip. It shows a date's
+A circle on the top-right corner of a shift chip, ringed 2 px in the background colour behind
+it so it reads as sitting on the chip. On the calendar it is offset 7 px past the chip's right
+edge and 15 px above its top, so it clears the shift letter; the day number sits top-left to
+leave it room. It shows a date's
 babysitter state with neutral colours, so the shift's colour stays the loudest thing in the
 cell. Status is shown by shape as well as colour:
 
 | State | Look |
 |---|---|
-| Needs a babysitter | An 8 px `babysitter-need` dot, offset 3 px past the corner, no letters |
-| Tentative | 16 px, `cell` fill, 1 px dashed `text-disabled` border, `text-muted` initials |
-| Confirmed | 16 px, `border-strong` fill, no border, `text` initials |
+| Needs a babysitter | 24 px, `cell` fill, 2 px dotted `babysitter-need` border, no letters, in the same place as the others |
+| Tentative | 24 px, `cell` fill, 1.5 px dashed `text-disabled` border, `text-soft` initials |
+| Confirmed | 24 px, `border-strong` fill, no border, `text` initials |
 
-Initials are 8 px JetBrains Mono bold. A date with a babysitter and no shift shows the avatar
+Initials are 12 px JetBrains Mono bold. A date with a babysitter and no shift shows the avatar
 where the chip would be, centred. Outside the month it is at 45 % opacity, like the chip; on past
-dates it shows as normal. The Babysitters screen (§6.5) uses the same avatar on its row chips,
-and a 28 px circle (`border-strong` fill, `text` initials, 12 px) by each babysitter's name.
+dates it shows as normal. The Babysitters screen (§6.5) keeps the earlier, smaller avatar on its row chips (an 8 px
+dot 3 px past the corner; 16 px circles 7 px past it with 8 px initials, tentative ones 1 px
+dashed with `text-muted` initials), and a 28 px circle (`border-strong` fill, `text` initials, 12 px) by each babysitter's name.
 
 **Initials**: the first letter of the name, uppercased (`Mum` → `M`, `aunty bec` → `A`). When
 another known name (§5.8) starts with the same letter ignoring case, both use their first two

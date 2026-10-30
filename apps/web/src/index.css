@@ -124,8 +124,10 @@
   --text-label--line-height: 1.4;
   --text-footnote: 13px;
   --text-footnote--line-height: 1.5;
-  --text-initials: 8px; /* a babysitter avatar on a chip, §5.10 */
+  --text-initials: 8px; /* a babysitter avatar on a Babysitters row chip, §5.10 */
   --text-initials--font-weight: 700;
+  --text-initials-grid: 12px; /* a babysitter avatar on a calendar chip, §5.10 */
+  --text-initials-grid--font-weight: 700;
   --text-event: 9px; /* the event caption in a calendar cell, §5.3 */
   --text-event--line-height: 11px;
   --text-caption: 12px;

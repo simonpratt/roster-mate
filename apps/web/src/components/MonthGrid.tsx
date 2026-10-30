@@ -260,7 +260,7 @@ function DayCell({ date, shift, events, swappedFrom, babysitter, known, needsBab
       onClick={() => onSelect(date)}
       className={`flex h-21 min-w-0 flex-col items-center justify-between rounded-field pt-1.75 pb-2 ${cell} ${focus}`}
     >
-      <span className={`font-mono text-caption tabular-nums ${number}`}>{dayOfMonth(date)}</span>
+      <span className={`self-start pl-1.5 font-mono text-caption tabular-nums ${number}`}>{dayOfMonth(date)}</span>
       {code || status ? (
         <ChipWithAvatar
           code={code}

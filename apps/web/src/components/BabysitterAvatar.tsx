@@ -3,10 +3,11 @@ import { CodeChip } from "./CodeChip";
 import { SwapIcon } from "./icons";
 
 // The babysitter avatar, docs/ux-spec.md §5.10, docs/designs/Main.dc.html (cellLook) and
-// Babysitters.dc.html: a small circle on a shift chip's top-right corner showing the date's
-// babysitter state in neutral greys, so the shift's colour stays the loudest thing. "large" is
-// the 28 px circle by a section heading on the Babysitters screen. Always aria-hidden: the
-// date's accessible name carries the babysitter and status.
+// Babysitters.dc.html: a circle on a shift chip's top-right corner showing the date's babysitter
+// state in neutral greys, so the shift's colour stays the loudest thing. "grid" is the 24 px one
+// on the calendar, "small" the 16 px one on a Babysitters row, and "large" the 28 px circle by a
+// section heading on the Babysitters screen. Always aria-hidden: the date's accessible name
+// carries the babysitter and status.
 
 export type AvatarStatus = "needs" | "tentative" | "confirmed";
 
@@ -17,7 +18,7 @@ type BabysitterAvatarProps = {
   status: AvatarStatus;
   /** The initials; unused for "needs". */
   initials?: string;
-  size?: "small" | "large";
+  size?: AvatarSize;
   ring?: AvatarRing;
   className?: string;
 };
@@ -27,7 +28,14 @@ const rings: Record<AvatarRing, string> = {
   today: "ring-2 ring-today-surface",
 };
 
-const looks: Record<"small" | "large", Record<AvatarStatus, string>> = {
+type AvatarSize = "small" | "grid" | "large";
+
+const looks: Record<AvatarSize, Record<AvatarStatus, string>> = {
+  grid: {
+    needs: "size-6 border-2 border-dotted border-babysitter-need bg-cell",
+    tentative: "size-6 border-[1.5px] border-dashed border-text-disabled bg-cell text-initials-grid tracking-[-0.02em] text-text-soft",
+    confirmed: "size-6 bg-border-strong text-initials-grid tracking-[-0.02em] text-text",
+  },
   small: {
     needs: "size-2 bg-babysitter-need",
     tentative: "size-4 border border-dashed border-text-disabled bg-cell text-initials text-text-muted",
@@ -66,23 +74,28 @@ type ChipWithAvatarProps = {
 };
 
 /**
- * A shift chip with the avatar on its top-right corner: 3 px past it for the needs dot, 7 px for
- * initials. With no shift the avatar sits centred where the chip would be. A swapped shift has
- * the swap badge 5 px past its bottom-left corner, opposite the avatar.
+ * A shift chip with the avatar on its top-right corner. On a Babysitters row: 3 px past it for the
+ * needs dot, 7 px for initials. On the calendar ("grid"): 7 px to the right and 15 px up, clear of
+ * the shift letter, the needs dot included. With no shift the avatar sits centred where
+ * the chip would be. A swapped shift has the swap badge 5 px past its bottom-left corner, opposite
+ * the avatar.
  */
 export function ChipWithAvatar({ code, size, avatar, swapped = false, ring, className = "" }: ChipWithAvatarProps) {
   const box = size === "grid" ? "h-8 w-8.5" : "h-7 w-8.5";
+  const grid = size === "grid";
   const place = !avatar
     ? ""
-    : avatar.status === "needs"
-      ? "absolute -top-0.75 -right-0.75"
-      : code
-        ? "absolute -top-1.75 -right-1.75"
-        : "absolute top-1/2 right-1/2 translate-x-1/2 -translate-y-1/2";
+    : !code
+      ? "absolute top-1/2 right-1/2 translate-x-1/2 -translate-y-1/2"
+      : grid
+        ? "absolute -top-3.75 -right-1.75"
+        : avatar.status === "needs"
+          ? "absolute -top-0.75 -right-0.75"
+          : "absolute -top-1.75 -right-1.75";
   return (
     <span aria-hidden="true" className={`relative flex ${className}`}>
       {code ? <CodeChip code={code} size={size} /> : <span className={box} />}
-      {avatar && <BabysitterAvatar status={avatar.status} initials={avatar.initials} ring={ring} className={place} />}
+      {avatar && <BabysitterAvatar status={avatar.status} initials={avatar.initials} size={grid ? "grid" : "small"} ring={ring} className={place} />}
       {code && swapped && <SwapBadge ring={ring} />}
     </span>
   );

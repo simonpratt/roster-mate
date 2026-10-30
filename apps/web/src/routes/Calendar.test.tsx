@@ -129,15 +129,15 @@ describe("Calendar month grid", () => {
     const needs = await cell("Monday 16 November, Day, no babysitter");
     expect(needs).toHaveClass("border-cell-line", "bg-cell");
     expect(avatar(needs)).toHaveAttribute("data-status", "needs");
-    expect(avatar(needs)).toHaveClass("size-2", "bg-babysitter-need", "ring-cell", "-top-0.75", "-right-0.75");
+    expect(avatar(needs)).toHaveClass("size-6", "border-dotted", "border-babysitter-need", "bg-cell", "ring-cell", "-top-3.75", "-right-1.75");
     expect(avatar(needs)).toHaveTextContent("");
     expect(caption(needs)).toBeNull();
 
-    // Tentative: dashed initials, 7 px past the chip's corner. Mum and Mel share an initial.
+    // Tentative: dashed initials, 7 px right of the chip and 15 px above it. Mum and Mel share an initial.
     const tentative = await cell("Tuesday 17 November, Late, babysitter Mum, tentative, Event 0");
     expect(avatar(tentative)).toHaveAttribute("data-status", "tentative");
-    expect(avatar(tentative)).toHaveClass("size-4", "border-dashed", "border-text-disabled", "bg-cell", "text-text-muted");
-    expect(avatar(tentative)).toHaveClass("-top-1.75", "-right-1.75");
+    expect(avatar(tentative)).toHaveClass("size-6", "border-dashed", "border-text-disabled", "bg-cell", "text-initials-grid", "text-text-soft");
+    expect(avatar(tentative)).toHaveClass("-top-3.75", "-right-1.75");
     expect(avatar(tentative)).toHaveTextContent(/^Mu$/);
     expect(caption(tentative)).toHaveTextContent(/^Event 0$/);
     expect(caption(tentative)).toHaveClass("h-2.75", "px-0.75", "text-event");
@@ -227,7 +227,7 @@ describe("Calendar month grid", () => {
     expect(badge(await cell("Sunday 15 November, Early, swapped from Late, today"))).toHaveClass("ring-today-surface");
     const dayOff = await cell("Monday 16 November, Day off, swapped from Day, babysitter Mum, confirmed");
     expect(badge(dayOff)).toBeInTheDocument();
-    expect(within(dayOff).getByTestId("babysitter-avatar")).toHaveClass("-top-1.75", "-right-1.75");
+    expect(within(dayOff).getByTestId("babysitter-avatar")).toHaveClass("-top-3.75", "-right-1.75");
     for (const name of [
       "Tuesday 17 November, Late, no babysitter",
       "Wednesday 18 November, Early, no babysitter",
