@@ -80,11 +80,11 @@ body{margin:0}
             </sc-if>
             <sc-if value="{{d.real}}" hint-placeholder-val="{{ true }}">
               <button type="button" onClick="{{d.pick}}" aria-label="{{d.aria}}" style="height: {{d.h}}; box-sizing: border-box; border-radius: 12px; border: {{d.borderW}} {{d.borderStyle}} {{d.border}}; box-shadow: inset 0 0 0 1px {{d.ring}}; background: {{d.cellBg}}; padding: 7px 0 8px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; color: {{d.numColor}}; font: inherit; cursor: pointer">
-                <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; font-weight: {{d.numWeight}}">{{d.num}}</span>
+                <span style="align-self: flex-start; padding-left: 6px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; font-weight: {{d.numWeight}}">{{d.num}}</span>
                 <span style="position: relative; display: flex">
                   <span style="width: 34px; height: 32px; box-sizing: border-box; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: {{d.chipBg}}; color: {{d.chipFg}}; box-shadow: inset 0 0 0 1px {{d.chipLine}}; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 14px">{{d.code}}</span>
                   <sc-if value="{{d.showAvatar}}" hint-placeholder-val="{{ false }}">
-                    <span aria-hidden="true" style="position: absolute; top: {{d.avatarTop}}; right: {{d.avatarRight}}; width: {{d.avatarSize}}; height: {{d.avatarSize}}; box-sizing: border-box; border-radius: 50%; border: 1px {{d.badgeLineStyle}} {{d.badgeLine}}; background: {{d.badgeBg}}; color: {{d.badgeFg}}; box-shadow: 0 0 0 2px {{d.cellBgSolid}}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 8px; font-weight: 700">{{d.avatarText}}</span>
+                    <span aria-hidden="true" style="position: absolute; top: {{d.avatarTop}}; right: {{d.avatarRight}}; width: {{d.avatarSize}}; height: {{d.avatarSize}}; box-sizing: border-box; border-radius: 50%; border: {{d.avatarLineW}} {{d.badgeLineStyle}} {{d.badgeLine}}; background: {{d.badgeBg}}; color: {{d.badgeFg}}; box-shadow: 0 0 0 2px {{d.cellBgSolid}}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: {{d.avatarFont}}; font-weight: 700; letter-spacing: -0.02em">{{d.avatarText}}</span>
                   </sc-if>
                   <sc-if value="{{d.swapped}}" hint-placeholder-val="{{ false }}">
                     <span aria-hidden="true" style="position: absolute; left: -5px; bottom: -5px; width: 15px; height: 15px; box-sizing: border-box; border-radius: 50%; border: 1px solid #5A3A1C; background: #2A1E10; color: #FDBA74; box-shadow: 0 0 0 2px {{d.cellBgSolid}}; display: flex; align-items: center; justify-content: center">
@@ -351,8 +351,8 @@ class Component extends DCLogic {
     // when the date needs a babysitter, else the initials, dashed while tentative and filled once
     // confirmed. With no shift the avatar sits where the chip would be.
     const AVATAR = {
-      need: ['#C98A2A', '#0E1014', '#C98A2A', 'solid'],
-      tent: ['#121418', '#9AA1AD', '#737B88', 'dashed'],
+      need: ['#121418', '#0E1014', '#C98A2A', 'dotted'],
+      tent: ['#121418', '#C9CDD4', '#737B88', 'dashed'],
       conf: ['#3A404B', '#ECEEF2', '#3A404B', 'solid']
     };
     const cellLook = (st, sitter, isToday, inMonth, isEditing, hasCode) => {
@@ -360,9 +360,13 @@ class Component extends DCLogic {
       return {
         showAvatar: !!st,
         badgeBg: a ? a[0] : 'transparent', badgeFg: a ? a[1] : 'transparent', badgeLine: a ? a[2] : 'transparent', badgeLineStyle: a ? a[3] : 'solid',
-        avatarSize: st === 'need' ? '8px' : '16px',
-        avatarTop: st === 'need' ? '-3px' : (hasCode ? '-7px' : '8px'),
-        avatarRight: st === 'need' ? '-3px' : (hasCode ? '-7px' : '9px'),
+        // The same 24 px circle in the same place for every state, the needs dot included.
+        avatarSize: '24px',
+        avatarFont: '12px',
+        avatarLineW: st === 'need' ? '2px' : (st === 'tent' ? '1.5px' : '1px'),
+        // Raised 15 px above the chip so it clears the shift letter; the date sits top-left to make room.
+        avatarTop: hasCode ? '-15px' : '4px',
+        avatarRight: hasCode ? '-7px' : '5px',
         avatarText: st === 'need' || !sitter ? '' : initialsOf(sitter),
         cellBgSolid: isToday ? '#161920' : (inMonth ? '#121418' : '#0E1014'),
         border: isEditing || isToday ? '#ECEEF2' : (inMonth ? '#1C2027' : '#15181D'),
